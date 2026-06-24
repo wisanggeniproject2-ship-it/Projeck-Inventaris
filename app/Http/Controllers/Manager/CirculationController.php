@@ -1,69 +1,48 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\AdminUnit;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Circulation;
-use Illuminate\Http\Request;
+use App\Models\User;
 
-class CirculationController extends Controller
+class DashboardController extends Controller
 {
-    public function __construct()
-    {
-        // HAPUS: $this->middleware('role:user');
-    }
+    // HAPUS CONSTRUCTOR
 
     public function index()
     {
-        $circulations = Circulation::where('user_id', auth()->id())
-            ->with('item')
-            ->latest()
-            ->paginate(10);
+        $unitId = auth()->user()->unit_id;
         
-        return view('user.circulations.index', compact('circulations'));
-    }
-
-    public function create(Request $request)
-    {
-        $items = Item::where('unit_id', auth()->user()->unit_id)
-            ->where('status', 'available')
+        $stats = [
+            'total_items' => Item::where('unit_id', $unitId)->count(),
+            'total_borrowed' => Circulation::whereHas('item', function($query) use ($unitId) {
+                $query->where('unit_id', $unitId);
+            })->where('status', 'approved')->count(),
+            'total_pending' => Circulation::whereHas('item', function($query) use ($unitId) {
+                $query->where('unit_id', $unitId);
+            })->where('status', 'pending')->count(),
+            'total_returned' => Circulation::whereHas('item', function($query) use ($unitId) {
+                $query->where('unit_id', $unitId);
+            })->where('status', 'returned')->count(),
+            'total_users' => User::where('unit_id', $unitId)->count(),
+        ];
+        
+        $recentItems = Item::with(['category'])
+            ->where('unit_id', $unitId)
+            ->latest()
+            ->take(5)
             ->get();
         
-        $selectedItem = null;
-        if ($request->has('item')) {
-            $selectedItem = Item::find($request->item);
-        }
+        $recentCirculations = Circulation::with(['item', 'user'])
+            ->whereHas('item', function($query) use ($unitId) {
+                $query->where('unit_id', $unitId);
+            })
+            ->latest()
+            ->take(5)
+            ->get();
         
-        return view('user.circulations.create', compact('items', 'selectedItem'));
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'borrower_name' => 'required|string|max:100',
-            'expected_return_date' => 'required|date|after:today',
-            'purpose' => 'required|string',
-        ]);
-        
-        $item = Item::findOrFail($request->item_id);
-        
-        if ($item->status !== 'available') {
-            return back()->with('error', 'Barang sedang tidak tersedia.');
-        }
-        
-        Circulation::create([
-            'item_id' => $request->item_id,
-            'user_id' => auth()->id(),
-            'borrower_name' => $request->borrower_name,
-            'borrow_date' => now(),
-            'expected_return_date' => $request->expected_return_date,
-            'purpose' => $request->purpose,
-            'status' => 'pending',
-        ]);
-        
-        return redirect()->route('user.circulations.index')
-            ->with('success', 'Peminjaman berhasil diajukan.');
+        return view('admin_unit.dashboard', compact('stats', 'recentItems', 'recentCirculations'));
     }
 }

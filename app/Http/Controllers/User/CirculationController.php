@@ -9,10 +9,7 @@ use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('role:user');
-    }
+    // HAPUS CONSTRUCTOR INI
 
     public function index()
     {

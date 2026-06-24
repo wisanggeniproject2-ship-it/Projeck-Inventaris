@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
+    // HAPUS CONSTRUCTOR INI
+
     public function index(Request $request)
     {
         $unitId = auth()->user()->unit_id;
@@ -30,7 +32,6 @@ class ItemController extends Controller
 
     public function show(Item $item)
     {
-        // Pastikan item milik unit user
         if ($item->unit_id !== auth()->user()->unit_id) {
             abort(403);
         }

@@ -9,10 +9,7 @@ use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
-    public function __construct()
-    {
-        // HAPUS: $this->middleware('role:manager');
-    }
+    // HAPUS CONSTRUCTOR INI
 
     public function index(Request $request)
     {

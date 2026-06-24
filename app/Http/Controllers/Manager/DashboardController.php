@@ -9,10 +9,7 @@ use App\Models\Unit;
 
 class DashboardController extends Controller
 {
-    public function __construct()
-    {
-        // HAPUS: $this->middleware('role:manager');
-    }
+    // HAPUS CONSTRUCTOR INI
 
     public function index()
     {

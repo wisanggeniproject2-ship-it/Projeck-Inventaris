@@ -9,10 +9,11 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('role:user');
-    }
+    // HAPUS CONSTRUCTOR INI:
+    // public function __construct()
+    // {
+    //     $this->middleware('role:user');
+    // }
 
     public function index()
     {
