@@ -13,88 +13,155 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Units
+        // ==================== UNITS ====================
         $units = [
-            ['name' => 'SMP', 'code' => 'SMP', 'description' => 'Sekolah Menengah Pertama'],
-            ['name' => 'SMA', 'code' => 'SMA', 'description' => 'Sekolah Menengah Atas'],
-            ['name' => 'Administrasi', 'code' => 'ADM', 'description' => 'Unit Administrasi'],
+            ['name' => 'Daycare', 'code' => 'DCP'],
+            ['name' => 'Preschool', 'code' => 'PRS'],
+            ['name' => 'KBIT', 'code' => 'KBT'],
+            ['name' => 'TKIT', 'code' => 'TKT'],
+            ['name' => 'TKIP', 'code' => 'TKP'],
+            ['name' => 'SDIT', 'code' => 'SDT'],
+            ['name' => 'MI', 'code' => 'MIN'],
+            ['name' => 'SMPIT', 'code' => 'SMT'],
+            ['name' => 'MA', 'code' => 'MAA'],
         ];
         
         foreach ($units as $unit) {
-            Unit::updateOrCreate(['code' => $unit['code']], $unit);
+            Unit::updateOrCreate(['code' => $unit['code']], [
+                'name' => $unit['name'],
+                'description' => 'Unit ' . $unit['name'],
+                'is_active' => true,
+            ]);
         }
-        
-        // Create Categories
+
+        // ==================== CATEGORIES ====================
         $categories = [
             ['name' => 'Elektronik', 'code' => 'ELC'],
             ['name' => 'Furniture', 'code' => 'FRN'],
             ['name' => 'Alat Tulis', 'code' => 'ATK'],
             ['name' => 'Perlengkapan', 'code' => 'PRL'],
+            ['name' => 'Kendaraan', 'code' => 'KND'],
+            ['name' => 'Bangunan', 'code' => 'BGN'],
         ];
         
         foreach ($categories as $category) {
-            Category::updateOrCreate(['code' => $category['code']], $category);
+            Category::updateOrCreate(['code' => $category['code']], [
+                'name' => $category['name'],
+            ]);
         }
-        
-        // Create Users
-        $adminUnit = Unit::where('code', 'ADM')->first();
-        $smpUnit = Unit::where('code', 'SMP')->first();
-        $smaUnit = Unit::where('code', 'SMA')->first();
-        
+
+        // ==================== GET UNITS ====================
+        $units = Unit::all()->keyBy('code');
+
+        // ==================== SUPER ADMIN ====================
         User::updateOrCreate(
-            ['email' => 'admin@yayasan.com'],
+            ['email' => 'superadmin@yayasan.com'],
             [
-                'name' => 'Administrator',
+                'name' => 'Super Administrator',
                 'password' => Hash::make('password'),
-                'role' => 'admin',
-                'unit_id' => $adminUnit->id,
+                'role' => 'super_admin',
+                'unit_id' => null,
                 'is_active' => true,
             ]
         );
-        
+
+        // ==================== ADMIN UNIT ====================
+        $adminUnitEmails = [
+            'Daycare' => 'admin.daycare@yayasan.com',
+            'Preschool' => 'admin.preschool@yayasan.com',
+            'KBIT' => 'admin.kbit@yayasan.com',
+            'TKIT' => 'admin.tkit@yayasan.com',
+            'TKIP' => 'admin.tkip@yayasan.com',
+            'SDIT' => 'admin.sdit@yayasan.com',
+            'MI' => 'admin.mi@yayasan.com',
+            'SMPIT' => 'admin.smpit@yayasan.com',
+            'MA' => 'admin.ma@yayasan.com',
+        ];
+
+        foreach ($adminUnitEmails as $unitName => $email) {
+            $unit = Unit::where('name', $unitName)->first();
+            if ($unit) {
+                User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => 'Admin ' . $unitName,
+                        'password' => Hash::make('password'),
+                        'role' => 'admin_unit',
+                        'unit_id' => $unit->id,
+                        'is_active' => true,
+                    ]
+                );
+            }
+        }
+
+        // ==================== MANAGER ====================
         User::updateOrCreate(
-            ['email' => 'manager@smp.com'],
+            ['email' => 'manager@yayasan.com'],
             [
-                'name' => 'Manager SMP',
+                'name' => 'Manager Yayasan',
                 'password' => Hash::make('password'),
                 'role' => 'manager',
-                'unit_id' => $smpUnit->id,
+                'unit_id' => null,
                 'is_active' => true,
             ]
         );
-        
+
+        // ==================== USERS ====================
         User::updateOrCreate(
-            ['email' => 'user@yayasan.com'],
+            ['email' => 'user.daycare@yayasan.com'],
             [
-                'name' => 'Regular User',
+                'name' => 'User Daycare',
                 'password' => Hash::make('password'),
                 'role' => 'user',
-                'unit_id' => $smaUnit->id,
+                'unit_id' => $units['DCP']->id ?? null,
                 'is_active' => true,
             ]
         );
-        
-        // Create sample items
+
+        User::updateOrCreate(
+            ['email' => 'user.smpit@yayasan.com'],
+            [
+                'name' => 'User SMPIT',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'unit_id' => $units['SMT']->id ?? null,
+                'is_active' => true,
+            ]
+        );
+
+        // ==================== SAMPLE ITEMS ====================
         $electronics = Category::where('code', 'ELC')->first();
         
-        Item::create([
-            'code' => 'LAP-001',
-            'name' => 'Laptop Asus',
-            'category_id' => $electronics->id,
-            'unit_id' => $smpUnit->id,
-            'location' => 'Lab Komputer 1',
-            'budget_source' => 'APBN',
-            'status' => 'available',
-        ]);
-        
-        Item::create([
-            'code' => 'PRJ-001',
-            'name' => 'Projector Epson',
-            'category_id' => $electronics->id,
-            'unit_id' => $smaUnit->id,
-            'location' => 'Ruang AV',
-            'budget_source' => 'APBD',
-            'status' => 'available',
-        ]);
+        // Sample item untuk Daycare
+        if ($electronics && isset($units['DCP'])) {
+            Item::create([
+                'code' => Item::generateCode($units['DCP']->id),
+                'name' => 'TV LED 32 Inch',
+                'category_id' => $electronics->id,
+                'unit_id' => $units['DCP']->id,
+                'purchase_date' => now()->subMonths(6),
+                'condition' => 'baik',
+                'price' => 3500000,
+                'location' => 'Ruang Bermain',
+                'status' => 'available',
+                'description' => 'TV untuk menonton video edukasi anak',
+            ]);
+        }
+
+        // Sample item untuk SMPIT
+        if ($electronics && isset($units['SMT'])) {
+            Item::create([
+                'code' => Item::generateCode($units['SMT']->id),
+                'name' => 'Projector Epson',
+                'category_id' => $electronics->id,
+                'unit_id' => $units['SMT']->id,
+                'purchase_date' => now()->subMonths(3),
+                'condition' => 'baik',
+                'price' => 8500000,
+                'location' => 'Ruang AV',
+                'status' => 'available',
+                'description' => 'Projector untuk pembelajaran multimedia',
+            ]);
+        }
     }
 }

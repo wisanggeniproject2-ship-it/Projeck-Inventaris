@@ -5,29 +5,29 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Circulation;
-use Illuminate\Http\Request;
+use App\Models\Unit;
 
 class DashboardController extends Controller
 {
+    public function __construct()
+    {
+        // HAPUS: $this->middleware('role:manager');
+    }
+
     public function index()
     {
-        $unitId = auth()->user()->unit_id;
-        
         $stats = [
-            'total_items' => Item::where('unit_id', $unitId)->count(),
-            'total_borrowed' => Circulation::whereHas('item', function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            })->where('status', 'approved')->count(),
-            'total_pending' => Circulation::whereHas('item', function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            })->where('status', 'pending')->count(),
+            'total_items' => Item::count(),
+            'total_borrowed' => Circulation::where('status', 'approved')->count(),
+            'total_pending' => Circulation::where('status', 'pending')->count(),
+            'total_units' => Unit::count(),
         ];
         
-        $recentItems = Item::with('category')->where('unit_id', $unitId)->latest()->take(5)->get();
-        $recentCirculations = Circulation::with('item')->whereHas('item', function($q) use ($unitId) {
-            $q->where('unit_id', $unitId);
-        })->latest()->take(5)->get();
+        $recentItems = Item::with(['category', 'unit'])->latest()->take(10)->get();
+        $recentCirculations = Circulation::with(['item', 'user'])->latest()->take(10)->get();
         
-        return view('manager.dashboard', compact('stats', 'recentItems', 'recentCirculations'));
+        $itemsByUnit = Unit::withCount('items')->get();
+        
+        return view('manager.dashboard', compact('stats', 'recentItems', 'recentCirculations', 'itemsByUnit'));
     }
 }

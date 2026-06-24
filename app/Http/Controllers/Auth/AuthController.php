@@ -30,9 +30,10 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Akun Anda tidak aktif.']);
             }
             
-            // Redirect based on role
+            // Redirect berdasarkan role (4 ROLE)
             return match($user->role) {
-                'admin' => redirect()->route('admin.dashboard'),
+                'super_admin' => redirect()->route('super_admin.dashboard'),
+                'admin_unit' => redirect()->route('admin_unit.dashboard'),
                 'manager' => redirect()->route('manager.dashboard'),
                 default => redirect()->route('user.dashboard'),
             };
@@ -48,6 +49,6 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/login');
+        return redirect()->route('landing');
     }
 }

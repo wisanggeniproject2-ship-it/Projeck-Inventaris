@@ -3,14 +3,14 @@
 @section('content')
 <div class="container mx-auto max-w-3xl">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Tambah Barang</h1>
-        <a href="{{ route('super_admin.items.index') }}" class="text-gray-600 hover:text-gray-800">
+        <h1 class="text-2xl font-bold">Tambah Barang - {{ auth()->user()->unit->name }}</h1>
+        <a href="{{ route('admin_unit.items.index') }}" class="text-gray-600 hover:text-gray-800">
             <i class="fas fa-arrow-left mr-2"></i>Kembali
         </a>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('super_admin.items.store') }}" method="POST">
+        <form action="{{ route('admin_unit.items.store') }}" method="POST">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -32,19 +32,6 @@
                         @endforeach
                     </select>
                     @error('category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Unit *</label>
-                    <select name="unit_id" required class="w-full px-3 py-2 border rounded-lg">
-                        <option value="">Pilih Unit</option>
-                        @foreach($units as $unit)
-                        <option value="{{ $unit->id }}" {{ old('unit_id') == $unit->id ? 'selected' : '' }}>
-                            {{ $unit->name }}
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('unit_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>

@@ -1,40 +1,69 @@
 <?php
 
-namespace App\Http\Controllers\Manager;
+namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Item;
 use App\Models\Circulation;
 use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
-    public function index(Request $request)
+    public function __construct()
     {
-        $unitId = auth()->user()->unit_id;
-        
-        $query = Circulation::with(['item', 'user'])
-            ->whereHas('item', function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            });
-        
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        
-        $circulations = $query->latest()->paginate(10);
-        
-        return view('manager.circulations.index', compact('circulations'));
+        // HAPUS: $this->middleware('role:user');
     }
 
-    public function show(Circulation $circulation)
+    public function index()
     {
-        // Pastikan circulation milik unit manager
-        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
-            abort(403);
+        $circulations = Circulation::where('user_id', auth()->id())
+            ->with('item')
+            ->latest()
+            ->paginate(10);
+        
+        return view('user.circulations.index', compact('circulations'));
+    }
+
+    public function create(Request $request)
+    {
+        $items = Item::where('unit_id', auth()->user()->unit_id)
+            ->where('status', 'available')
+            ->get();
+        
+        $selectedItem = null;
+        if ($request->has('item')) {
+            $selectedItem = Item::find($request->item);
         }
         
-        $circulation->load(['item', 'user', 'approver']);
+        return view('user.circulations.create', compact('items', 'selectedItem'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'item_id' => 'required|exists:items,id',
+            'borrower_name' => 'required|string|max:100',
+            'expected_return_date' => 'required|date|after:today',
+            'purpose' => 'required|string',
+        ]);
         
-        return view('manager.circulations.show', compact('circulation'));
+        $item = Item::findOrFail($request->item_id);
+        
+        if ($item->status !== 'available') {
+            return back()->with('error', 'Barang sedang tidak tersedia.');
+        }
+        
+        Circulation::create([
+            'item_id' => $request->item_id,
+            'user_id' => auth()->id(),
+            'borrower_name' => $request->borrower_name,
+            'borrow_date' => now(),
+            'expected_return_date' => $request->expected_return_date,
+            'purpose' => $request->purpose,
+            'status' => 'pending',
+        ]);
+        
+        return redirect()->route('user.circulations.index')
+            ->with('success', 'Peminjaman berhasil diajukan.');
     }
 }

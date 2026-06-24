@@ -1,22 +1,26 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\AdminUnit;
 
 use App\Http\Controllers\Controller;
 use App\Models\Circulation;
-use App\Models\Item;
 use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
     public function __construct()
     {
-        // HAPUS: $this->middleware('role:super_admin');
+        // HAPUS: $this->middleware('role:admin_unit');
     }
 
     public function index(Request $request)
     {
-        $query = Circulation::with(['item', 'user', 'approver']);
+        $unitId = auth()->user()->unit_id;
+        
+        $query = Circulation::with(['item', 'user'])
+            ->whereHas('item', function($q) use ($unitId) {
+                $q->where('unit_id', $unitId);
+            });
         
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -24,17 +28,25 @@ class CirculationController extends Controller
         
         $circulations = $query->latest()->paginate(10);
         
-        return view('admin.circulations.index', compact('circulations'));
+        return view('admin_unit.circulations.index', compact('circulations'));
     }
 
     public function show(Circulation $circulation)
     {
+        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+            abort(403);
+        }
+        
         $circulation->load(['item', 'user', 'approver']);
-        return view('admin.circulations.show', compact('circulation'));
+        return view('admin_unit.circulations.show', compact('circulation'));
     }
 
     public function approve(Circulation $circulation)
     {
+        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+            abort(403);
+        }
+        
         if (!$circulation->isPending()) {
             return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
         }
@@ -48,6 +60,10 @@ class CirculationController extends Controller
 
     public function reject(Circulation $circulation)
     {
+        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+            abort(403);
+        }
+        
         if (!$circulation->isPending()) {
             return back()->with('error', 'Peminjaman ini tidak bisa ditolak.');
         }
@@ -60,6 +76,10 @@ class CirculationController extends Controller
 
     public function markReturned(Circulation $circulation)
     {
+        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+            abort(403);
+        }
+        
         if (!$circulation->isApproved()) {
             return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
         }

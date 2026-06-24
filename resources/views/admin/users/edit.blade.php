@@ -4,13 +4,13 @@
 <div class="container mx-auto max-w-2xl">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Edit User</h1>
-        <a href="{{ route('admin.users.index') }}" class="text-gray-600 hover:text-gray-800">
+        <a href="{{ route('super_admin.users.index') }}" class="text-gray-600 hover:text-gray-800">
             <i class="fas fa-arrow-left mr-2"></i>Kembali
         </a>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('admin.users.update', $user) }}" method="POST">
+        <form action="{{ route('super_admin.users.update', $user) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -18,19 +18,19 @@
                 <div>
                     <label class="block text-sm font-medium mb-2">Nama Lengkap *</label>
                     <input type="text" name="name" value="{{ old('name', $user->name) }}" required
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-2">Email *</label>
                     <input type="email" name="email" value="{{ old('email', $user->email) }}" required
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-2">Password (kosongkan jika tidak diubah)</label>
                     <input type="password" name="password"
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
@@ -38,11 +38,12 @@
                     <select name="role" id="role" required class="w-full px-3 py-2 border rounded-lg">
                         <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>User</option>
                         <option value="manager" {{ old('role', $user->role) == 'manager' ? 'selected' : '' }}>Manager</option>
-                        <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="admin_unit" {{ old('role', $user->role) == 'admin_unit' ? 'selected' : '' }}>Admin Unit</option>
+                        <option value="super_admin" {{ old('role', $user->role) == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                     </select>
                 </div>
 
-                <div id="unit_field" style="display: {{ old('role', $user->role) != 'admin' ? 'block' : 'none' }}">
+                <div id="unit_field" style="display: {{ old('role', $user->role) != 'super_admin' ? 'block' : 'none' }}">
                     <label class="block text-sm font-medium mb-2">Unit</label>
                     <select name="unit_id" class="w-full px-3 py-2 border rounded-lg">
                         <option value="">Pilih Unit</option>
@@ -57,7 +58,7 @@
                 <div>
                     <label class="block text-sm font-medium mb-2">No. Telepon</label>
                     <input type="text" name="phone" value="{{ old('phone', $user->phone) }}"
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
@@ -80,7 +81,7 @@
 <script>
 document.getElementById('role').addEventListener('change', function() {
     var unitField = document.getElementById('unit_field');
-    if (this.value === 'admin') {
+    if (this.value === 'super_admin') {
         unitField.style.display = 'none';
     } else {
         unitField.style.display = 'block';

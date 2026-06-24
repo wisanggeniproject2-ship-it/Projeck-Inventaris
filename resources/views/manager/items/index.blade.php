@@ -2,43 +2,86 @@
 
 @section('content')
 <div class="container mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Daftar Barang - {{ auth()->user()->unit->name }}</h1>
-    </div>
+    <h1 class="text-2xl font-bold mb-6">Daftar Barang - Semua Unit</h1>
 
-    <div class="mb-6">
-        <form method="GET" class="flex gap-2">
-            <input type="text" name="search" value="{{ request('search') }}" 
-                   placeholder="Cari barang..." 
-                   class="flex-1 px-4 py-2 border rounded-lg">
-            <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg">
-                <i class="fas fa-search mr-2"></i>Cari
-            </button>
+    <!-- Filter & Search -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <input type="text" name="search" value="{{ request('search') }}" 
+                       placeholder="Cari kode, nama, atau lokasi..." 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <select name="unit" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Semua Unit</option>
+                    @foreach($units as $unit)
+                    <option value="{{ $unit->id }}" {{ request('unit') == $unit->id ? 'selected' : '' }}>
+                        {{ $unit->name }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                    <i class="fas fa-search mr-2"></i>Cari
+                </button>
+                @if(request('search') || request('unit'))
+                <a href="{{ route('manager.items.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                    Reset
+                </a>
+                @endif
+            </div>
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        @foreach($items as $item)
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="w-full h-48 object-cover">
-            <div class="p-4">
-                <h3 class="font-bold text-lg">{{ $item->name }}</h3>
-                <p class="text-gray-600 text-sm"><i class="fas fa-barcode mr-2"></i>{{ $item->code }}</p>
-                <p class="text-gray-600 text-sm"><i class="fas fa-map-marker-alt mr-2"></i>{{ $item->location }}</p>
-                <p class="text-gray-600 text-sm"><i class="fas fa-tag mr-2"></i>{{ $item->category->name }}</p>
-                <div class="mt-3">
-                    <span class="px-2 py-1 text-xs rounded-full
-                        {{ $item->status == 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                        {{ $item->status == 'available' ? 'Tersedia' : 'Dipinjam' }}
-                    </span>
-                </div>
-            </div>
-        </div>
-        @endforeach
+    <!-- Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Barang</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lokasi</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($items as $item)
+                <tr class="border-t">
+                    <td class="px-6 py-4">{{ $item->code }}</td>
+                    <td class="px-6 py-4">{{ $item->name }}</td>
+                    <td class="px-6 py-4">{{ $item->unit->name }}</td>
+                    <td class="px-6 py-4">{{ $item->location }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {{ $item->status == 'available' ? 'bg-green-100 text-green-700' : 
+                               ($item->status == 'borrowed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
+                            {{ $item->status == 'available' ? 'Tersedia' : ($item->status == 'borrowed' ? 'Dipinjam' : 'Perbaikan') }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="{{ route('manager.items.show', $item) }}" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-box-open text-4xl mb-2 block"></i>
+                        Belum ada data barang
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="mt-6">
-        {{ $items->links() }}
+        {{ $items->withQueryString()->links() }}
     </div>
 </div>
 @endsection

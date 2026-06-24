@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('name', 100);
             $table->string('email', 100)->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'manager', 'user'])->default('user');
+            $table->enum('role', ['super_admin', 'admin_unit', 'manager', 'user'])->default('user');
             $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('set null');
             $table->string('phone', 20)->nullable();
             $table->boolean('is_active')->default(true);

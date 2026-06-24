@@ -4,14 +4,9 @@
 <div class="container mx-auto max-w-4xl">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Detail Barang</h1>
-        <div>
-            <a href="{{ route('super_admin.items.edit', $item) }}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
-                <i class="fas fa-edit mr-2"></i>Edit
-            </a>
-            <a href="{{ route('super_admin.items.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 ml-2">
-                <i class="fas fa-arrow-left mr-2"></i>Kembali
-            </a>
-        </div>
+        <a href="{{ route('admin_unit.items.index') }}" class="text-gray-600 hover:text-gray-800">
+            <i class="fas fa-arrow-left mr-2"></i>Kembali
+        </a>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -96,11 +91,6 @@
                 <div>
                     <label class="text-sm text-gray-500">Deskripsi</label>
                     <p>{{ $item->description ?: '-' }}</p>
-                </div>
-
-                <div>
-                    <label class="text-sm text-gray-500">Dibuat</label>
-                    <p>{{ $item->created_at->format('d/m/Y H:i') }}</p>
                 </div>
             </div>
         </div>

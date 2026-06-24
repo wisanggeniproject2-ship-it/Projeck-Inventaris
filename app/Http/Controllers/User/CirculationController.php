@@ -9,6 +9,11 @@ use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('role:user');
+    }
+
     public function index()
     {
         $circulations = Circulation::where('user_id', auth()->id())
@@ -19,13 +24,18 @@ class CirculationController extends Controller
         return view('user.circulations.index', compact('circulations'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $items = Item::where('unit_id', auth()->user()->unit_id)
             ->where('status', 'available')
             ->get();
         
-        return view('user.circulations.create', compact('items'));
+        $selectedItem = null;
+        if ($request->has('item')) {
+            $selectedItem = Item::find($request->item);
+        }
+        
+        return view('user.circulations.create', compact('items', 'selectedItem'));
     }
 
     public function store(Request $request)
@@ -40,7 +50,7 @@ class CirculationController extends Controller
         $item = Item::findOrFail($request->item_id);
         
         if ($item->status !== 'available') {
-            return back()->with('error', 'Barang sedang tidak tersedia');
+            return back()->with('error', 'Barang sedang tidak tersedia.');
         }
         
         Circulation::create([
@@ -54,6 +64,6 @@ class CirculationController extends Controller
         ]);
         
         return redirect()->route('user.circulations.index')
-            ->with('success', 'Peminjaman berhasil diajukan');
+            ->with('success', 'Peminjaman berhasil diajukan.');
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\AdminUnit;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
@@ -17,12 +17,14 @@ class ItemController extends Controller
     public function __construct(QRCodeService $qrCodeService)
     {
         $this->qrCodeService = $qrCodeService;
-        // HAPUS: $this->middleware('role:super_admin');
+        // HAPUS: $this->middleware('role:admin_unit');
     }
 
     public function index(Request $request)
     {
-        $query = Item::with(['category', 'unit']);
+        $unitId = auth()->user()->unit_id;
+        
+        $query = Item::with(['category', 'unit'])->where('unit_id', $unitId);
         
         if ($request->filled('search')) {
             $search = $request->search;
@@ -33,22 +35,15 @@ class ItemController extends Controller
             });
         }
         
-        if ($request->filled('unit')) {
-            $query->where('unit_id', $request->unit);
-        }
-        
-        $items = $query->latest()->paginate(15);
-        $units = Unit::where('is_active', true)->get();
-        $categories = Category::all();
-        
-        return view('admin.items.index', compact('items', 'units', 'categories'));
+        $items = $query->latest()->paginate(10);
+        return view('admin_unit.items.index', compact('items'));
     }
 
     public function create()
     {
         $categories = Category::all();
-        $units = Unit::where('is_active', true)->get();
-        return view('admin.items.create', compact('categories', 'units'));
+        $units = Unit::where('id', auth()->user()->unit_id)->get();
+        return view('admin_unit.items.create', compact('categories', 'units'));
     }
 
     public function store(Request $request)
@@ -56,7 +51,6 @@ class ItemController extends Controller
         $request->validate([
             'name' => 'required|string|max:200',
             'category_id' => 'required|exists:categories,id',
-            'unit_id' => 'required|exists:units,id',
             'purchase_date' => 'nullable|date',
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
@@ -64,13 +58,13 @@ class ItemController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $code = Item::generateCode($request->unit_id);
+        $code = Item::generateCode(auth()->user()->unit_id);
 
         $item = Item::create([
             'code' => $code,
             'name' => $request->name,
             'category_id' => $request->category_id,
-            'unit_id' => $request->unit_id,
+            'unit_id' => auth()->user()->unit_id,
             'purchase_date' => $request->purchase_date,
             'condition' => $request->condition,
             'price' => $request->price,
@@ -86,51 +80,32 @@ class ItemController extends Controller
             \Log::error('QR Code generation failed: ' . $e->getMessage());
         }
 
-        return redirect()->route('super_admin.items.index')
+        return redirect()->route('admin_unit.items.index')
             ->with('success', 'Barang berhasil ditambahkan! Kode: ' . $code);
     }
 
     public function show(Item $item)
     {
-        $item->load(['category', 'unit', 'circulations.user', 'circulations.approver']);
-        return view('admin.items.show', compact('item'));
+        if ($item->unit_id !== auth()->user()->unit_id) {
+            abort(403);
+        }
+        
+        $item->load(['category', 'unit', 'circulations.user']);
+        return view('admin_unit.items.show', compact('item'));
     }
 
     public function edit(Item $item)
     {
-        $categories = Category::all();
-        $units = Unit::where('is_active', true)->get();
-        return view('admin.items.edit', compact('item', 'categories', 'units'));
+        abort(403, 'Admin unit tidak memiliki akses untuk mengedit barang.');
     }
 
     public function update(Request $request, Item $item)
     {
-        $request->validate([
-            'name' => 'required|string|max:200',
-            'category_id' => 'required|exists:categories,id',
-            'unit_id' => 'required|exists:units,id',
-            'purchase_date' => 'nullable|date',
-            'condition' => 'required|in:baik,rusak,perbaikan',
-            'price' => 'nullable|numeric|min:0',
-            'location' => 'nullable|string|max:200',
-            'description' => 'nullable|string',
-        ]);
-
-        $item->update($request->all());
-
-        return redirect()->route('super_admin.items.index')
-            ->with('success', 'Barang berhasil diupdate!');
+        abort(403, 'Admin unit tidak memiliki akses untuk mengupdate barang.');
     }
 
     public function destroy(Item $item)
     {
-        if ($item->qr_code_path) {
-            Storage::disk('public')->delete($item->qr_code_path);
-        }
-        
-        $item->delete();
-
-        return redirect()->route('super_admin.items.index')
-            ->with('success', 'Barang berhasil dihapus!');
+        abort(403, 'Admin unit tidak memiliki akses untuk menghapus barang.');
     }
 }

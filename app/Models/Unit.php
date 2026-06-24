@@ -9,13 +9,9 @@ class Unit extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name', 'code', 'description', 'is_active'
-    ];
+    protected $fillable = ['name', 'code', 'description', 'is_active'];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-    ];
+    protected $casts = ['is_active' => 'boolean'];
 
     public function users()
     {
@@ -25,5 +21,10 @@ class Unit extends Model
     public function items()
     {
         return $this->hasMany(Item::class);
+    }
+
+    public function getCodePrefix()
+    {
+        return $this->code;
     }
 }

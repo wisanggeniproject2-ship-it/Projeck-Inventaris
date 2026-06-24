@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
+    public function __construct()
+    {
+        // HAPUS: $this->middleware('role:manager');
+    }
+
     public function index(Request $request)
     {
-        $unitId = auth()->user()->unit_id;
-        
-        $query = Item::with('category')->where('unit_id', $unitId);
+        $query = Item::with(['category', 'unit']);
         
         if ($request->filled('search')) {
             $search = $request->search;
@@ -23,22 +27,19 @@ class ItemController extends Controller
             });
         }
         
-        $items = $query->latest()->paginate(12);
+        if ($request->filled('unit')) {
+            $query->where('unit_id', $request->unit);
+        }
         
-        return view('manager.items.index', compact('items'));
+        $items = $query->latest()->paginate(15);
+        $units = Unit::where('is_active', true)->get();
+        
+        return view('manager.items.index', compact('items', 'units'));
     }
 
     public function show(Item $item)
     {
-        // Pastikan item milik unit manager
-        if ($item->unit_id !== auth()->user()->unit_id) {
-            abort(403);
-        }
-        
-        $item->load(['category', 'unit', 'circulations' => function($q) {
-            $q->latest()->take(10);
-        }]);
-        
+        $item->load(['category', 'unit', 'circulations.user']);
         return view('manager.items.show', compact('item'));
     }
 }

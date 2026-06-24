@@ -10,15 +10,16 @@ class QRCodeService
 {
     public function generateQrCode(Item $item)
     {
+        // Data yang akan di-encode ke QR Code
         $data = [
             'id' => $item->id,
             'code' => $item->code,
             'name' => $item->name,
+            'unit' => $item->unit->name,
             'location' => $item->location,
-            'budget_source' => $item->budget_source,
         ];
 
-        // VERSI TERBARU: Pakai SVG (TIDAK BUTUH IMAGICK)
+        // Generate QR Code dalam format SVG (tidak butuh imagick)
         $qrCode = QrCode::format('svg')
             ->size(300)
             ->margin(10)
@@ -29,5 +30,11 @@ class QRCodeService
         Storage::disk('public')->put($filename, $qrCode);
         
         return $filename;
+    }
+
+    // Untuk scan QR Code
+    public function decodeQrCode($qrCodeData)
+    {
+        return json_decode($qrCodeData, true);
     }
 }

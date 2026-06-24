@@ -14,12 +14,9 @@ class User extends Authenticatable
         'name', 'email', 'password', 'role', 'unit_id', 'phone', 'is_active'
     ];
 
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
     ];
 
@@ -38,9 +35,14 @@ class User extends Authenticatable
         return $this->hasMany(Circulation::class, 'approved_by');
     }
 
-    public function isAdmin()
+    public function isSuperAdmin()
     {
-        return $this->role === 'admin';
+        return $this->role === 'super_admin';
+    }
+
+    public function isAdminUnit()
+    {
+        return $this->role === 'admin_unit';
     }
 
     public function isManager()
@@ -51,10 +53,5 @@ class User extends Authenticatable
     public function isUser()
     {
         return $this->role === 'user';
-    }
-
-    public function hasRole($role)
-    {
-        return $this->role === $role;
     }
 }

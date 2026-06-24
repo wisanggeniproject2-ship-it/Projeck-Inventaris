@@ -11,12 +11,13 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'name', 'category_id', 'unit_id', 'location', 
-        'budget_source', 'image', 'description', 'status', 'qr_code_path'
+        'code', 'name', 'category_id', 'unit_id', 'purchase_date',
+        'condition', 'price', 'location', 'status', 'qr_code_path', 'description'
     ];
 
     protected $casts = [
-        'status' => 'string',
+        'purchase_date' => 'date',
+        'price' => 'decimal:2',
     ];
 
     public function category()
@@ -46,48 +47,37 @@ class Item extends Model
         return $this->status === 'available';
     }
 
-    public function getImageUrlAttribute()
-    {
-        if ($this->image && Storage::disk('public')->exists($this->image)) {
-            return Storage::url($this->image);
-        }
-        return asset('assets/images/default-item.png');
-    }
-
-    /**
-     * Get QR Code URL (Support PNG & SVG)
-     */
     public function getQrCodeUrlAttribute()
     {
         if ($this->qr_code_path && Storage::disk('public')->exists($this->qr_code_path)) {
             return Storage::url($this->qr_code_path);
         }
-        
-        // Fallback: cek apakah ada file QR dengan format lama (PNG)
-        $pngPath = 'qrcodes/' . $this->code . '.png';
-        if (Storage::disk('public')->exists($pngPath)) {
-            return Storage::url($pngPath);
-        }
-        
         return null;
     }
 
-    /**
-     * Get QR Code file extension
-     */
-    public function getQrCodeExtensionAttribute()
+    // ==================== AUTO GENERATE CODE ====================
+    public static function generateCode($unitId)
     {
-        if ($this->qr_code_path) {
-            return pathinfo($this->qr_code_path, PATHINFO_EXTENSION);
+        $unit = Unit::find($unitId);
+        if (!$unit) {
+            throw new \Exception('Unit tidak ditemukan');
         }
-        return null;
-    }
 
-    /**
-     * Check if QR Code exists
-     */
-    public function hasQrCode()
-    {
-        return $this->qr_code_url !== null;
+        $prefix = 'INV-' . $unit->code . '-';
+        
+        // Get last item with same unit
+        $lastItem = self::where('unit_id', $unitId)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastItem) {
+            // Extract number from last code
+            $lastNumber = (int) substr($lastItem->code, -4);
+            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '0001';
+        }
+
+        return $prefix . $newNumber;
     }
 }

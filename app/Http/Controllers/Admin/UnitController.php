@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class UnitController extends Controller
 {
+    public function __construct()
+    {
+        // HAPUS: $this->middleware('role:super_admin');
+    }
+
     public function index(Request $request)
     {
         $query = Unit::query();
@@ -33,13 +38,13 @@ class UnitController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|max:50|unique:units',
+            'code' => 'required|string|max:10|unique:units',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
         
         Unit::create($request->all());
-        return redirect()->route('admin.units.index')
+        return redirect()->route('super_admin.units.index')
             ->with('success', 'Unit berhasil ditambahkan');
     }
 
@@ -52,13 +57,13 @@ class UnitController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|max:50|unique:units,code,' . $unit->id,
+            'code' => 'required|string|max:10|unique:units,code,' . $unit->id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
         
         $unit->update($request->all());
-        return redirect()->route('admin.units.index')
+        return redirect()->route('super_admin.units.index')
             ->with('success', 'Unit berhasil diupdate');
     }
 
@@ -69,7 +74,7 @@ class UnitController extends Controller
         }
         
         $unit->delete();
-        return redirect()->route('admin.units.index')
+        return redirect()->route('super_admin.units.index')
             ->with('success', 'Unit berhasil dihapus');
     }
 }

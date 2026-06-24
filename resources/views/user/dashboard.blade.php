@@ -2,18 +2,18 @@
 
 @section('content')
 <div class="container mx-auto">
-    <h1 class="text-2xl font-bold mb-6">Dashboard User</h1>
+    <h1 class="text-2xl font-bold mb-6">Dashboard User - {{ auth()->user()->unit->name }}</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm">Ajukan Peminjaman</p>
-                    <p class="text-2xl font-bold">Barang Tersedia</p>
+                    <p class="text-lg font-semibold text-green-600">Barang Tersedia</p>
                 </div>
                 <i class="fas fa-box-open text-4xl text-green-500"></i>
             </div>
-            <a href="{{ route('user.circulations.create') }}" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg">
+            <a href="{{ route('user.circulations.create') }}" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
                 <i class="fas fa-hand-paper mr-2"></i>Ajukan Sekarang
             </a>
         </div>
@@ -22,7 +22,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm">Peminjaman Aktif</p>
-                    <p class="text-2xl font-bold">{{ $activeLoans ?? 0 }}</p>
+                    <p class="text-2xl font-bold">{{ $activeLoans }}</p>
                 </div>
                 <i class="fas fa-clock text-4xl text-yellow-500"></i>
             </div>
@@ -39,16 +39,22 @@
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                @foreach($availableItems ?? [] as $item)
-                <div class="border rounded-lg p-4">
+                @foreach($availableItems as $item)
+                <div class="border rounded-lg p-4 hover:shadow-lg transition">
                     <h4 class="font-semibold">{{ $item->name }}</h4>
                     <p class="text-sm text-gray-600">Kode: {{ $item->code }}</p>
                     <p class="text-sm text-gray-600">Lokasi: {{ $item->location }}</p>
-                    <a href="{{ route('user.circulations.create', ['item' => $item->id]) }}" class="mt-2 inline-block text-blue-500 text-sm">
-                        Pinjam →
+                    <a href="{{ route('user.circulations.create', ['item' => $item->id]) }}" class="mt-2 inline-block text-blue-500 text-sm hover:text-blue-700">
+                        <i class="fas fa-hand-paper mr-1"></i>Pinjam →
                     </a>
                 </div>
                 @endforeach
+                @if($availableItems->count() == 0)
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <i class="fas fa-box-open text-4xl mb-2 block"></i>
+                    Tidak ada barang tersedia saat ini
+                </div>
+                @endif
             </div>
         </div>
     </div>

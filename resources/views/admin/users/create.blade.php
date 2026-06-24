@@ -4,13 +4,13 @@
 <div class="container mx-auto max-w-2xl">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Tambah User</h1>
-        <a href="{{ route('admin.users.index') }}" class="text-gray-600 hover:text-gray-800">
+        <a href="{{ route('super_admin.users.index') }}" class="text-gray-600 hover:text-gray-800">
             <i class="fas fa-arrow-left mr-2"></i>Kembali
         </a>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('admin.users.store') }}" method="POST">
+        <form action="{{ route('super_admin.users.store') }}" method="POST">
             @csrf
 
             <div class="space-y-4">
@@ -40,11 +40,13 @@
                     <select name="role" id="role" required class="w-full px-3 py-2 border rounded-lg">
                         <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>User</option>
                         <option value="manager" {{ old('role') == 'manager' ? 'selected' : '' }}>Manager</option>
-                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="admin_unit" {{ old('role') == 'admin_unit' ? 'selected' : '' }}>Admin Unit</option>
+                        <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                     </select>
+                    @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                <div id="unit_field" style="display: {{ old('role') != 'admin' ? 'block' : 'none' }}">
+                <div id="unit_field" style="display: {{ old('role') != 'super_admin' ? 'block' : 'none' }}">
                     <label class="block text-sm font-medium mb-2">Unit</label>
                     <select name="unit_id" class="w-full px-3 py-2 border rounded-lg">
                         <option value="">Pilih Unit</option>
@@ -54,12 +56,13 @@
                         </option>
                         @endforeach
                     </select>
+                    @error('unit_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-2">No. Telepon</label>
                     <input type="text" name="phone" value="{{ old('phone') }}"
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
@@ -82,7 +85,7 @@
 <script>
 document.getElementById('role').addEventListener('change', function() {
     var unitField = document.getElementById('unit_field');
-    if (this.value === 'admin') {
+    if (this.value === 'super_admin') {
         unitField.style.display = 'none';
     } else {
         unitField.style.display = 'block';

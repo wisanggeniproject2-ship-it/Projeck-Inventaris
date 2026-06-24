@@ -9,6 +9,11 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('role:user');
+    }
+
     public function index()
     {
         $unitId = auth()->user()->unit_id;

@@ -5,10 +5,10 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Detail User</h1>
         <div>
-            <a href="{{ route('admin.users.edit', $user) }}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+            <a href="{{ route('super_admin.users.edit', $user) }}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
                 <i class="fas fa-edit mr-2"></i>Edit
             </a>
-            <a href="{{ route('admin.users.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 ml-2">
+            <a href="{{ route('super_admin.users.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 ml-2">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>
         </div>
@@ -36,9 +36,10 @@
                         <label class="text-sm text-gray-500">Role</label>
                         <p>
                             <span class="px-2 py-1 text-xs rounded-full
-                                {{ $user->role == 'admin' ? 'bg-red-100 text-red-700' : 
-                                   ($user->role == 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700') }}">
-                                {{ strtoupper($user->role) }}
+                                {{ $user->role == 'super_admin' ? 'bg-red-100 text-red-700' : 
+                                   ($user->role == 'admin_unit' ? 'bg-blue-100 text-blue-700' : 
+                                   ($user->role == 'manager' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')) }}">
+                                {{ strtoupper(str_replace('_', ' ', $user->role)) }}
                             </span>
                         </p>
                     </div>
@@ -91,8 +92,7 @@
                     <tr class="border-t">
                         <td class="px-4 py-2">
                             {{ $circulation->item->name }}
-                            <br>
-                            <small class="text-gray-500">{{ $circulation->item->code }}</small>
+                            <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
                         </td>
                         <td class="px-4 py-2">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
                         <td class="px-4 py-2">{{ $circulation->expected_return_date->format('d/m/Y') }}</td>

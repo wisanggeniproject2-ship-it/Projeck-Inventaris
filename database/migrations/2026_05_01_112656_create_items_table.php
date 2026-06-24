@@ -14,12 +14,13 @@ return new class extends Migration
             $table->string('name', 200);
             $table->foreignId('category_id')->constrained('categories');
             $table->foreignId('unit_id')->constrained('units');
-            $table->string('location', 200);
-            $table->string('budget_source', 100)->nullable();
-            $table->string('image')->nullable();
-            $table->text('description')->nullable();
+            $table->date('purchase_date')->nullable();
+            $table->enum('condition', ['baik', 'rusak', 'perbaikan'])->default('baik');
+            $table->decimal('price', 15, 2)->nullable();
+            $table->string('location', 200)->nullable();
             $table->enum('status', ['available', 'borrowed', 'maintenance'])->default('available');
             $table->string('qr_code_path')->nullable();
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

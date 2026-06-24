@@ -4,7 +4,7 @@
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Riwayat Peminjaman Saya</h1>
-        <a href="{{ route('user.circulations.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route('user.circulations.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
             <i class="fas fa-plus mr-2"></i>Ajukan Peminjaman
         </a>
     </div>
@@ -24,8 +24,7 @@
                 <tr class="border-t">
                     <td class="px-6 py-4">
                         {{ $circulation->item->name }}
-                        <br>
-                        <small class="text-gray-500">{{ $circulation->item->code }}</small>
+                        <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
                     </td>
                     <td class="px-6 py-4">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
                     <td class="px-6 py-4">{{ $circulation->expected_return_date->format('d/m/Y') }}</td>
