@@ -19,10 +19,20 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-center mb-4">
                 <h3 class="font-semibold text-lg mb-2">QR Code</h3>
-                @if($item->qr_code_url)
-                <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto">
+                
+                {{-- QR CODE - VERSI TERBARU DENGAN SVG SUPPORT --}}
+                @if($item->hasQrCode())
+                    <div class="bg-gray-50 p-4 rounded-lg inline-block">
+                        <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto w-48">
+                        @if($item->qr_code_extension)
+                            <p class="text-xs text-gray-500 mt-2">Format: {{ strtoupper($item->qr_code_extension) }}</p>
+                        @endif
+                    </div>
                 @else
-                <p class="text-gray-500">QR Code belum tersedia</p>
+                    <div class="bg-gray-100 p-6 rounded-lg inline-block">
+                        <i class="fas fa-qrcode text-6xl text-gray-400"></i>
+                        <p class="text-gray-500 mt-2">QR Code belum tersedia</p>
+                    </div>
                 @endif
             </div>
             
@@ -81,6 +91,11 @@
                     <label class="text-sm text-gray-500">Dibuat</label>
                     <p>{{ $item->created_at->format('d/m/Y H:i') }}</p>
                 </div>
+
+                <div>
+                    <label class="text-sm text-gray-500">Terakhir Update</label>
+                    <p>{{ $item->updated_at->format('d/m/Y H:i') }}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -116,6 +131,7 @@
                     @empty
                     <tr class="border-t">
                         <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-exchange-alt text-4xl text-gray-300 mb-2 block"></i>
                             Belum ada riwayat peminjaman
                         </td>
                     </tr>
@@ -123,6 +139,18 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- Action Buttons (Optional) -->
+    <div class="mt-6 flex justify-end gap-2">
+        @if($item->status == 'available')
+            <a href="{{ route('user.circulations.create') }}?item={{ $item->id }}" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                <i class="fas fa-hand-paper mr-2"></i>Ajukan Peminjaman
+            </a>
+        @endif
+        <a href="{{ route('admin.items.edit', $item) }}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+            <i class="fas fa-edit mr-2"></i>Edit Barang
+        </a>
     </div>
 </div>
 @endsection

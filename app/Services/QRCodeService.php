@@ -18,9 +18,14 @@ class QRCodeService
             'budget_source' => $item->budget_source,
         ];
 
-        $qrCode = QrCode::format('png')->size(300)->generate(json_encode($data));
+        // VERSI TERBARU: Pakai SVG (TIDAK BUTUH IMAGICK)
+        $qrCode = QrCode::format('svg')
+            ->size(300)
+            ->margin(10)
+            ->errorCorrection('H')
+            ->generate(json_encode($data));
         
-        $filename = 'qrcodes/' . $item->code . '.png';
+        $filename = 'qrcodes/' . $item->code . '.svg';
         Storage::disk('public')->put($filename, $qrCode);
         
         return $filename;

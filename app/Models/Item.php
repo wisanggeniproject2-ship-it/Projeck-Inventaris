@@ -54,11 +54,40 @@ class Item extends Model
         return asset('assets/images/default-item.png');
     }
 
+    /**
+     * Get QR Code URL (Support PNG & SVG)
+     */
     public function getQrCodeUrlAttribute()
     {
         if ($this->qr_code_path && Storage::disk('public')->exists($this->qr_code_path)) {
             return Storage::url($this->qr_code_path);
         }
+        
+        // Fallback: cek apakah ada file QR dengan format lama (PNG)
+        $pngPath = 'qrcodes/' . $this->code . '.png';
+        if (Storage::disk('public')->exists($pngPath)) {
+            return Storage::url($pngPath);
+        }
+        
         return null;
+    }
+
+    /**
+     * Get QR Code file extension
+     */
+    public function getQrCodeExtensionAttribute()
+    {
+        if ($this->qr_code_path) {
+            return pathinfo($this->qr_code_path, PATHINFO_EXTENSION);
+        }
+        return null;
+    }
+
+    /**
+     * Check if QR Code exists
+     */
+    public function hasQrCode()
+    {
+        return $this->qr_code_url !== null;
     }
 }
