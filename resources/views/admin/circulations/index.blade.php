@@ -28,6 +28,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peminjam</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Pinjam</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenggat</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -43,6 +44,7 @@
                         <small class="text-gray-500">{{ $circulation->item->code }}</small>
                     </td>
                     <td class="px-6 py-4">{{ $circulation->borrower_name }}</td>
+                    <td class="px-6 py-4">{{ $circulation->item->unit->name }}</td>
                     <td class="px-6 py-4">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
                     <td class="px-6 py-4">{{ $circulation->expected_return_date->format('d/m/Y') }}</td>
                     <td class="px-6 py-4">
@@ -55,29 +57,37 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            <a href="{{ route('admin.circulations.show', $circulation) }}" class="text-blue-600 hover:text-blue-800">
+                            <!-- DETAIL - PAKAI super_admin.circulations.show -->
+                            <a href="{{ route('super_admin.circulations.show', $circulation) }}" 
+                               class="text-blue-600 hover:text-blue-800">
                                 <i class="fas fa-eye"></i>
                             </a>
                             
                             @if($circulation->status == 'pending')
-                                <form action="{{ route('admin.circulations.approve', $circulation) }}" method="POST" class="inline">
+                                <form action="{{ route('super_admin.circulations.approve', $circulation) }}" 
+                                      method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="text-green-600 hover:text-green-800">
+                                    <button type="submit" class="text-green-600 hover:text-green-800"
+                                            onclick="return confirm('Setujui peminjaman ini?')">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.circulations.reject', $circulation) }}" method="POST" class="inline">
+                                <form action="{{ route('super_admin.circulations.reject', $circulation) }}" 
+                                      method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="text-red-600 hover:text-red-800">
+                                    <button type="submit" class="text-red-600 hover:text-red-800"
+                                            onclick="return confirm('Tolak peminjaman ini?')">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </form>
                             @endif
                             
                             @if($circulation->status == 'approved')
-                                <form action="{{ route('admin.circulations.return', $circulation) }}" method="POST" class="inline">
+                                <form action="{{ route('super_admin.circulations.return', $circulation) }}" 
+                                      method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="text-blue-600 hover:text-blue-800">
+                                    <button type="submit" class="text-blue-600 hover:text-blue-800"
+                                            onclick="return confirm('Tandai barang sudah dikembalikan?')">
                                         <i class="fas fa-undo-alt"></i>
                                     </button>
                                 </form>

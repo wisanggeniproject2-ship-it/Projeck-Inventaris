@@ -51,22 +51,37 @@ class Circulation extends Model
         return $this->status === 'returned';
     }
 
-    public function approve()
-    {
-        $this->status = 'approved';
-        $this->approved_at = now();
-        $this->item->update(['status' => 'borrowed']);
+   public function approve()
+{
+    $this->status = 'approved';
+    $this->approved_at = now();
+    $this->save();
+    
+    // Update status item menjadi borrowed
+    if ($this->item) {
+        $this->item->status = 'borrowed';
+        $this->item->save();
     }
+}
 
-    public function reject()
-    {
-        $this->status = 'rejected';
-    }
+public function reject()
+{
+    $this->status = 'rejected';
+    $this->save();
+    
+    // Status item tetap available (tidak berubah)
+}
 
-    public function markAsReturned()
-    {
-        $this->status = 'returned';
-        $this->return_date = now();
-        $this->item->update(['status' => 'available']);
+public function markAsReturned()
+{
+    $this->status = 'returned';
+    $this->return_date = now();
+    $this->save();
+    
+    // Update status item menjadi available kembali
+    if ($this->item) {
+        $this->item->status = 'available';
+        $this->item->save();
     }
+}
 }

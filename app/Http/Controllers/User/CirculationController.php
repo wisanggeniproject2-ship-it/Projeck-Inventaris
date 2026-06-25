@@ -4,27 +4,52 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\Unit;
 use App\Models\Circulation;
 use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
-    // HAPUS CONSTRUCTOR INI
-
-    public function index()
+    public function index(Request $request)
     {
-        $circulations = Circulation::where('user_id', auth()->id())
-            ->with('item')
+        $userId = auth()->id();
+        
+        $query = Circulation::where('user_id', $userId)
+            ->with(['item', 'item.unit']);
+        
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('item', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+        
+        $circulations = $query->orderByRaw("FIELD(status, 'pending', 'approved', 'returned', 'rejected')")
             ->latest()
             ->paginate(10);
         
-        return view('user.circulations.index', compact('circulations'));
+        $stats = [
+            'all' => Circulation::where('user_id', $userId)->count(),
+            'pending' => Circulation::where('user_id', $userId)->where('status', 'pending')->count(),
+            'approved' => Circulation::where('user_id', $userId)->where('status', 'approved')->count(),
+            'returned' => Circulation::where('user_id', $userId)->where('status', 'returned')->count(),
+            'rejected' => Circulation::where('user_id', $userId)->where('status', 'rejected')->count(),
+        ];
+        
+        return view('user.circulations.index', compact('circulations', 'stats'));
     }
 
     public function create(Request $request)
     {
-        $items = Item::where('unit_id', auth()->user()->unit_id)
-            ->where('status', 'available')
+        $units = Unit::where('is_active', true)->get();
+        
+        $items = Item::where('status', 'available')
+            ->with('unit')
             ->get();
         
         $selectedItem = null;
@@ -32,7 +57,7 @@ class CirculationController extends Controller
             $selectedItem = Item::find($request->item);
         }
         
-        return view('user.circulations.create', compact('items', 'selectedItem'));
+        return view('user.circulations.create', compact('units', 'items', 'selectedItem'));
     }
 
     public function store(Request $request)
@@ -50,6 +75,14 @@ class CirculationController extends Controller
             return back()->with('error', 'Barang sedang tidak tersedia.');
         }
         
+        $activeCirculation = Circulation::where('item_id', $item->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->exists();
+            
+        if ($activeCirculation) {
+            return back()->with('error', 'Barang sedang dalam proses peminjaman.');
+        }
+        
         Circulation::create([
             'item_id' => $request->item_id,
             'user_id' => auth()->id(),
@@ -59,8 +92,33 @@ class CirculationController extends Controller
             'purpose' => $request->purpose,
             'status' => 'pending',
         ]);
-        
+
         return redirect()->route('user.circulations.index')
-            ->with('success', 'Peminjaman berhasil diajukan.');
+            ->with('success', 'Peminjaman berhasil diajukan! Menunggu persetujuan admin unit.');
     }
+
+    // ==================== METHOD RETURN BARANG ====================
+   public function returnItem(Circulation $circulation)
+{
+    if ($circulation->user_id !== auth()->id()) {
+        abort(403);
+    }
+    
+    if ($circulation->status !== 'approved') {
+        return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
+    }
+    
+    // Update status sirkulasi
+    $circulation->status = 'returned';
+    $circulation->return_date = now();
+    $circulation->save();
+    
+    // 🔥 UPDATE STATUS BARANG MENJADI AVAILABLE KEMBALI
+    $item = $circulation->item;
+    $item->status = 'available';
+    $item->save();
+    
+    return redirect()->route('user.circulations.index')
+        ->with('success', 'Barang berhasil dikembalikan! Terima kasih.');
+}
 }

@@ -4,7 +4,7 @@
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Manajemen Unit</h1>
-        <a href="{{ route('admin.units.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route('super_admin.units.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
             <i class="fas fa-plus mr-2"></i>Tambah Unit
         </a>
     </div>
@@ -18,6 +18,11 @@
             <button type="submit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">
                 <i class="fas fa-search mr-2"></i>Cari
             </button>
+            @if(request('search'))
+            <a href="{{ route('super_admin.units.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                Reset
+            </a>
+            @endif
         </form>
     </div>
 
@@ -45,10 +50,10 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            <a href="{{ route('admin.units.edit', $unit) }}" class="text-yellow-600 hover:text-yellow-800">
+                            <a href="{{ route('super_admin.units.edit', $unit) }}" class="text-yellow-600 hover:text-yellow-800">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <form action="{{ route('admin.units.destroy', $unit) }}" method="POST" class="inline">
+                            <form action="{{ route('super_admin.units.destroy', $unit) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('Yakin ingin menghapus unit ini?')">

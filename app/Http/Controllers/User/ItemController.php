@@ -4,18 +4,27 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
-    // HAPUS CONSTRUCTOR INI
-
     public function index(Request $request)
     {
-        $unitId = auth()->user()->unit_id;
+        // Tampilkan SEMUA barang dari SEMUA unit (termasuk yang dipinjam)
+        $query = Item::with(['category', 'unit', 'activeCirculation']);
         
-        $query = Item::with('category')->where('unit_id', $unitId);
+        // Filter berdasarkan unit
+        if ($request->filled('unit')) {
+            $query->where('unit_id', $request->unit);
+        }
         
+        // Filter berdasarkan status (available/borrowed)
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        // Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -26,18 +35,21 @@ class ItemController extends Controller
         }
         
         $items = $query->latest()->paginate(12);
+        $units = Unit::where('is_active', true)->get();
         
-        return view('user.items.index', compact('items'));
+        return view('user.items.index', compact('items', 'units'));
     }
 
     public function show(Item $item)
     {
-        if ($item->unit_id !== auth()->user()->unit_id) {
-            abort(403);
-        }
+        $item->load(['category', 'unit', 'circulations' => function($q) {
+            $q->latest()->take(5);
+        }]);
         
-        $item->load(['category', 'unit']);
+        // Cek apakah barang sedang dipinjam
+        $isBorrowed = $item->status === 'borrowed';
+        $activeCirculation = $item->activeCirculation;
         
-        return view('user.items.show', compact('item'));
+        return view('user.items.show', compact('item', 'isBorrowed', 'activeCirculation'));
     }
 }

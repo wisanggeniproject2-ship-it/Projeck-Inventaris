@@ -6,9 +6,10 @@ use App\Http\Controllers\User\CirculationController;
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-// Items - View & Scan
 Route::get('items', [ItemController::class, 'index'])->name('items.index');
 Route::get('items/{item}', [ItemController::class, 'show'])->name('items.show');
 
-// Circulations
-Route::resource('circulations', CirculationController::class)->only(['index', 'create', 'store']);
+Route::get('circulations', [CirculationController::class, 'index'])->name('circulations.index');
+Route::get('circulations/create', [CirculationController::class, 'create'])->name('circulations.create');
+Route::post('circulations', [CirculationController::class, 'store'])->name('circulations.store');
+Route::put('circulations/{circulation}/return', [CirculationController::class, 'returnItem'])->name('circulations.return');

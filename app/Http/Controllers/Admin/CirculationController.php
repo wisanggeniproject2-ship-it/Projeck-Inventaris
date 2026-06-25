@@ -33,40 +33,58 @@ class CirculationController extends Controller
         return view('admin.circulations.show', compact('circulation'));
     }
 
-    public function approve(Circulation $circulation)
-    {
-        if (!$circulation->isPending()) {
-            return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
-        }
-        
-        $circulation->approve();
-        $circulation->approved_by = auth()->id();
-        $circulation->save();
-        
-        return back()->with('success', 'Peminjaman berhasil disetujui.');
+  public function approve(Circulation $circulation)
+{
+    if (!$circulation->isPending()) {
+        return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
     }
+    
+    if ($circulation->item->status !== 'available') {
+        return back()->with('error', 'Barang sedang tidak tersedia.');
+    }
+    
+    // Update status sirkulasi
+    $circulation->status = 'approved';
+    $circulation->approved_by = auth()->id();
+    $circulation->approved_at = now();
+    $circulation->save();
+    
+    // 🔥 UPDATE STATUS BARANG MENJADI BORROWED
+    $item = $circulation->item;
+    $item->status = 'borrowed';
+    $item->save();
+    
+    return back()->with('success', 'Peminjaman berhasil disetujui!');
+}
 
-    public function reject(Circulation $circulation)
-    {
-        if (!$circulation->isPending()) {
-            return back()->with('error', 'Peminjaman ini tidak bisa ditolak.');
-        }
-        
-        $circulation->reject();
-        $circulation->save();
-        
-        return back()->with('success', 'Peminjaman berhasil ditolak.');
+public function reject(Circulation $circulation)
+{
+    if (!$circulation->isPending()) {
+        return back()->with('error', 'Peminjaman ini tidak bisa ditolak.');
     }
+    
+    $circulation->status = 'rejected';
+    $circulation->save();
+    
+    // 🔥 STATUS BARANG TETAP AVAILABLE
+    return back()->with('success', 'Peminjaman berhasil ditolak.');
+}
 
-    public function markReturned(Circulation $circulation)
-    {
-        if (!$circulation->isApproved()) {
-            return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
-        }
-        
-        $circulation->markAsReturned();
-        $circulation->save();
-        
-        return back()->with('success', 'Barang berhasil dikembalikan.');
+public function markReturned(Circulation $circulation)
+{
+    if (!$circulation->isApproved()) {
+        return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
     }
+    
+    $circulation->status = 'returned';
+    $circulation->return_date = now();
+    $circulation->save();
+    
+    // 🔥 UPDATE STATUS BARANG MENJADI AVAILABLE KEMBALI
+    $item = $circulation->item;
+    $item->status = 'available';
+    $item->save();
+    
+    return back()->with('success', 'Barang berhasil dikembalikan!');
+}
 }

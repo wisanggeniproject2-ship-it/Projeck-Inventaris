@@ -9,11 +9,6 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function __construct()
-    {
-        // HAPUS: $this->middleware('role:super_admin');
-    }
-
     public function index(Request $request)
     {
         $query = Category::query();
@@ -39,7 +34,7 @@ class CategoryController extends Controller
     {
         Category::create($request->validated());
         return redirect()->route('super_admin.categories.index')
-            ->with('success', 'Kategori berhasil ditambahkan');
+            ->with('success', 'Kategori berhasil ditambahkan!');
     }
 
     public function edit(Category $category)
@@ -51,17 +46,17 @@ class CategoryController extends Controller
     {
         $category->update($request->validated());
         return redirect()->route('super_admin.categories.index')
-            ->with('success', 'Kategori berhasil diupdate');
+            ->with('success', 'Kategori berhasil diupdate!');
     }
 
     public function destroy(Category $category)
     {
         if ($category->items()->count() > 0) {
-            return back()->with('error', 'Kategori tidak bisa dihapus karena masih memiliki barang');
+            return back()->with('error', 'Kategori tidak bisa dihapus karena masih memiliki barang!');
         }
         
         $category->delete();
         return redirect()->route('super_admin.categories.index')
-            ->with('success', 'Kategori berhasil dihapus');
+            ->with('success', 'Kategori berhasil dihapus!');
     }
 }

@@ -35,16 +35,27 @@ class Item extends Model
         return $this->hasMany(Circulation::class);
     }
 
-    public function activeCirculation()
-    {
-        return $this->hasOne(Circulation::class)
-            ->whereIn('status', ['pending', 'approved'])
-            ->latest();
-    }
+   public function activeCirculation()
+{
+    return $this->hasOne(Circulation::class)
+        ->whereIn('status', ['approved'])
+        ->latest();
+}
 
     public function isAvailable()
     {
         return $this->status === 'available';
+    }
+
+    // ==================== SCOPE ====================
+    public function scopeAvailable($query)
+    {
+        return $query->where('status', 'available');
+    }
+
+    public function scopeByUnit($query, $unitId)
+    {
+        return $query->where('unit_id', $unitId);
     }
 
     public function getQrCodeUrlAttribute()
@@ -55,7 +66,6 @@ class Item extends Model
         return null;
     }
 
-    // ==================== AUTO GENERATE CODE ====================
     public static function generateCode($unitId)
     {
         $unit = Unit::find($unitId);
@@ -65,13 +75,11 @@ class Item extends Model
 
         $prefix = 'INV-' . $unit->code . '-';
         
-        // Get last item with same unit
         $lastItem = self::where('unit_id', $unitId)
             ->orderBy('id', 'desc')
             ->first();
 
         if ($lastItem) {
-            // Extract number from last code
             $lastNumber = (int) substr($lastItem->code, -4);
             $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {

@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 
 class UnitController extends Controller
 {
-    public function __construct()
-    {
-        // HAPUS: $this->middleware('role:super_admin');
-    }
-
     public function index(Request $request)
     {
         $query = Unit::query();
@@ -43,9 +38,15 @@ class UnitController extends Controller
             'is_active' => 'boolean',
         ]);
         
-        Unit::create($request->all());
+        Unit::create([
+            'name' => $request->name,
+            'code' => strtoupper($request->code),
+            'description' => $request->description,
+            'is_active' => $request->is_active ?? true,
+        ]);
+        
         return redirect()->route('super_admin.units.index')
-            ->with('success', 'Unit berhasil ditambahkan');
+            ->with('success', 'Unit berhasil ditambahkan!');
     }
 
     public function edit(Unit $unit)
@@ -62,19 +63,26 @@ class UnitController extends Controller
             'is_active' => 'boolean',
         ]);
         
-        $unit->update($request->all());
+        $unit->update([
+            'name' => $request->name,
+            'code' => strtoupper($request->code),
+            'description' => $request->description,
+            'is_active' => $request->is_active ?? true,
+        ]);
+        
         return redirect()->route('super_admin.units.index')
-            ->with('success', 'Unit berhasil diupdate');
+            ->with('success', 'Unit berhasil diupdate!');
     }
 
     public function destroy(Unit $unit)
     {
         if ($unit->users()->count() > 0 || $unit->items()->count() > 0) {
-            return back()->with('error', 'Unit tidak bisa dihapus karena masih memiliki data terkait');
+            return back()->with('error', 'Unit tidak bisa dihapus karena masih memiliki data terkait!');
         }
         
         $unit->delete();
+        
         return redirect()->route('super_admin.units.index')
-            ->with('success', 'Unit berhasil dihapus');
+            ->with('success', 'Unit berhasil dihapus!');
     }
 }
