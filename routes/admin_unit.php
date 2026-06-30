@@ -22,4 +22,10 @@ Route::prefix('circulations')->group(function () {
     Route::post('/{circulation}/approve', [CirculationController::class, 'approve'])->name('circulations.approve');
     Route::post('/{circulation}/reject', [CirculationController::class, 'reject'])->name('circulations.reject');
     Route::post('/{circulation}/return', [CirculationController::class, 'markReturned'])->name('circulations.return');
+    Route::post('circulations/{circulation}/confirm-return', [CirculationController::class, 'confirmReturn'])->name('circulations.confirmReturn');
+
+// ==================== NOTIFICATIONS ====================
+// ==================== NOTIFICATIONS ====================
+Route::post('notifications/mark-read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.markRead');
+Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllRead');
 });

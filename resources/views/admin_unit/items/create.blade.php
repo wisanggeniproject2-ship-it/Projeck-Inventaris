@@ -10,7 +10,7 @@
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('admin_unit.items.store') }}" method="POST">
+        <form action="{{ route('admin_unit.items.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -65,6 +65,15 @@
                            placeholder="Contoh: Rak A, Lemari 1">
                 </div>
 
+                <!-- INPUT GAMBAR -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
+                    <input type="file" name="image" accept="image/*"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, JPEG. Maks: 2MB</p>
+                    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium mb-2">Deskripsi</label>
                     <textarea name="description" rows="3" 
@@ -81,6 +90,11 @@
                             <li>Membuat kode barang unik (format: INV-UNIT-0001)</li>
                             <li>Membuat QR Code untuk barang ini</li>
                         </ul>
+                        <p class="text-sm text-blue-600 mt-2 border-t border-blue-200 pt-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>
+                            <strong>Catatan:</strong> Barang dengan kondisi <strong>Rusak</strong> atau <strong>Perbaikan</strong> 
+                            tidak akan bisa dipinjam oleh user.
+                        </p>
                     </div>
                 </div>
             </div>

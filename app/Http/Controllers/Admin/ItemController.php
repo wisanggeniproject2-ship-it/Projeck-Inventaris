@@ -17,7 +17,6 @@ class ItemController extends Controller
     public function __construct(QRCodeService $qrCodeService)
     {
         $this->qrCodeService = $qrCodeService;
-        // HAPUS: $this->middleware('role:super_admin');
     }
 
     public function index(Request $request)
@@ -61,12 +60,13 @@ class ItemController extends Controller
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
             'location' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
         ]);
 
         $code = Item::generateCode($request->unit_id);
 
-        $item = Item::create([
+        $data = [
             'code' => $code,
             'name' => $request->name,
             'category_id' => $request->category_id,
@@ -77,8 +77,16 @@ class ItemController extends Controller
             'location' => $request->location,
             'description' => $request->description,
             'status' => 'available',
-        ]);
+        ];
 
+        // Upload gambar
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('items', 'public');
+        }
+
+        $item = Item::create($data);
+
+        // Generate QR Code
         try {
             $qrCodePath = $this->qrCodeService->generateQrCode($item);
             $item->update(['qr_code_path' => $qrCodePath]);
@@ -113,10 +121,22 @@ class ItemController extends Controller
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
             'location' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
         ]);
 
-        $item->update($request->all());
+        $data = $request->except(['image']);
+
+        // Upload gambar baru
+        if ($request->hasFile('image')) {
+            // Hapus gambar lama
+            if ($item->image && Storage::disk('public')->exists($item->image)) {
+                Storage::disk('public')->delete($item->image);
+            }
+            $data['image'] = $request->file('image')->store('items', 'public');
+        }
+
+        $item->update($data);
 
         return redirect()->route('super_admin.items.index')
             ->with('success', 'Barang berhasil diupdate!');
@@ -124,6 +144,12 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
+        // Hapus gambar
+        if ($item->image && Storage::disk('public')->exists($item->image)) {
+            Storage::disk('public')->delete($item->image);
+        }
+        
+        // Hapus QR Code
         if ($item->qr_code_path) {
             Storage::disk('public')->delete($item->qr_code_path);
         }

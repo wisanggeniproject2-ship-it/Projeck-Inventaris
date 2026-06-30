@@ -13,3 +13,4 @@ Route::get('circulations', [CirculationController::class, 'index'])->name('circu
 Route::get('circulations/create', [CirculationController::class, 'create'])->name('circulations.create');
 Route::post('circulations', [CirculationController::class, 'store'])->name('circulations.store');
 Route::put('circulations/{circulation}/return', [CirculationController::class, 'returnItem'])->name('circulations.return');
+Route::put('circulations/{circulation}/request-return', [CirculationController::class, 'requestReturn'])->name('circulations.requestReturn');

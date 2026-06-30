@@ -16,11 +16,13 @@ return new class extends Migration
             $table->date('borrow_date');
             $table->date('return_date')->nullable();
             $table->date('expected_return_date');
-            $table->enum('status', ['pending', 'approved', 'rejected', 'returned'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'returned', 'return_pending'])->default('pending');
             $table->text('purpose')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users');
             $table->timestamp('approved_at')->nullable();
+            $table->foreignId('return_confirmed_by')->nullable()->constrained('users');
+            $table->timestamp('return_confirmed_at')->nullable();
             $table->timestamps();
         });
     }

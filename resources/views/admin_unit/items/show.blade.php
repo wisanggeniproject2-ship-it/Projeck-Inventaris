@@ -10,19 +10,26 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Left - QR Code -->
+        <!-- Left - QR Code & Gambar -->
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="font-semibold text-lg mb-4 text-center">QR Code</h3>
-            <div class="text-center">
+            <!-- QR Code -->
+            <div class="text-center mb-4">
+                <h3 class="font-semibold text-lg mb-2">QR Code</h3>
                 @if($item->qr_code_url)
-                <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto w-64">
-                <p class="text-xs text-gray-500 mt-2">Scan QR untuk melihat detail</p>
+                <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto w-48">
                 @else
                 <div class="bg-gray-100 p-6 rounded-lg">
                     <i class="fas fa-qrcode text-6xl text-gray-400"></i>
                     <p class="text-gray-500 mt-2">QR Code belum tersedia</p>
                 </div>
                 @endif
+            </div>
+            
+            <!-- GAMBAR BARANG -->
+            <div class="mt-4">
+                <h3 class="font-semibold text-lg mb-2">Gambar Barang</h3>
+                <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
+                     class="w-full h-64 object-cover rounded-lg border border-gray-200">
             </div>
         </div>
 
@@ -61,7 +68,7 @@
                     <p>
                         <span class="px-2 py-1 text-xs rounded-full
                             {{ $item->condition == 'baik' ? 'bg-green-100 text-green-700' : 
-                               ($item->condition == 'rusak' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
+                               ($item->condition == 'rusak' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700') }}">
                             {{ ucfirst($item->condition) }}
                         </span>
                     </p>

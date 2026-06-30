@@ -80,7 +80,19 @@
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                            placeholder="Contoh: Rak A, Lemari 1">
                 </div>
-
+<!-- Tambahkan di dalam form, setelah Lokasi -->
+<div>
+    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
+    @if($item->image)
+    <div class="mb-2">
+        <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="h-32 w-auto rounded-lg object-cover">
+    </div>
+    @endif
+    <input type="file" name="image" accept="image/*"
+           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+    <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar. Format: JPG, PNG, JPEG. Maks: 2MB</p>
+    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+</div>
                 <!-- Status -->
                 <div>
                     <label class="block text-sm font-medium mb-2">Status</label>

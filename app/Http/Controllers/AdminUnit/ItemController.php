@@ -17,7 +17,7 @@ class ItemController extends Controller
     public function __construct(QRCodeService $qrCodeService)
     {
         $this->qrCodeService = $qrCodeService;
-        // HAPUS: $this->middleware('role:admin_unit');
+        // Middleware sudah dihandle di routes
     }
 
     public function index(Request $request)
@@ -25,6 +25,11 @@ class ItemController extends Controller
         $unitId = auth()->user()->unit_id;
         
         $query = Item::with(['category', 'unit'])->where('unit_id', $unitId);
+        
+        // Filter berdasarkan kategori
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
         
         if ($request->filled('search')) {
             $search = $request->search;
@@ -36,7 +41,9 @@ class ItemController extends Controller
         }
         
         $items = $query->latest()->paginate(10);
-        return view('admin_unit.items.index', compact('items'));
+        $categories = Category::all();
+        
+        return view('admin_unit.items.index', compact('items', 'categories'));
     }
 
     public function create()
@@ -55,12 +62,13 @@ class ItemController extends Controller
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
             'location' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
         ]);
 
         $code = Item::generateCode(auth()->user()->unit_id);
 
-        $item = Item::create([
+        $data = [
             'code' => $code,
             'name' => $request->name,
             'category_id' => $request->category_id,
@@ -71,8 +79,16 @@ class ItemController extends Controller
             'location' => $request->location,
             'description' => $request->description,
             'status' => 'available',
-        ]);
+        ];
 
+        // Upload gambar
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('items', 'public');
+        }
+
+        $item = Item::create($data);
+
+        // Generate QR Code
         try {
             $qrCodePath = $this->qrCodeService->generateQrCode($item);
             $item->update(['qr_code_path' => $qrCodePath]);

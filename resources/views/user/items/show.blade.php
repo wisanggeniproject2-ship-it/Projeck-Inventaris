@@ -5,7 +5,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">📦 Detail Barang</h1>
         <div>
-            @if($item->status == 'available')
+            @if($item->canBeBorrowed())
                 <a href="{{ route('user.circulations.create') }}?item={{ $item->id }}" 
                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
                     <i class="fas fa-hand-paper mr-2"></i>Ajukan Peminjaman
@@ -39,20 +39,69 @@
             <h3 class="font-semibold text-lg mb-4">Informasi Barang</h3>
             
             <!-- Status Barang -->
-            <div class="mb-4 p-3 rounded-lg {{ $item->status == 'available' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
+            @php
+                $canBorrow = $item->canBeBorrowed();
+                $isNotAvailable = !$canBorrow;
+            @endphp
+            
+            <div class="mb-4 p-3 rounded-lg 
+                {{ $canBorrow ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
                 <div class="flex items-center justify-between">
                     <span class="font-medium">Status Barang</span>
-                    @if($item->status == 'available')
+                    @if($canBorrow)
                         <span class="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
                             🟢 Tersedia
                         </span>
                     @else
                         <span class="px-3 py-1 rounded-full text-sm bg-red-100 text-red-700">
-                            🔴 Dipinjam
+                            🔴 Tidak Tersedia
                         </span>
                     @endif
                 </div>
             </div>
+            
+            <!-- Info Tidak Tersedia -->
+            @if($isNotAvailable)
+            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
+                    <div>
+                        <p class="font-medium text-red-800">Barang Tidak Tersedia</p>
+                        <p class="text-sm text-red-700 mt-1">
+                            @if($item->status == 'borrowed')
+                                <i class="fas fa-user mr-1"></i>
+                                Sedang dipinjam oleh: <strong>{{ $activeCirculation->borrower_name ?? 'Seseorang' }}</strong>
+                                @if($activeCirculation)
+                                    <br><i class="fas fa-calendar-alt mr-1"></i>
+                                    Tanggal kembali: {{ $activeCirculation->expected_return_date->format('d/m/Y') }}
+                                    @if($activeCirculation->expected_return_date < now())
+                                        <span class="text-red-500 text-xs ml-1">⚠️ Terlambat!</span>
+                                    @endif
+                                @endif
+                            @elseif($item->condition == 'rusak')
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Barang dalam kondisi <strong>Rusak</strong>
+                            @elseif($item->condition == 'perbaikan')
+                                <i class="fas fa-tools mr-1"></i>
+                                Barang sedang dalam <strong>Perbaikan</strong>
+                            @else
+                                <i class="fas fa-times-circle mr-1"></i>
+                                Tidak tersedia untuk dipinjam
+                            @endif
+                        </p>
+                        <p class="text-sm text-red-600 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Barang ini tidak dapat dipinjam saat ini.
+                        </p>
+                        @if($item->description && ($item->condition == 'rusak' || $item->condition == 'perbaikan'))
+                            <p class="text-sm text-red-700 mt-1">
+                                <strong>Keterangan:</strong> {{ $item->description }}
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
             
             <div class="space-y-3">
                 <div>
@@ -85,15 +134,10 @@
                     <p>
                         <span class="px-2 py-1 text-xs rounded-full
                             {{ $item->condition == 'baik' ? 'bg-green-100 text-green-700' : 
-                               ($item->condition == 'rusak' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
+                               ($item->condition == 'rusak' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700') }}">
                             {{ ucfirst($item->condition) }}
                         </span>
                     </p>
-                </div>
-
-                <div>
-                    <label class="text-sm text-gray-500">Sumber Anggaran</label>
-                    <p>{{ $item->budget_source ?: '-' }}</p>
                 </div>
 
                 <div>
@@ -167,6 +211,7 @@
                     @empty
                     <tr>
                         <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl text-gray-300 mb-2 block"></i>
                             Belum ada riwayat peminjaman
                         </td>
                     </tr>

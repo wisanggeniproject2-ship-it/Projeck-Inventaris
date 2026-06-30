@@ -98,7 +98,8 @@
                             <span class="ml-1 text-xs text-yellow-600">⏳</span>
                         @endif
                     </td>
-                   <td class="px-6 py-4">
+             <!-- Di bagian aksi -->
+<td class="px-6 py-4">
     <div class="flex gap-3">
         <!-- Detail Barang -->
         <a href="{{ route('user.items.show', $circulation->item_id) }}" 
@@ -106,17 +107,24 @@
             <i class="fas fa-eye text-lg"></i>
         </a>
         
-        <!-- Kembalikan Barang (hanya untuk status approved) -->
+        <!-- AJUKAN PENGEMBALIAN (untuk status approved) -->
         @if($circulation->status == 'approved')
-        <form action="{{ route('user.circulations.return', $circulation) }}" method="POST" class="inline">
-            @csrf
-            @method('PUT')
-            <button type="submit" class="text-green-600 hover:text-green-800" 
-                    title="Kembalikan Barang"
-                    onclick="return confirm('Yakin ingin mengembalikan barang ini?')">
-                <i class="fas fa-undo-alt text-lg"></i>
-            </button>
-        </form>
+            <form action="{{ route('user.circulations.requestReturn', $circulation) }}" method="POST" class="inline">
+                @csrf
+                @method('PUT')
+                <button type="submit" class="text-orange-600 hover:text-orange-800" 
+                        title="Ajukan Pengembalian"
+                        onclick="return confirm('Yakin ingin mengajukan pengembalian barang ini?')">
+                    <i class="fas fa-undo-alt text-lg"></i>
+                </button>
+            </form>
+        @endif
+        
+        <!-- Status Return Pending -->
+        @if($circulation->status == 'return_pending')
+            <span class="text-blue-600 text-sm" title="Menunggu konfirmasi admin">
+                <i class="fas fa-clock text-lg"></i> Menunggu Konfirmasi
+            </span>
         @endif
     </div>
 </td>

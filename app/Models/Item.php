@@ -10,10 +10,10 @@ class Item extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'code', 'name', 'category_id', 'unit_id', 'purchase_date',
-        'condition', 'price', 'location', 'status', 'qr_code_path', 'description'
-    ];
+  protected $fillable = [
+    'code', 'name', 'category_id', 'unit_id', 'purchase_date',
+    'condition', 'price', 'location', 'status', 'image', 'qr_code_path', 'description'
+];
 
     protected $casts = [
         'purchase_date' => 'date',
@@ -35,19 +35,28 @@ class Item extends Model
         return $this->hasMany(Circulation::class);
     }
 
-   public function activeCirculation()
-{
-    return $this->hasOne(Circulation::class)
-        ->whereIn('status', ['approved'])
-        ->latest();
-}
+    public function activeCirculation()
+    {
+        return $this->hasOne(Circulation::class)
+            ->whereIn('status', ['approved'])
+            ->latest();
+    }
 
     public function isAvailable()
     {
         return $this->status === 'available';
     }
 
-    // ==================== SCOPE ====================
+    public function isBroken()
+    {
+        return $this->condition === 'rusak' || $this->condition === 'perbaikan';
+    }
+
+    public function canBeBorrowed()
+    {
+        return $this->status === 'available' && $this->condition === 'baik';
+    }
+
     public function scopeAvailable($query)
     {
         return $query->where('status', 'available');
@@ -56,6 +65,15 @@ class Item extends Model
     public function scopeByUnit($query, $unitId)
     {
         return $query->where('unit_id', $unitId);
+    }
+
+    // ==================== GETTER IMAGE ====================
+    public function getImageUrlAttribute()
+    {
+        if ($this->image && Storage::disk('public')->exists($this->image)) {
+            return Storage::url($this->image);
+        }
+        return asset('assets/images/default-item.png');
     }
 
     public function getQrCodeUrlAttribute()
@@ -88,4 +106,5 @@ class Item extends Model
 
         return $prefix . $newNumber;
     }
+    
 }

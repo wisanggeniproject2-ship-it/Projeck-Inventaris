@@ -6,10 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Unit;
 use App\Models\Circulation;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     public function index(Request $request)
     {
         $userId = auth()->id();
@@ -29,7 +37,7 @@ class CirculationController extends Controller
             });
         }
         
-        $circulations = $query->orderByRaw("FIELD(status, 'pending', 'approved', 'returned', 'rejected')")
+        $circulations = $query->orderByRaw("FIELD(status, 'pending', 'approved', 'return_pending', 'returned', 'rejected')")
             ->latest()
             ->paginate(10);
         
@@ -37,6 +45,7 @@ class CirculationController extends Controller
             'all' => Circulation::where('user_id', $userId)->count(),
             'pending' => Circulation::where('user_id', $userId)->where('status', 'pending')->count(),
             'approved' => Circulation::where('user_id', $userId)->where('status', 'approved')->count(),
+            'return_pending' => Circulation::where('user_id', $userId)->where('status', 'return_pending')->count(),
             'returned' => Circulation::where('user_id', $userId)->where('status', 'returned')->count(),
             'rejected' => Circulation::where('user_id', $userId)->where('status', 'rejected')->count(),
         ];
@@ -48,13 +57,20 @@ class CirculationController extends Controller
     {
         $units = Unit::where('is_active', true)->get();
         
+        // HANYA TAMPILKAN BARANG YANG BISA DIPINJAM (AVAILABLE + KONDISI BAIK)
         $items = Item::where('status', 'available')
+            ->where('condition', 'baik')
             ->with('unit')
             ->get();
         
         $selectedItem = null;
         if ($request->has('item')) {
             $selectedItem = Item::find($request->item);
+            // Cek apakah barang bisa dipinjam
+            if ($selectedItem && !$selectedItem->canBeBorrowed()) {
+                return redirect()->route('user.items.index')
+                    ->with('error', 'Barang ini tidak tersedia untuk dipinjam.');
+            }
         }
         
         return view('user.circulations.create', compact('units', 'items', 'selectedItem'));
@@ -71,10 +87,12 @@ class CirculationController extends Controller
         
         $item = Item::findOrFail($request->item_id);
         
-        if ($item->status !== 'available') {
-            return back()->with('error', 'Barang sedang tidak tersedia.');
+        // CEK APAKAH BARANG BISA DIPINJAM (STATUS AVAILABLE + KONDISI BAIK)
+        if (!$item->canBeBorrowed()) {
+            return back()->with('error', 'Barang tidak tersedia untuk dipinjam.');
         }
         
+        // CEK APAKAH BARANG SEDANG DALAM PROSES PEMINJAMAN
         $activeCirculation = Circulation::where('item_id', $item->id)
             ->whereIn('status', ['pending', 'approved'])
             ->exists();
@@ -83,7 +101,7 @@ class CirculationController extends Controller
             return back()->with('error', 'Barang sedang dalam proses peminjaman.');
         }
         
-        Circulation::create([
+        $circulation = Circulation::create([
             'item_id' => $request->item_id,
             'user_id' => auth()->id(),
             'borrower_name' => $request->borrower_name,
@@ -93,32 +111,34 @@ class CirculationController extends Controller
             'status' => 'pending',
         ]);
 
+        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (pending)
+        $this->notificationService->sendCirculationNotification($circulation, 'pending');
+
         return redirect()->route('user.circulations.index')
             ->with('success', 'Peminjaman berhasil diajukan! Menunggu persetujuan admin unit.');
     }
 
-    // ==================== METHOD RETURN BARANG ====================
-   public function returnItem(Circulation $circulation)
-{
-    if ($circulation->user_id !== auth()->id()) {
-        abort(403);
+    // ==================== REQUEST RETURN (USER AJUKAN PENGEMBALIAN) ====================
+    public function requestReturn(Circulation $circulation)
+    {
+        // Pastikan ini milik user yang login
+        if ($circulation->user_id !== auth()->id()) {
+            abort(403);
+        }
+        
+        // Hanya bisa request return jika status approved
+        if ($circulation->status !== 'approved') {
+            return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
+        }
+        
+        // Update status jadi return_pending (menunggu konfirmasi admin)
+        $circulation->status = 'return_pending';
+        $circulation->save();
+
+        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (return_pending)
+        $this->notificationService->sendCirculationNotification($circulation, 'return_pending');
+        
+        return redirect()->route('user.circulations.index')
+            ->with('success', 'Permintaan pengembalian berhasil diajukan! Menunggu konfirmasi admin unit.');
     }
-    
-    if ($circulation->status !== 'approved') {
-        return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
-    }
-    
-    // Update status sirkulasi
-    $circulation->status = 'returned';
-    $circulation->return_date = now();
-    $circulation->save();
-    
-    // 🔥 UPDATE STATUS BARANG MENJADI AVAILABLE KEMBALI
-    $item = $circulation->item;
-    $item->status = 'available';
-    $item->save();
-    
-    return redirect()->route('user.circulations.index')
-        ->with('success', 'Barang berhasil dikembalikan! Terima kasih.');
-}
 }
