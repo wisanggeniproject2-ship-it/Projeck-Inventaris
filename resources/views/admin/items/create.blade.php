@@ -10,7 +10,7 @@
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('super_admin.items.store') }}" method="POST">
+        <form action="{{ route('super_admin.items.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -51,6 +51,7 @@
                     <label class="block text-sm font-medium mb-2">Tanggal Pembelian</label>
                     <input type="date" name="purchase_date" value="{{ old('purchase_date') }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    @error('purchase_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -60,6 +61,7 @@
                         <option value="rusak" {{ old('condition') == 'rusak' ? 'selected' : '' }}>Rusak</option>
                         <option value="perbaikan" {{ old('condition') == 'perbaikan' ? 'selected' : '' }}>Perbaikan</option>
                     </select>
+                    @error('condition') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -69,6 +71,21 @@
                         <input type="number" name="price" value="{{ old('price') }}" step="0.01"
                                class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                     </div>
+                    @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <!-- 🔥 SUMBER DANA (DARI TABEL funding_sources) -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Sumber Dana</label>
+                    <select name="funding_source_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <option value="">-- Pilih Sumber Dana --</option>
+                        @foreach($fundingSources as $source)
+                        <option value="{{ $source->id }}" {{ old('funding_source_id') == $source->id ? 'selected' : '' }}>
+                            {{ $source->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('funding_source_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -76,19 +93,23 @@
                     <input type="text" name="location" value="{{ old('location') }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                            placeholder="Contoh: Rak A, Lemari 1">
+                    @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
-<!-- Tambahkan di dalam form, setelah Lokasi -->
-<div>
-    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
-    <input type="file" name="image" accept="image/*"
-           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-    <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, JPEG. Maks: 2MB</p>
-    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-</div>
+
+                <!-- GAMBAR -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
+                    <input type="file" name="image" accept="image/*"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, JPEG. Maks: 2MB</p>
+                    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium mb-2">Deskripsi</label>
                     <textarea name="description" rows="3" 
                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">{{ old('description') }}</textarea>
+                    @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

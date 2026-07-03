@@ -4,11 +4,17 @@
 <div class="container mx-auto max-w-4xl">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Detail Barang</h1>
-        <div>
+        <div class="flex gap-2 flex-wrap">
+            <!-- 🔥 TOMBOL CETAK PDF -->
+            <a href="{{ route('super_admin.items.pdf', $item) }}" 
+               target="_blank"
+               class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                <i class="fas fa-file-pdf mr-2"></i>Cetak PDF
+            </a>
             <a href="{{ route('super_admin.items.edit', $item) }}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
                 <i class="fas fa-edit mr-2"></i>Edit
             </a>
-            <a href="{{ route('super_admin.items.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 ml-2">
+            <a href="{{ route('super_admin.items.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>
         </div>
@@ -86,6 +92,23 @@
                 <div>
                     <label class="text-sm text-gray-500">Harga</label>
                     <p>{{ $item->price ? 'Rp ' . number_format($item->price, 0, ',', '.') : '-' }}</p>
+                </div>
+
+                <!-- 🔥 SUMBER DANA (MELALUI RELASI fundingSource) -->
+                <div>
+                    <label class="text-sm text-gray-500">Sumber Dana</label>
+                    <p>
+                        @if($item->fundingSource)
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {{ $item->fundingSource->name == 'BOS' ? 'bg-blue-100 text-blue-700' : 
+                                   ($item->fundingSource->name == 'APBY' ? 'bg-green-100 text-green-700' : 
+                                   ($item->fundingSource->name == 'WAKAF' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500')) }}">
+                                {{ $item->fundingSource->name }}
+                            </span>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
+                    </p>
                 </div>
 
                 <div>

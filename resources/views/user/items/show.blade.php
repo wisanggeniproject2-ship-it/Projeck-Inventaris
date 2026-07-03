@@ -3,221 +3,120 @@
 @section('content')
 <div class="container mx-auto max-w-4xl">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">📦 Detail Barang</h1>
-        <div>
-            @if($item->canBeBorrowed())
-                <a href="{{ route('user.circulations.create') }}?item={{ $item->id }}" 
-                   class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
-                    <i class="fas fa-hand-paper mr-2"></i>Ajukan Peminjaman
-                </a>
-            @endif
-            <a href="{{ route('user.items.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition ml-2">
-                <i class="fas fa-arrow-left mr-2"></i>Kembali
-            </a>
-        </div>
+        <h1 class="text-2xl font-bold text-gray-800">Detail Barang</h1>
+        <a href="{{ route('user.items.index') }}" class="text-gray-600 hover:text-gray-800">
+            <i class="fas fa-arrow-left mr-2"></i>Kembali
+        </a>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Left - QR Code -->
+        <!-- Left - QR Code & Gambar -->
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="font-semibold text-lg mb-4 text-center">QR Code</h3>
-            <div class="text-center">
+            <!-- QR Code -->
+            <div class="text-center mb-4">
+                <h3 class="font-semibold text-gray-700 text-sm mb-2">QR Code</h3>
                 @if($item->qr_code_url)
-                <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto w-64">
-                <p class="text-xs text-gray-500 mt-2">Scan QR untuk melihat detail</p>
+                <img src="{{ $item->qr_code_url }}" alt="QR Code" class="mx-auto w-40">
                 @else
-                <div class="bg-gray-100 p-6 rounded-lg">
-                    <i class="fas fa-qrcode text-6xl text-gray-400"></i>
-                    <p class="text-gray-500 mt-2">QR Code belum tersedia</p>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <i class="fas fa-qrcode text-5xl text-gray-400"></i>
+                    <p class="text-gray-500 text-xs mt-1">QR Code belum tersedia</p>
                 </div>
                 @endif
+            </div>
+            
+            <!-- GAMBAR BARANG -->
+            <div class="mt-4">
+                <h3 class="font-semibold text-gray-700 text-sm mb-2">Gambar Barang</h3>
+                <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
+                     class="w-full h-48 object-cover rounded-lg border border-gray-200">
             </div>
         </div>
 
         <!-- Right - Detail -->
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="font-semibold text-lg mb-4">Informasi Barang</h3>
+            <h3 class="font-semibold text-gray-700 text-sm mb-4 border-b pb-2">Informasi Barang</h3>
             
-            <!-- Status Barang -->
-            @php
-                $canBorrow = $item->canBeBorrowed();
-                $isNotAvailable = !$canBorrow;
-            @endphp
-            
-            <div class="mb-4 p-3 rounded-lg 
-                {{ $canBorrow ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
-                <div class="flex items-center justify-between">
-                    <span class="font-medium">Status Barang</span>
-                    @if($canBorrow)
-                        <span class="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
-                            🟢 Tersedia
-                        </span>
-                    @else
-                        <span class="px-3 py-1 rounded-full text-sm bg-red-100 text-red-700">
-                            🔴 Tidak Tersedia
-                        </span>
-                    @endif
-                </div>
-            </div>
-            
-            <!-- Info Tidak Tersedia -->
-            @if($isNotAvailable)
-            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div class="flex items-start">
-                    <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
-                    <div>
-                        <p class="font-medium text-red-800">Barang Tidak Tersedia</p>
-                        <p class="text-sm text-red-700 mt-1">
-                            @if($item->status == 'borrowed')
-                                <i class="fas fa-user mr-1"></i>
-                                Sedang dipinjam oleh: <strong>{{ $activeCirculation->borrower_name ?? 'Seseorang' }}</strong>
-                                @if($activeCirculation)
-                                    <br><i class="fas fa-calendar-alt mr-1"></i>
-                                    Tanggal kembali: {{ $activeCirculation->expected_return_date->format('d/m/Y') }}
-                                    @if($activeCirculation->expected_return_date < now())
-                                        <span class="text-red-500 text-xs ml-1">⚠️ Terlambat!</span>
-                                    @endif
-                                @endif
-                            @elseif($item->condition == 'rusak')
-                                <i class="fas fa-exclamation-triangle mr-1"></i>
-                                Barang dalam kondisi <strong>Rusak</strong>
-                            @elseif($item->condition == 'perbaikan')
-                                <i class="fas fa-tools mr-1"></i>
-                                Barang sedang dalam <strong>Perbaikan</strong>
-                            @else
-                                <i class="fas fa-times-circle mr-1"></i>
-                                Tidak tersedia untuk dipinjam
-                            @endif
-                        </p>
-                        <p class="text-sm text-red-600 mt-2">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Barang ini tidak dapat dipinjam saat ini.
-                        </p>
-                        @if($item->description && ($item->condition == 'rusak' || $item->condition == 'perbaikan'))
-                            <p class="text-sm text-red-700 mt-1">
-                                <strong>Keterangan:</strong> {{ $item->description }}
-                            </p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endif
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="text-sm text-gray-500">Kode Barang</label>
-                    <p class="font-mono font-bold text-lg">{{ $item->code }}</p>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Kode Barang</span>
+                    <span class="font-mono font-medium">{{ $item->code }}</span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Nama Barang</label>
-                    <p class="font-medium text-lg">{{ $item->name }}</p>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Nama Barang</span>
+                    <span class="font-medium">{{ $item->name }}</span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Kategori</label>
-                    <p>{{ $item->category->name }}</p>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Kategori</span>
+                    <span>{{ $item->category->name }}</span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Unit</label>
-                    <p>{{ $item->unit->name }}</p>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Unit</span>
+                    <span>{{ $item->unit->name }}</span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Lokasi</label>
-                    <p><i class="fas fa-map-marker-alt mr-2"></i>{{ $item->location }}</p>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Tanggal Beli</span>
+                    <span>{{ $item->purchase_date ? $item->purchase_date->format('d/m/Y') : '-' }}</span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Kondisi</label>
-                    <p>
-                        <span class="px-2 py-1 text-xs rounded-full
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Kondisi</span>
+                    <span>
+                        <span class="px-2 py-0.5 text-xs rounded-full
                             {{ $item->condition == 'baik' ? 'bg-green-100 text-green-700' : 
                                ($item->condition == 'rusak' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700') }}">
                             {{ ucfirst($item->condition) }}
                         </span>
-                    </p>
+                    </span>
                 </div>
 
-                <div>
-                    <label class="text-sm text-gray-500">Deskripsi</label>
-                    <p>{{ $item->description ?: '-' }}</p>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Status</span>
+                    <span>
+                        <span class="px-2 py-0.5 text-xs rounded-full
+                            {{ $item->status == 'available' ? 'bg-green-100 text-green-700' : 
+                               ($item->status == 'borrowed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
+                            {{ $item->status == 'available' ? 'Tersedia' : ($item->status == 'borrowed' ? 'Dipinjam' : 'Perbaikan') }}
+                        </span>
+                    </span>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Info Peminjaman Aktif -->
-    @if($item->status == 'borrowed' && $activeCirculation)
-    <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-6">
-        <h4 class="font-semibold text-red-800 mb-3">
-            <i class="fas fa-info-circle mr-2"></i>Barang Sedang Dipinjam
-        </h4>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-                <span class="text-gray-600">Dipinjam oleh:</span>
-                <p class="font-medium">{{ $activeCirculation->borrower_name }}</p>
-            </div>
-            <div>
-                <span class="text-gray-600">Tanggal Pinjam:</span>
-                <p class="font-medium">{{ $activeCirculation->borrow_date->format('d/m/Y') }}</p>
-            </div>
-            <div>
-                <span class="text-gray-600">Tenggat Kembali:</span>
-                <p class="font-medium {{ $activeCirculation->expected_return_date < now() ? 'text-red-600' : '' }}">
-                    {{ $activeCirculation->expected_return_date->format('d/m/Y') }}
-                    @if($activeCirculation->expected_return_date < now())
-                        <span class="text-red-500 text-xs">⚠️ Terlambat!</span>
-                    @endif
-                </p>
-            </div>
-        </div>
-        <p class="text-sm text-red-600 mt-3">
-            <i class="fas fa-exclamation-triangle mr-1"></i>
-            Barang ini sedang dipinjam dan tidak tersedia untuk dipinjam saat ini.
-        </p>
-    </div>
-    @endif
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Harga</span>
+                    <span>{{ $item->price ? 'Rp ' . number_format($item->price, 0, ',', '.') : '-' }}</span>
+                </div>
 
-    <!-- Riwayat Peminjaman -->
-    <div class="mt-6 bg-white rounded-lg shadow p-6">
-        <h3 class="font-semibold text-lg mb-4">Riwayat Peminjaman</h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-2 text-left">Peminjam</th>
-                        <th class="px-4 py-2 text-left">Tanggal Pinjam</th>
-                        <th class="px-4 py-2 text-left">Tenggat</th>
-                        <th class="px-4 py-2 text-left">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($item->circulations as $circulation)
-                    <tr class="border-t">
-                        <td class="px-4 py-2">{{ $circulation->borrower_name }}</td>
-                        <td class="px-4 py-2">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
-                        <td class="px-4 py-2">{{ $circulation->expected_return_date->format('d/m/Y') }}</td>
-                        <td class="px-4 py-2">
-                            <span class="px-2 py-1 text-xs rounded-full
-                                {{ $circulation->status == 'approved' ? 'bg-green-100 text-green-700' : 
-                                   ($circulation->status == 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                                   ($circulation->status == 'returned' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700')) }}">
-                                {{ ucfirst($circulation->status) }}
+                <!-- SUMBER DANA -->
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Sumber Dana</span>
+                    <span>
+                        @if($item->fundingSource)
+                            <span class="px-2 py-0.5 text-xs rounded-full
+                                {{ $item->fundingSource->name == 'BOS' ? 'bg-blue-100 text-blue-700' : 
+                                   ($item->fundingSource->name == 'APBY' ? 'bg-green-100 text-green-700' : 
+                                   ($item->fundingSource->name == 'WAKAF' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500')) }}">
+                                {{ $item->fundingSource->name }}
                             </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-500">
-                            <i class="fas fa-inbox text-4xl text-gray-300 mb-2 block"></i>
-                            Belum ada riwayat peminjaman
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
+                    </span>
+                </div>
+
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span class="text-gray-500">Lokasi</span>
+                    <span>{{ $item->location ?: '-' }}</span>
+                </div>
+
+                <div class="flex justify-between py-1">
+                    <span class="text-gray-500">Deskripsi</span>
+                    <span class="text-right max-w-[60%]">{{ $item->description ?: '-' }}</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>

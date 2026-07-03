@@ -127,7 +127,7 @@
                                 
                                 <!-- Confirm Return -->
                                 @if($circulation->status == 'return_pending')
-                                    <form action="{{ route('admin_unit.circulations.confirmReturn', $circulation) }}" 
+                                    <form action="{{ route('admin_unit.circulations.confirm-return', $circulation) }}"  
                                           method="POST" class="inline">
                                         @csrf
                                         <button type="submit" class="text-green-600 hover:text-green-800"

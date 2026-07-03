@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Category;
 use App\Models\Unit;
+use App\Models\FundingSource;  // 🔥 TAMBAHKAN INI
 use App\Services\QRCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ItemController extends Controller
 {
@@ -17,16 +19,14 @@ class ItemController extends Controller
     public function __construct(QRCodeService $qrCodeService)
     {
         $this->qrCodeService = $qrCodeService;
-        // Middleware sudah dihandle di routes
     }
 
     public function index(Request $request)
     {
         $unitId = auth()->user()->unit_id;
         
-        $query = Item::with(['category', 'unit'])->where('unit_id', $unitId);
+        $query = Item::with(['category', 'unit', 'fundingSource'])->where('unit_id', $unitId);  // 🔥 TAMBAHKAN fundingSource
         
-        // Filter berdasarkan kategori
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
@@ -50,7 +50,8 @@ class ItemController extends Controller
     {
         $categories = Category::all();
         $units = Unit::where('id', auth()->user()->unit_id)->get();
-        return view('admin_unit.items.create', compact('categories', 'units'));
+        $fundingSources = FundingSource::active()->get();  // 🔥 TAMBAHKAN INI
+        return view('admin_unit.items.create', compact('categories', 'units', 'fundingSources'));
     }
 
     public function store(Request $request)
@@ -61,6 +62,7 @@ class ItemController extends Controller
             'purchase_date' => 'nullable|date',
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
+            'funding_source_id' => 'nullable|exists:funding_sources,id',  // 🔥 UBAH KE funding_source_id
             'location' => 'nullable|string|max:200',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
@@ -76,19 +78,18 @@ class ItemController extends Controller
             'purchase_date' => $request->purchase_date,
             'condition' => $request->condition,
             'price' => $request->price,
+            'funding_source_id' => $request->funding_source_id,  // 🔥 UBAH KE funding_source_id
             'location' => $request->location,
             'description' => $request->description,
             'status' => 'available',
         ];
 
-        // Upload gambar
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('items', 'public');
         }
 
         $item = Item::create($data);
 
-        // Generate QR Code
         try {
             $qrCodePath = $this->qrCodeService->generateQrCode($item);
             $item->update(['qr_code_path' => $qrCodePath]);
@@ -106,7 +107,7 @@ class ItemController extends Controller
             abort(403);
         }
         
-        $item->load(['category', 'unit', 'circulations.user']);
+        $item->load(['category', 'unit', 'fundingSource', 'circulations.user']);  // 🔥 TAMBAHKAN fundingSource
         return view('admin_unit.items.show', compact('item'));
     }
 
@@ -123,5 +124,21 @@ class ItemController extends Controller
     public function destroy(Item $item)
     {
         abort(403, 'Admin unit tidak memiliki akses untuk menghapus barang.');
+    }
+
+    // ==================== 🔥 GENERATE PDF STIKER ====================
+    public function generatePdf(Item $item)
+    {
+        // Cek akses: hanya admin unit yang memiliki unit yang sama
+        if ($item->unit_id !== auth()->user()->unit_id) {
+            abort(403, 'Anda tidak memiliki akses ke barang ini.');
+        }
+
+        $pdf = PDF::loadView('admin.items.pdf', compact('item'));
+        
+        // 🔥 PAKAI A4 LANDSCAPE (PASTI LEBAR, 3 KOLOM MUAT)
+        $pdf->setPaper('A4', 'landscape');
+        
+        return $pdf->download('stiker-' . $item->code . '.pdf');
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminUnit\DashboardController;
 use App\Http\Controllers\AdminUnit\ItemController;
 use App\Http\Controllers\AdminUnit\CirculationController;
+use App\Http\Controllers\Admin\NotificationController;  // 🔥 TAMBAHKAN INI
 
 // ==================== DASHBOARD ====================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -13,6 +14,9 @@ Route::prefix('items')->group(function () {
     Route::get('/create', [ItemController::class, 'create'])->name('items.create');
     Route::post('/', [ItemController::class, 'store'])->name('items.store');
     Route::get('/{item}', [ItemController::class, 'show'])->name('items.show');
+    
+    // 🔥 TAMBAHKAN ROUTE PDF
+    Route::get('/{item}/pdf', [ItemController::class, 'generatePdf'])->name('items.pdf');
 });
 
 // ==================== CIRCULATIONS ====================
@@ -22,10 +26,11 @@ Route::prefix('circulations')->group(function () {
     Route::post('/{circulation}/approve', [CirculationController::class, 'approve'])->name('circulations.approve');
     Route::post('/{circulation}/reject', [CirculationController::class, 'reject'])->name('circulations.reject');
     Route::post('/{circulation}/return', [CirculationController::class, 'markReturned'])->name('circulations.return');
-    Route::post('circulations/{circulation}/confirm-return', [CirculationController::class, 'confirmReturn'])->name('circulations.confirmReturn');
+    Route::post('/{circulation}/confirm-return', [CirculationController::class, 'confirmReturn'])->name('circulations.confirm-return');  // 🔥 PERBAIKI TANDA PETIK
+});
 
 // ==================== NOTIFICATIONS ====================
-// ==================== NOTIFICATIONS ====================
-Route::post('notifications/mark-read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.markRead');
-Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllRead');
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::post('/mark-read/{id}', [NotificationController::class, 'markAsRead'])->name('markRead');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('markAllRead');
 });

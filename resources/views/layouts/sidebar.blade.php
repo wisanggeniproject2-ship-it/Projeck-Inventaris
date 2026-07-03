@@ -54,6 +54,15 @@
                 </a>
             </li>
             
+            <!-- SUMBER DANA (🔥 TAMBAHKAN INI) -->
+            <li>
+                <a href="{{ route('super_admin.funding-sources.index') }}" 
+                   class="flex items-center space-x-3 px-4 py-2 rounded hover:bg-gray-800 transition {{ request()->routeIs('super_admin.funding-sources.*') ? 'bg-gray-800' : '' }}">
+                    <i class="fas fa-coins w-5"></i>
+                    <span>Sumber Dana</span>
+                </a>
+            </li>
+            
             <!-- SIRKULASI -->
             <li>
                 <a href="{{ route('super_admin.circulations.index') }}" 
