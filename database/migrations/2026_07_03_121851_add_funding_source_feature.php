@@ -8,12 +8,17 @@ return new class extends Migration
 {
     public function up()
     {
-        // Hapus kolom funding_source (ENUM)
-        Schema::table('items', function (Blueprint $table) {
-            $table->dropColumn('funding_source');
+        // 1. BUAT TABEL funding_sources
+        Schema::create('funding_sources', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('code')->unique()->nullable();
+            $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
         });
 
-        // Tambah funding_source_id (foreign key)
+        // 2. TAMBAHKAN KOLOM funding_source_id DI items
         Schema::table('items', function (Blueprint $table) {
             $table->foreignId('funding_source_id')
                   ->nullable()
@@ -25,10 +30,13 @@ return new class extends Migration
 
     public function down()
     {
+        // 1. HAPUS FOREIGN KEY & KOLOM DI items
         Schema::table('items', function (Blueprint $table) {
             $table->dropForeign(['funding_source_id']);
             $table->dropColumn('funding_source_id');
-            $table->enum('funding_source', ['BOS', 'APBY', 'WAKAF'])->nullable()->after('price');
         });
+
+        // 2. HAPUS TABEL funding_sources
+        Schema::dropIfExists('funding_sources');
     }
 };
