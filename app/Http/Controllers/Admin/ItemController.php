@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Category;
 use App\Models\Unit;
+use App\Models\FundingSource;  // 🔥 TAMBAHKAN INI
 use App\Services\QRCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ItemController extends Controller
 {
@@ -21,7 +23,7 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
-        $query = Item::with(['category', 'unit']);
+        $query = Item::with(['category', 'unit', 'fundingSource']);  // 🔥 TAMBAHKAN fundingSource
         
         if ($request->filled('search')) {
             $search = $request->search;
@@ -47,7 +49,8 @@ class ItemController extends Controller
     {
         $categories = Category::all();
         $units = Unit::where('is_active', true)->get();
-        return view('admin.items.create', compact('categories', 'units'));
+        $fundingSources = FundingSource::active()->get();  // 🔥 TAMBAHKAN INI
+        return view('admin.items.create', compact('categories', 'units', 'fundingSources'));
     }
 
     public function store(Request $request)
@@ -59,6 +62,7 @@ class ItemController extends Controller
             'purchase_date' => 'nullable|date',
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
+            'funding_source_id' => 'nullable|exists:funding_sources,id',  // 🔥 UBAH KE funding_source_id
             'location' => 'nullable|string|max:200',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
@@ -74,19 +78,18 @@ class ItemController extends Controller
             'purchase_date' => $request->purchase_date,
             'condition' => $request->condition,
             'price' => $request->price,
+            'funding_source_id' => $request->funding_source_id,  // 🔥 UBAH KE funding_source_id
             'location' => $request->location,
             'description' => $request->description,
             'status' => 'available',
         ];
 
-        // Upload gambar
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('items', 'public');
         }
 
         $item = Item::create($data);
 
-        // Generate QR Code
         try {
             $qrCodePath = $this->qrCodeService->generateQrCode($item);
             $item->update(['qr_code_path' => $qrCodePath]);
@@ -100,7 +103,7 @@ class ItemController extends Controller
 
     public function show(Item $item)
     {
-        $item->load(['category', 'unit', 'circulations.user', 'circulations.approver']);
+        $item->load(['category', 'unit', 'fundingSource', 'circulations.user', 'circulations.approver']);  // 🔥 TAMBAHKAN fundingSource
         return view('admin.items.show', compact('item'));
     }
 
@@ -108,7 +111,8 @@ class ItemController extends Controller
     {
         $categories = Category::all();
         $units = Unit::where('is_active', true)->get();
-        return view('admin.items.edit', compact('item', 'categories', 'units'));
+        $fundingSources = FundingSource::active()->get();  // 🔥 TAMBAHKAN INI
+        return view('admin.items.edit', compact('item', 'categories', 'units', 'fundingSources'));
     }
 
     public function update(Request $request, Item $item)
@@ -120,6 +124,7 @@ class ItemController extends Controller
             'purchase_date' => 'nullable|date',
             'condition' => 'required|in:baik,rusak,perbaikan',
             'price' => 'nullable|numeric|min:0',
+            'funding_source_id' => 'nullable|exists:funding_sources,id',  // 🔥 UBAH KE funding_source_id
             'location' => 'nullable|string|max:200',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
@@ -127,9 +132,7 @@ class ItemController extends Controller
 
         $data = $request->except(['image']);
 
-        // Upload gambar baru
         if ($request->hasFile('image')) {
-            // Hapus gambar lama
             if ($item->image && Storage::disk('public')->exists($item->image)) {
                 Storage::disk('public')->delete($item->image);
             }
@@ -144,12 +147,10 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
-        // Hapus gambar
         if ($item->image && Storage::disk('public')->exists($item->image)) {
             Storage::disk('public')->delete($item->image);
         }
         
-        // Hapus QR Code
         if ($item->qr_code_path) {
             Storage::disk('public')->delete($item->qr_code_path);
         }
@@ -158,5 +159,15 @@ class ItemController extends Controller
 
         return redirect()->route('super_admin.items.index')
             ->with('success', 'Barang berhasil dihapus!');
+    }
+
+    // ==================== 🔥 GENERATE PDF STIKER ====================
+    public function generatePdf(Item $item)
+    {
+        $pdf = PDF::loadView('admin.items.pdf', compact('item'));
+        
+        $pdf->setPaper('A4', 'landscape');
+        
+        return $pdf->download('stiker-' . $item->code . '.pdf');
     }
 }

@@ -20,6 +20,7 @@
                     <label class="block text-sm font-medium mb-2">Nama Barang *</label>
                     <input type="text" name="name" value="{{ old('name', $item->name) }}" required
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Kategori -->
@@ -32,6 +33,7 @@
                         </option>
                         @endforeach
                     </select>
+                    @error('category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Unit -->
@@ -44,6 +46,7 @@
                         </option>
                         @endforeach
                     </select>
+                    @error('unit_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Tanggal Pembelian -->
@@ -51,6 +54,7 @@
                     <label class="block text-sm font-medium mb-2">Tanggal Pembelian</label>
                     <input type="date" name="purchase_date" value="{{ old('purchase_date', $item->purchase_date ? $item->purchase_date->format('Y-m-d') : '') }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    @error('purchase_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Kondisi -->
@@ -61,6 +65,7 @@
                         <option value="rusak" {{ old('condition', $item->condition) == 'rusak' ? 'selected' : '' }}>Rusak</option>
                         <option value="perbaikan" {{ old('condition', $item->condition) == 'perbaikan' ? 'selected' : '' }}>Perbaikan</option>
                     </select>
+                    @error('condition') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Harga -->
@@ -71,6 +76,21 @@
                         <input type="number" name="price" value="{{ old('price', $item->price) }}" step="0.01"
                                class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                     </div>
+                    @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <!-- 🔥 SUMBER DANA (DARI TABEL funding_sources) -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Sumber Dana</label>
+                    <select name="funding_source_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <option value="">-- Pilih Sumber Dana --</option>
+                        @foreach($fundingSources as $source)
+                        <option value="{{ $source->id }}" {{ old('funding_source_id', $item->funding_source_id) == $source->id ? 'selected' : '' }}>
+                            {{ $source->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('funding_source_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Lokasi -->
@@ -79,20 +99,23 @@
                     <input type="text" name="location" value="{{ old('location', $item->location) }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                            placeholder="Contoh: Rak A, Lemari 1">
+                    @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
-<!-- Tambahkan di dalam form, setelah Lokasi -->
-<div>
-    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
-    @if($item->image)
-    <div class="mb-2">
-        <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="h-32 w-auto rounded-lg object-cover">
-    </div>
-    @endif
-    <input type="file" name="image" accept="image/*"
-           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-    <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar. Format: JPG, PNG, JPEG. Maks: 2MB</p>
-    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-</div>
+
+                <!-- Gambar -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Gambar Barang</label>
+                    @if($item->image)
+                    <div class="mb-2">
+                        <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="h-32 w-auto rounded-lg object-cover border border-gray-200">
+                    </div>
+                    @endif
+                    <input type="file" name="image" accept="image/*"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar. Format: JPG, PNG, JPEG. Maks: 2MB</p>
+                    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- Status -->
                 <div>
                     <label class="block text-sm font-medium mb-2">Status</label>
@@ -101,6 +124,7 @@
                         <option value="borrowed" {{ old('status', $item->status) == 'borrowed' ? 'selected' : '' }}>Dipinjam</option>
                         <option value="maintenance" {{ old('status', $item->status) == 'maintenance' ? 'selected' : '' }}>Perbaikan</option>
                     </select>
+                    @error('status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Deskripsi -->
@@ -108,6 +132,7 @@
                     <label class="block text-sm font-medium mb-2">Deskripsi</label>
                     <textarea name="description" rows="3" 
                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">{{ old('description', $item->description) }}</textarea>
+                    @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

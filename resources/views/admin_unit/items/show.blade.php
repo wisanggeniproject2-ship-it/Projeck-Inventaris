@@ -4,9 +4,17 @@
 <div class="container mx-auto max-w-4xl">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Detail Barang</h1>
-        <a href="{{ route('admin_unit.items.index') }}" class="text-gray-600 hover:text-gray-800">
-            <i class="fas fa-arrow-left mr-2"></i>Kembali
-        </a>
+        <div class="flex gap-2">
+            <!-- 🔥 TOMBOL CETAK PDF -->
+            <a href="{{ route('admin_unit.items.pdf', $item) }}" 
+               target="_blank"
+               class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                <i class="fas fa-file-pdf mr-2"></i>Cetak PDF
+            </a>
+            <a href="{{ route('admin_unit.items.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+                <i class="fas fa-arrow-left mr-2"></i>Kembali
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -28,7 +36,7 @@
             <!-- GAMBAR BARANG -->
             <div class="mt-4">
                 <h3 class="font-semibold text-lg mb-2">Gambar Barang</h3>
-                <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
+                <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
                      class="w-full h-64 object-cover rounded-lg border border-gray-200">
             </div>
         </div>
@@ -88,6 +96,23 @@
                 <div>
                     <label class="text-sm text-gray-500">Harga</label>
                     <p>{{ $item->price ? 'Rp ' . number_format($item->price, 0, ',', '.') : '-' }}</p>
+                </div>
+
+                <!-- 🔥 SUMBER DANA (MELALUI RELASI fundingSource) -->
+                <div>
+                    <label class="text-sm text-gray-500">Sumber Dana</label>
+                    <p>
+                        @if($item->fundingSource)
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {{ $item->fundingSource->name == 'BOS' ? 'bg-blue-100 text-blue-700' : 
+                                   ($item->fundingSource->name == 'APBY' ? 'bg-green-100 text-green-700' : 
+                                   ($item->fundingSource->name == 'WAKAF' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500')) }}">
+                                {{ $item->fundingSource->name }}
+                            </span>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
+                    </p>
                 </div>
 
                 <div>

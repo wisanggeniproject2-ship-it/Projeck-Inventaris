@@ -10,16 +10,18 @@ class Item extends Model
 {
     use HasFactory;
 
-  protected $fillable = [
-    'code', 'name', 'category_id', 'unit_id', 'purchase_date',
-    'condition', 'price', 'location', 'status', 'image', 'qr_code_path', 'description'
-];
+    protected $fillable = [
+        'code', 'name', 'category_id', 'unit_id', 'purchase_date',
+        'condition', 'price', 'funding_source_id', 'location', 'status',  // 🔥 UBAH funding_source → funding_source_id
+        'image', 'qr_code_path', 'description'
+    ];
 
     protected $casts = [
         'purchase_date' => 'date',
         'price' => 'decimal:2',
     ];
 
+    // ==================== RELASI ====================
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -42,6 +44,13 @@ class Item extends Model
             ->latest();
     }
 
+    // 🔥 RELASI KE SUMBER DANA
+    public function fundingSource()
+    {
+        return $this->belongsTo(FundingSource::class);
+    }
+
+    // ==================== STATUS ====================
     public function isAvailable()
     {
         return $this->status === 'available';
@@ -57,6 +66,7 @@ class Item extends Model
         return $this->status === 'available' && $this->condition === 'baik';
     }
 
+    // ==================== SCOPE ====================
     public function scopeAvailable($query)
     {
         return $query->where('status', 'available');
@@ -84,6 +94,7 @@ class Item extends Model
         return null;
     }
 
+    // ==================== GENERATE KODE ====================
     public static function generateCode($unitId)
     {
         $unit = Unit::find($unitId);
@@ -106,5 +117,4 @@ class Item extends Model
 
         return $prefix . $newNumber;
     }
-    
 }

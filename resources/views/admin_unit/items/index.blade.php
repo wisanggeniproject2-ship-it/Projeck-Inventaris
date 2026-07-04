@@ -52,6 +52,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kondisi</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sumber Dana</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
                 </thead>
@@ -59,7 +60,7 @@
                     @forelse($items as $item)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4">
-                            <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
+                            <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
                                  class="w-12 h-12 rounded-lg object-cover border border-gray-200">
                         </td>
                         <td class="px-6 py-4 font-mono text-sm">{{ $item->code }}</td>
@@ -84,14 +85,30 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <a href="{{ route('admin_unit.items.show', $item) }}" class="text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            {{ $item->fundingSource->name ?? '-' }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex gap-2">
+                                <!-- Detail -->
+                                <a href="{{ route('admin_unit.items.show', $item) }}" 
+                                   class="text-blue-600 hover:text-blue-800" 
+                                   title="Detail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                <!-- 🔥 CETAK PDF -->
+                                <a href="{{ route('admin_unit.items.pdf', $item) }}" 
+                                   target="_blank"
+                                   class="text-red-600 hover:text-red-800" 
+                                   title="Cetak PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                             <i class="fas fa-box-open text-4xl mb-2 block"></i>
                             Belum ada data barang di unit ini
                         </td>

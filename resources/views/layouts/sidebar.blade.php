@@ -74,6 +74,17 @@
                 </a>
             </li>
 
+            <li>
+                <a href="{{ route('super_admin.funding-sources.index') }}"
+                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                          {{ request()->routeIs('super_admin.funding-sources.*')
+                                ? 'bg-brand-600 text-white shadow-brand'
+                                : 'text-white/85 hover:bg-brand-600 hover:text-white' }}">
+                    <i class="fas fa-coins w-5 text-center"></i>
+                    <span class="text-sm font-medium">Sumber Dana</span>
+                </a>
+            </li>
+
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-white/60 uppercase">Transaksi</li>
 
             <li>

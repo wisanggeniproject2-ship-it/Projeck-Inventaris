@@ -38,6 +38,7 @@
                     <label class="block text-sm font-medium mb-2">Tanggal Pembelian</label>
                     <input type="date" name="purchase_date" value="{{ old('purchase_date') }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    @error('purchase_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -47,6 +48,7 @@
                         <option value="rusak" {{ old('condition') == 'rusak' ? 'selected' : '' }}>Rusak</option>
                         <option value="perbaikan" {{ old('condition') == 'perbaikan' ? 'selected' : '' }}>Perbaikan</option>
                     </select>
+                    @error('condition') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -56,6 +58,21 @@
                         <input type="number" name="price" value="{{ old('price') }}" step="0.01"
                                class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                     </div>
+                    @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <!-- 🔥 SUMBER DANA (DARI TABEL funding_sources) -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Sumber Dana</label>
+                    <select name="funding_source_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <option value="">-- Pilih Sumber Dana --</option>
+                        @foreach($fundingSources as $source)
+                        <option value="{{ $source->id }}" {{ old('funding_source_id') == $source->id ? 'selected' : '' }}>
+                            {{ $source->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('funding_source_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -63,6 +80,7 @@
                     <input type="text" name="location" value="{{ old('location') }}"
                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                            placeholder="Contoh: Rak A, Lemari 1">
+                    @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- INPUT GAMBAR -->
@@ -78,6 +96,7 @@
                     <label class="block text-sm font-medium mb-2">Deskripsi</label>
                     <textarea name="description" rows="3" 
                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">{{ old('description') }}</textarea>
+                    @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
