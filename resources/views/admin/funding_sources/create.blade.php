@@ -14,35 +14,35 @@
             @csrf
 
             <div class="space-y-4">
-                <!-- Nama -->
+                <!-- Nama Sumber Dana -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Sumber Dana <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kode<span class="text-red-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" 
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" 
-                           placeholder="Contoh: BOS, APBY, WAKAF" required>
+                           placeholder="Contoh: BOS, WAKAF, APBN" required>
+                    <p class="text-xs text-gray-500 mt-1">Isi dengan nama sumber dana (contoh: BOS, WAKAF, APBN)</p>
                     @error('name')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kode -->
+                <!-- Kode (Opsional) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kode</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Sumber Dana</label>
                     <input type="text" name="code" value="{{ old('code') }}" 
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('code') border-red-500 @enderror" 
-                           placeholder="Contoh: BOS, APBY, WAKAF">
+                           placeholder="Nama sumber yang mengirim kan pendanaan">
                     @error('code')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-xs text-gray-500 mt-1">Kode opsional, digunakan untuk singkatan</p>
                 </div>
 
                 <!-- Deskripsi -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi (Opsional)</label>
                     <textarea name="description" rows="3" 
                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror" 
-                              placeholder="Keterangan tentang sumber dana ini...">{{ old('description') }}</textarea>
+                              placeholder="Keterangan tentang sumber dana ini..."></textarea>
                     @error('description')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -56,7 +56,7 @@
                                class="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Aktif</span>
                     </label>
-                    <p class="text-xs text-gray-500 mt-1">Jika tidak aktif, sumber dana ini tidak akan muncul di pilihan saat tambah barang</p>
+                    <p class="text-xs text-gray-500 mt-1">Jika tidak aktif, sumber dana ini tidak muncul di dropdown barang</p>
                 </div>
             </div>
 
