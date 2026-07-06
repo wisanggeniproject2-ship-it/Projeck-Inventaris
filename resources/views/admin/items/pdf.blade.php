@@ -14,243 +14,217 @@
             background: #f2f2f2;
             font-family: 'Arial', 'Helvetica', sans-serif;
             padding: 20px 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
         }
 
-        /* ===== KARTU STIKER ===== */
+        /* ===== KARTU STIKER (TABLE BASED - AGAR AMAN DI DOMPDF) ===== */
         .sticker {
-            width: 300px;
+            width: 460px;
             margin: 0 auto;
             border: 2px solid #00796B;
             border-radius: 6px;
-            padding: 14px 12px 12px 12px;
             background: white;
-            text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border-collapse: collapse;
+        }
+        .sticker > tbody > tr > td {
+            vertical-align: middle;
         }
 
-        /* ===== LOGO ATAS ===== */
-        .logo-area {
-            margin-bottom: 4px;
+        /* ===== KOLOM 1: LOGO ===== */
+        .col-logo {
+            width: 90px;
+            padding: 8px 6px;
+            border-right: 2px solid #00796B;
+            text-align: center;
         }
-        .logo-icon {
-            display: block;
-            width: 26px;
-            height: 18px;
-            margin: 0 auto 4px auto;
-            border: 2px solid #00796B;
-            border-bottom: none;
-            border-radius: 3px 3px 0 0;
-            position: relative;
+        .col-logo img {
+            width: 70px;
+            height: auto;
         }
-        .logo-icon::after {
-            content: "";
-            position: absolute;
-            left: -4px;
-            right: -4px;
-            bottom: -3px;
-            height: 3px;
-            background: #00796B;
-            border-radius: 1px;
-        }
-        .logo-title {
+        .logo-fallback {
             font-size: 12px;
             font-weight: 700;
             color: #00796B;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            line-height: 1.2;
-        }
-        .logo-sub {
-            font-size: 8px;
-            font-weight: 400;
-            color: #666;
             letter-spacing: 0.5px;
-            display: block;
         }
 
-        /* ===== HEADER / JUDUL ===== */
-        .header-block {
-            border-top: 2px solid #00796B;
-            border-bottom: 2px solid #00796B;
-            padding: 5px 0 4px 0;
-            margin: 6px 0 10px 0;
+        /* ===== KOLOM 2: INFO (TABLE DALAM TABLE, 4 BARIS) ===== */
+        .col-info {
+            padding: 0;
+            border-right: 2px solid #00796B;
         }
-        .header-block h1 {
-            font-size: 13px;
+        .info-table-inner {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table-inner td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #00796B;
+            vertical-align: middle;
+        }
+        .info-table-inner tr:last-child td {
+            border-bottom: none;
+        }
+        .row-label {
+            display: block;
+            font-size: 7px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 1px;
+        }
+        .row-value {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #222;
+            line-height: 1.25;
+        }
+
+        /* baris 1: judul + sub judul */
+        .title {
+            font-size: 12px;
             font-weight: 700;
             color: #00796B;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             line-height: 1.2;
         }
-        .header-block .subhead {
+        .subtitle {
             font-size: 8px;
             font-weight: 400;
             color: #666;
-            letter-spacing: 0.3px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        /* ===== BLOK QR ===== */
-        .qr-section {
-            margin-bottom: 8px;
+        /* baris 2: kode & tanggal (dua sel sejajar) */
+        .kode-tanggal-row td {
+            width: 50%;
+        }
+
+        /* ===== KOLOM 3: QR CODE ===== */
+        .col-qr {
+            width: 110px;
+            padding: 8px 6px;
+            text-align: center;
         }
         .scan-label {
             display: block;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             color: #00796B;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
+            letter-spacing: 1px;
             margin-bottom: 4px;
         }
-        .qr-image-wrap {
-            display: block;
-            text-align: center;
-        }
         .qr-image-wrap img {
-            width: 80px;
-            height: 80px;
+            width: 78px;
+            height: 78px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: #fff;
         }
         .qr-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 78px;
+            height: 78px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: #f9f9f9;
             display: inline-block;
-            line-height: 80px;
-            font-size: 12px;
+            line-height: 78px;
+            font-size: 11px;
             color: #999;
-            text-align: center;
-        }
-        .qr-code-row {
-            margin-top: 6px;
-            text-align: center;
         }
         .qr-code-value {
+            display: block;
+            margin-top: 5px;
             font-family: 'Courier New', monospace;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             color: #00796B;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             background: #E0F2F1;
-            padding: 2px 16px;
+            padding: 2px 8px;
             border-radius: 3px;
-            display: inline-block;
-        }
-
-        /* ===== INFO TABLE ===== */
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4px;
-        }
-        .info-table td {
-            padding: 6px 0 5px 0;
-            font-size: 10px;
-            border-bottom: 1px dashed #e0e0e0;
-            vertical-align: middle;
-        }
-        .info-table tr.no-border td {
-            border-bottom: none;
-        }
-        .info-table .label-col {
-            text-align: left;
-            font-weight: 700;
-            color: #222;
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            width: 38%;
-        }
-        .info-table .value-col {
-            text-align: right;
-            color: #00796B;
-            font-weight: 700;
-            font-size: 10px;
-            width: 62%;
-        }
-
-        /* ===== RESPONSIF ===== */
-        @media (max-width: 360px) {
-            .sticker {
-                width: 100%;
-                padding: 12px 10px;
-            }
-            .qr-image-wrap img,
-            .qr-placeholder {
-                width: 66px;
-                height: 66px;
-                line-height: 66px;
-            }
-            .qr-code-value {
-                font-size: 11px;
-                padding: 2px 12px;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="sticker">
 
-        <!-- ===== LOGO ===== -->
-        <div class="logo-area">
-            <span class="logo-icon"></span>
-            <span class="logo-title">SIT PERMATA</span>
-            <span class="logo-sub">MOJOKERTO</span>
-        </div>
+    <table class="sticker">
+        <tbody>
+        <tr>
 
-        <!-- ===== HEADER JUDUL ===== -->
-        <div class="header-block">
-            <h1>BARANG INVENTARIS</h1>
-            <span class="subhead">MILIK SIT PERMATA MOJOKERTO</span>
-        </div>
-
-        <!-- ===== QR + KODE ===== -->
-        <div class="qr-section">
-            <span class="scan-label">Scan Me</span>
-
-            <div class="qr-image-wrap">
-                @if($item->qr_code_path && file_exists(public_path('storage/' . $item->qr_code_path)))
-                    <img src="{{ public_path('storage/' . $item->qr_code_path) }}" alt="QR Code">
+            <!-- ===== KOLOM 1: LOGO ===== -->
+            <td class="col-logo">
+                @if(file_exists(public_path('images/logopermata.png')))
+                    <img src="{{ public_path('images/logopermata.png') }}" alt="Logo SIT Permata">
                 @else
-                    <div class="qr-placeholder">QR</div>
+                    <span class="logo-fallback">LOGO</span>
                 @endif
-            </div>
+            </td>
 
-            <div class="qr-code-row">
+            <!-- ===== KOLOM 2: INFO (4 BARIS) ===== -->
+            <td class="col-info">
+                <table class="info-table-inner">
+                    <tbody>
+                    <!-- baris 1: judul & sub judul -->
+                    <tr>
+                        <td colspan="2">
+                            <span class="title">Barang Inventaris</span>
+                            <span class="subtitle">Milik SIT Permata Mojokerto</span>
+                        </td>
+                    </tr>
+
+                    <!-- baris 2: kode barang & tanggal beli (sejajar) -->
+                    <tr class="kode-tanggal-row">
+                        <td>
+                            <span class="row-label">Kode</span>
+                            <span class="row-value">{{ $item->code }}</span>
+                        </td>
+                        <td>
+                            <span class="row-label">Tanggal</span>
+                            <span class="row-value">{{ $item->purchase_date ? \Carbon\Carbon::parse($item->purchase_date)->translatedFormat('d/m/Y') : '-' }}</span>
+                        </td>
+                    </tr>
+
+                    <!-- baris 3: nama barang -->
+                    <tr>
+                        <td colspan="2">
+                            <span class="row-label">Nama Barang</span>
+                            <span class="row-value">{{ $item->name }}</span>
+                        </td>
+                    </tr>
+
+                    <!-- baris 4: sumber dana -->
+                    <tr>
+                        <td colspan="2">
+                            <span class="row-label">Sumber Dana</span>
+                            <span class="row-value">{{ $item->fundingSource->name ?? '-' }}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </td>
+
+            <!-- ===== KOLOM 3: QR CODE ===== -->
+            <td class="col-qr">
+                <span class="scan-label">Scan Me</span>
+                <div class="qr-image-wrap">
+                    @if($item->qr_code_path && file_exists(public_path('storage/' . $item->qr_code_path)))
+                        <img src="{{ public_path('storage/' . $item->qr_code_path) }}" alt="QR Code">
+                    @else
+                        <div class="qr-placeholder">QR</div>
+                    @endif
+                </div>
                 <span class="qr-code-value">{{ $item->code }}</span>
-            </div>
-        </div>
+            </td>
 
-        <!-- ===== INFO BARANG (TABLE) ===== -->
-        <table class="info-table">
-            <tr>
-                <td class="label-col">NAMA</td>
-                <td class="value-col">{{ $item->name }}</td>
-            </tr>
-            <tr>
-                <td class="label-col">UNIT</td>
-                <td class="value-col">{{ $item->unit->name ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label-col">SUMBER DANA</td>
-                <td class="value-col">{{ $item->fundingSource->name ?? '-' }}</td>
-            </tr>
-            <tr class="no-border">
-                <td class="label-col">TANGGAL BELI</td>
-                <td class="value-col">{{ $item->purchase_date ? \Carbon\Carbon::parse($item->purchase_date)->translatedFormat('d/m/Y') : '-' }}</td>
-            </tr>
-        </table>
+        </tr>
+        </tbody>
+    </table>
 
-    </div>
 </body>
 </html>
