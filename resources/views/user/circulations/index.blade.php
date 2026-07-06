@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto">
-    <div class="flex justify-between items-center mb-6">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl font-bold">Riwayat Peminjaman Saya</h1>
-        <a href="{{ route('user.circulations.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route('user.circulations.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg whitespace-nowrap">
             <i class="fas fa-plus mr-2"></i>Ajukan Peminjaman
         </a>
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6">
         <a href="{{ route('user.circulations.index') }}" 
            class="bg-white rounded-lg shadow p-3 text-center hover:shadow-md transition {{ !request('status') ? 'border-2 border-blue-500' : '' }}">
             <p class="text-2xl font-bold">{{ $stats['all'] }}</p>
@@ -40,113 +40,115 @@
 
     <!-- Search -->
     <div class="mb-6">
-        <form method="GET" class="flex gap-2">
+        <form method="GET" class="flex flex-col sm:flex-row gap-2">
             <input type="hidden" name="status" value="{{ request('status') }}">
             <input type="text" name="search" value="{{ request('search') }}" 
                    placeholder="Cari nama barang..." 
-                   class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-            <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
-                <i class="fas fa-search mr-2"></i>Cari
-            </button>
-            @if(request('search'))
-            <a href="{{ route('user.circulations.index', ['status' => request('status')]) }}" 
-               class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
-                Reset
-            </a>
-            @endif
+                   class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 w-full sm:w-auto">
+            <div class="flex gap-2">
+                <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 whitespace-nowrap">
+                    <i class="fas fa-search mr-2"></i>Cari
+                </button>
+                @if(request('search'))
+                <a href="{{ route('user.circulations.index', ['status' => request('status')]) }}" 
+                   class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 whitespace-nowrap">
+                    Reset
+                </a>
+                @endif
+            </div>
         </form>
     </div>
 
-    <!-- Table -->
+    <!-- 🔥 WRAPPER TABEL DENGAN OVERFLOW AUTO (BISA DIGESER) -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Pinjam</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenggat</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Kembali</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($circulations as $circulation)
-                <tr class="border-t {{ $circulation->status == 'pending' ? 'bg-yellow-50' : '' }}">
-                    <td class="px-6 py-4">
-                        {{ $circulation->item->name }}
-                        <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
-                    </td>
-                    <td class="px-6 py-4">{{ $circulation->item->unit->name }}</td>
-                    <td class="px-6 py-4">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
-                    <td class="px-6 py-4">
-                        {{ $circulation->expected_return_date->format('d/m/Y') }}
-                        @if($circulation->status == 'approved' && $circulation->expected_return_date < now())
-                            <span class="text-red-500 text-xs block">⚠️ Terlambat</span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-4">{{ $circulation->return_date ? $circulation->return_date->format('d/m/Y') : '-' }}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs rounded-full
-                            {{ $circulation->status == 'approved' ? 'bg-green-100 text-green-700' : 
-                               ($circulation->status == 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                               ($circulation->status == 'returned' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700')) }}">
-                            {{ ucfirst($circulation->status) }}
-                        </span>
-                        @if($circulation->status == 'pending')
-                            <span class="ml-1 text-xs text-yellow-600">⏳</span>
-                        @endif
-                    </td>
-             <!-- Di bagian aksi -->
-<td class="px-6 py-4">
-    <div class="flex gap-3">
-        <!-- Detail Barang -->
-        <a href="{{ route('user.items.show', $circulation->item_id) }}" 
-           class="text-blue-600 hover:text-blue-800" title="Detail Barang">
-            <i class="fas fa-eye text-lg"></i>
-        </a>
-        
-        <!-- AJUKAN PENGEMBALIAN (untuk status approved) -->
-        @if($circulation->status == 'approved')
-            <form action="{{ route('user.circulations.requestReturn', $circulation) }}" method="POST" class="inline">
-                @csrf
-                @method('PUT')
-                <button type="submit" class="text-orange-600 hover:text-orange-800" 
-                        title="Ajukan Pengembalian"
-                        onclick="return confirm('Yakin ingin mengajukan pengembalian barang ini?')">
-                    <i class="fas fa-undo-alt text-lg"></i>
-                </button>
-            </form>
-        @endif
-        
-        <!-- Status Return Pending -->
-        @if($circulation->status == 'return_pending')
-            <span class="text-blue-600 text-sm" title="Menunggu konfirmasi admin">
-                <i class="fas fa-clock text-lg"></i> Menunggu Konfirmasi
-            </span>
-        @endif
-    </div>
-</td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-2 block"></i>
-                        <p>Belum ada riwayat peminjaman</p>
-                        <a href="{{ route('user.circulations.create') }}" class="text-blue-500 hover:text-blue-700 mt-2 inline-block">
-                            Ajukan Peminjaman →
-                        </a>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Pinjam</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenggat</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Kembali</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($circulations as $circulation)
+                    <tr class="border-t {{ $circulation->status == 'pending' ? 'bg-yellow-50' : '' }}">
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            {{ $circulation->item->name }}
+                            <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">{{ $circulation->item->unit->name }}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            {{ $circulation->expected_return_date->format('d/m/Y') }}
+                            @if($circulation->status == 'approved' && $circulation->expected_return_date < now())
+                                <span class="text-red-500 text-xs block">⚠️ Terlambat</span>
+                            @endif
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">{{ $circulation->return_date ? $circulation->return_date->format('d/m/Y') : '-' }}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {{ $circulation->status == 'approved' ? 'bg-green-100 text-green-700' : 
+                                   ($circulation->status == 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                                   ($circulation->status == 'returned' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700')) }}">
+                                {{ ucfirst($circulation->status) }}
+                            </span>
+                            @if($circulation->status == 'pending')
+                                <span class="ml-1 text-xs text-yellow-600">⏳</span>
+                            @endif
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <div class="flex gap-3">
+                                <!-- Detail Barang -->
+                                <a href="{{ route('user.items.show', $circulation->item_id) }}" 
+                                   class="text-blue-600 hover:text-blue-800" title="Detail Barang">
+                                    <i class="fas fa-eye text-lg"></i>
+                                </a>
+                                
+                                <!-- AJUKAN PENGEMBALIAN (untuk status approved) -->
+                                @if($circulation->status == 'approved')
+                                    <form action="{{ route('user.circulations.requestReturn', $circulation) }}" method="POST" class="inline">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="submit" class="text-orange-600 hover:text-orange-800" 
+                                                title="Ajukan Pengembalian"
+                                                onclick="return confirm('Yakin ingin mengajukan pengembalian barang ini?')">
+                                            <i class="fas fa-undo-alt text-lg"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                
+                                <!-- Status Return Pending -->
+                                @if($circulation->status == 'return_pending')
+                                    <span class="text-blue-600 text-sm" title="Menunggu konfirmasi admin">
+                                        <i class="fas fa-clock text-lg"></i> Menunggu Konfirmasi
+                                    </span>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="px-4 sm:px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2 block"></i>
+                            <p>Belum ada riwayat peminjaman</p>
+                            <a href="{{ route('user.circulations.create') }}" class="text-blue-500 hover:text-blue-700 mt-2 inline-block">
+                                Ajukan Peminjaman →
+                            </a>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="mt-6">
         {{ $circulations->withQueryString()->links() }}
     </div>
 </div>
-
 @endsection
