@@ -52,10 +52,10 @@
     {{-- HEADER --}}
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 animate-fadeInUp">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
                 Selamat datang kembali, <span class="text-brand-600">{{ Auth::user()->name }}!</span>
             </h1>
-            <p class="text-sm text-gray-500 mt-1">Berikut ringkasan inventaris {{ config('app.name', 'sekolah') }}</p>
+            <p class="text-sm text-gray-500 mt-1">Berikut ringkasan inventaris Yayasan Permata</p>
         </div>
         <div class="flex items-center gap-2 bg-white border border-gray-100 shadow-sm rounded-xl px-4 py-2.5 text-sm text-gray-600 w-fit">
             <i class="fas fa-calendar-days text-brand-500"></i>
@@ -64,7 +64,7 @@
     </div>
 
     {{-- STAT CARDS --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 stagger">
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 stagger">
         <div class="card-elevated p-5">
             <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center mb-3 shadow-brand">
                 <i class="fas fa-boxes-stacked text-white"></i>
@@ -107,7 +107,7 @@
     </div>
 
     {{-- CHARTS + ACTIVITY --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
         {{-- TREN PEMINJAMAN --}}
         <div class="lg:col-span-1 card-elevated p-5 animate-fadeInUp" style="animation-delay:.1s">
@@ -182,7 +182,7 @@
         </div>
 
         {{-- AKTIVITAS TERBARU --}}
-        <div class="lg:col-span-1 card-elevated p-5 animate-fadeInUp" style="animation-delay:.26s">
+        <div class="md:col-span-2 lg:col-span-1 card-elevated p-5 animate-fadeInUp" style="animation-delay:.26s">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-semibold text-gray-800 flex items-center gap-2">
                     <span class="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center">
@@ -394,6 +394,10 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
         const trendCtx = document.getElementById('trendChart');
         if (trendCtx) {
+            const gradientFill = trendCtx.getContext('2d').createLinearGradient(0, 0, 0, 220);
+            gradientFill.addColorStop(0, 'rgba(20,156,140,0.35)');
+            gradientFill.addColorStop(1, 'rgba(20,156,140,0.02)');
+
             new Chart(trendCtx, {
                 type: 'line',
                 data: {
@@ -402,23 +406,42 @@ document.addEventListener('DOMContentLoaded', function () {
                         label: 'Peminjaman',
                         data: @json($trendData),
                         borderColor: brand.solid,
-                        backgroundColor: 'rgba(20,156,140,0.14)',
+                        backgroundColor: gradientFill,
                         fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointBackgroundColor: brand.solid,
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1.5,
-                        borderWidth: 2.5,
+                        tension: 0.45,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: brand.solid,
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: brand.solid,
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 3,
+                        borderWidth: 3,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 1200, easing: 'easeOutQuart' },
-                    plugins: { legend: { display: false } },
+                    animation: { duration: 1300, easing: 'easeOutQuart' },
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: brand.dark,
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            padding: 10,
+                            cornerRadius: 10,
+                            displayColors: false,
+                            titleFont: { weight: '600' },
+                            callbacks: {
+                                label: (ctx) => ' ' + ctx.parsed.y + ' peminjaman'
+                            }
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0 } },
                         x: { grid: { display: false } }
                     }
                 }
@@ -429,15 +452,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     @endif
 
+    @php
+        $statusLabels = !is_null($totalMaintenance) ? ['Tersedia', 'Dipinjam', 'Perbaikan'] : ['Tersedia', 'Dipinjam'];
+        $statusValues = !is_null($totalMaintenance) ? [$totalAvailable, $totalBorrowed, $totalMaintenance] : [$totalAvailable, $totalBorrowed];
+    @endphp
     try {
         const statusCtx = document.getElementById('statusChart');
         if (statusCtx) {
             new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: [{{ !is_null($totalMaintenance) ? "'Tersedia','Dipinjam','Perbaikan'" : "'Tersedia','Dipinjam'" }}],
+                    labels: @json($statusLabels),
                     datasets: [{
-                        data: [{{ !is_null($totalMaintenance) ? "$totalAvailable,$totalBorrowed,$totalMaintenance" : "$totalAvailable,$totalBorrowed" }}],
+                        data: @json($statusValues),
                         backgroundColor: [brand.emerald, brand.solid, brand.amber],
                         borderWidth: 3,
                         borderColor: '#ffffff',
@@ -450,8 +477,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '74%',
-                    animation: { duration: 1100, easing: 'easeOutQuart' },
-                    plugins: { legend: { display: false }, tooltip: { padding: 10, cornerRadius: 8 } }
+                    radius: '92%',
+                    animation: { duration: 1200, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: brand.dark,
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            padding: 10,
+                            cornerRadius: 10,
+                            displayColors: true,
+                            boxPadding: 4,
+                        }
+                    }
                 }
             });
         }
@@ -481,8 +520,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '68%',
+                    radius: '92%',
                     animation: { duration: 1200, easing: 'easeOutQuart' },
-                    plugins: { legend: { display: false } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: brand.dark,
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            padding: 10,
+                            cornerRadius: 10,
+                            displayColors: true,
+                            boxPadding: 4,
+                        }
+                    }
                 }
             });
         }

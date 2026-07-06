@@ -8,7 +8,7 @@
 
     <!-- Warna dasar HTML/body diset duluan supaya tidak ada kedipan putih sebelum CSS lain siap -->
     <style>
-        html, body { background-color: #0d6459; }
+        html, body { background-color: #0d6459; overflow-x: hidden; }
     </style>
 
     <!-- Tailwind CSS (Play CDN) -->

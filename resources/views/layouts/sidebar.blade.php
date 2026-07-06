@@ -4,7 +4,7 @@
 @endphp
 
 <aside id="appSidebar"
-       class="relative w-72 bg-brand-400 text-white flex flex-col sidebar-transition h-screen shrink-0 fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 overflow-hidden shadow-brand-lg">
+       class="w-72 bg-brand-400 text-white flex flex-col sidebar-transition h-screen shrink-0 fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 overflow-hidden shadow-brand-lg">
 
     <!-- LOGO -->
     <div class="relative flex items-center gap-3 px-5 py-4 border-b border-white/15">
@@ -15,9 +15,17 @@
             <i id="logoFallback" class="fas fa-graduation-cap text-white text-3xl hidden"></i>
         </div>
         <div class="leading-tight min-w-0">
-            <p class="font-bold text-white truncate tracking-wide">{{ config('app.name', 'Inventaris Sekolah') }}</p>
+            <p class="font-bold text-white truncate tracking-wide">Yayasan Permata</p>
             <p class="text-[11px] text-white/70 truncate">Sistem Manajemen Inventaris</p>
         </div>
+
+        <!-- Tombol tutup sidebar, hanya muncul di HP/tablet -->
+        <button type="button"
+                onclick="document.getElementById('appSidebar').classList.add('-translate-x-full'); document.getElementById('sidebarOverlay').classList.add('hidden');"
+                class="lg:hidden ml-auto shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/15 hover:text-white transition"
+                aria-label="Tutup menu">
+            <i class="fas fa-xmark text-lg"></i>
+        </button>
     </div>
 
     <nav class="relative z-10 flex-1 px-3 py-4 overflow-y-auto thin-scroll">
