@@ -36,9 +36,8 @@
     $totalPending  = $stats['total_pending'] ?? 0;
     $totalUnits    = $stats['total_units'] ?? 0;
     $totalUsers    = $stats['total_users'] ?? 0;
-    $totalMaintenance = $stats['total_maintenance'] ?? null;
 
-    $totalAvailable = max($totalItems - $totalBorrowed - ($totalMaintenance ?? 0), 0);
+    $totalAvailable = max($totalItems - $totalBorrowed, 0);
 
     $trendLabels = $chartTrend['labels'] ?? ['Jan','Feb','Mar','Apr','Mei','Jun'];
     $trendData   = $chartTrend['data'] ?? array_fill(0, count($trendLabels), 0);
@@ -139,10 +138,8 @@
             $statusParts = [
                 ['label' => 'Tersedia',  'value' => $totalAvailable, 'color' => '#10b981', 'bar' => 'bg-emerald-500'],
                 ['label' => 'Dipinjam',  'value' => $totalBorrowed,  'color' => '#149c8c', 'bar' => 'bg-brand-500'],
+                ['label' => 'Pending',   'value' => $totalPending,   'color' => '#f87171', 'bar' => 'bg-red-400'],
             ];
-            if (!is_null($totalMaintenance)) {
-                $statusParts[] = ['label' => 'Perbaikan', 'value' => $totalMaintenance, 'color' => '#f59e0b', 'bar' => 'bg-amber-500'];
-            }
         @endphp
         <div class="lg:col-span-1 card-elevated p-5 animate-fadeInUp" style="animation-delay:.18s">
             <div class="flex items-center justify-between mb-5">
@@ -388,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(initCharts, 60);
 
     function initCharts() {
-    const brand = { solid: '#149c8c', dark: '#0d6459', light: '#9deadb', amber: '#f59e0b', emerald: '#10b981' };
+    const brand = { solid: '#149c8c', dark: '#0d6459', light: '#9deadb', pending: '#f87171', emerald: '#10b981' };
 
     @if($hasTrendData)
     try {
@@ -453,8 +450,8 @@ document.addEventListener('DOMContentLoaded', function () {
     @endif
 
     @php
-        $statusLabels = !is_null($totalMaintenance) ? ['Tersedia', 'Dipinjam', 'Perbaikan'] : ['Tersedia', 'Dipinjam'];
-        $statusValues = !is_null($totalMaintenance) ? [$totalAvailable, $totalBorrowed, $totalMaintenance] : [$totalAvailable, $totalBorrowed];
+        $statusLabels = ['Tersedia', 'Dipinjam', 'Pending'];
+        $statusValues = [$totalAvailable, $totalBorrowed, $totalPending];
     @endphp
     try {
         const statusCtx = document.getElementById('statusChart');
@@ -465,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels: @json($statusLabels),
                     datasets: [{
                         data: @json($statusValues),
-                        backgroundColor: [brand.emerald, brand.solid, brand.amber],
+                        backgroundColor: [brand.emerald, brand.solid, brand.pending],
                         borderWidth: 3,
                         borderColor: '#ffffff',
                         borderRadius: 6,
