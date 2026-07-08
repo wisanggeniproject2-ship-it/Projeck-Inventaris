@@ -18,7 +18,8 @@
                 <p class="text-sm text-blue-700 font-medium">Informasi Barang</p>
                 <p class="text-sm text-blue-600">
                     <span class="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs mr-1">🟢 Tersedia</span> = Bisa dipinjam &nbsp;|&nbsp;
-                    <span class="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs mr-1">🔴 Tidak Tersedia</span> = Dipinjam / Rusak / Perbaikan
+                    <span class="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs mr-1">🔴 Tidak Tersedia</span> = Dipinjam / Rusak / Perbaikan &nbsp;|&nbsp;
+                    <span class="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs mr-1">📦 Stok Habis</span> = Stok 0
                 </p>
             </div>
         </div>
@@ -64,7 +65,7 @@
 
             <div>
                 <input type="text" name="search" value="{{ request('search') }}" 
-                       placeholder="🔍 Cari..." 
+                       placeholder="🔍 Cari kode, nama, lokasi..." 
                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
@@ -105,7 +106,28 @@
         @forelse($items as $item)
         @php
             $canBorrow = $item->canBeBorrowed();
-            $isNotAvailable = !$canBorrow;
+            $isStockEmpty = $item->stock <= 0;
+            $isBorrowed = $item->status == 'borrowed';
+            $isBroken = $item->isBroken();
+            $activeCirculation = $item->activeCirculation;
+            
+            // Tentukan status untuk badge
+            if ($canBorrow) {
+                $statusBadge = '🟢 Tersedia';
+                $statusColor = 'bg-green-500';
+            } elseif ($isStockEmpty && $item->status == 'available') {
+                $statusBadge = '📦 Stok Habis';
+                $statusColor = 'bg-yellow-500';
+            } elseif ($isBorrowed) {
+                $statusBadge = '🔴 Dipinjam';
+                $statusColor = 'bg-red-500';
+            } elseif ($isBroken) {
+                $statusBadge = $item->condition == 'rusak' ? '🔧 Rusak' : '🛠 Perbaikan';
+                $statusColor = 'bg-gray-500';
+            } else {
+                $statusBadge = '🔴 Tidak Tersedia';
+                $statusColor = 'bg-red-500';
+            }
         @endphp
         <div class="bg-white rounded-lg shadow-md overflow-hidden card-hover border 
             {{ $canBorrow ? 'border-green-200 hover:shadow-xl' : 'border-red-200 hover:shadow-xl' }}">
@@ -115,16 +137,15 @@
                 <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
                      class="w-full h-full object-cover transition hover:scale-105 duration-300">
                 <div class="absolute top-2 right-2">
-                    @if($canBorrow)
-                        <span class="px-2 py-1 text-xs rounded-full bg-green-500 text-white shadow">
-                            🟢 Tersedia
-                        </span>
-                    @else
-                        <span class="px-2 py-1 text-xs rounded-full bg-red-500 text-white shadow">
-                            🔴 Tidak Tersedia
-                        </span>
-                    @endif
+                    <span class="px-2 py-1 text-xs rounded-full {{ $statusColor }} text-white shadow">
+                        {{ $statusBadge }}
+                    </span>
                 </div>
+                @if($isBorrowed || $isStockEmpty)
+                    <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <i class="fas fa-lock text-5xl text-white/70"></i>
+                    </div>
+                @endif
             </div>
             
             <div class="p-4">
@@ -141,17 +162,24 @@
                 
                 <!-- Info -->
                 <p class="text-gray-600 text-sm mb-1"><i class="fas fa-barcode mr-2"></i>{{ $item->code }}</p>
+                <p class="text-gray-600 text-sm mb-1">
+                    <i class="fas fa-boxes mr-2"></i>Stok: <span class="font-semibold {{ $item->stock > 0 ? 'text-green-600' : 'text-red-500' }}">{{ $item->stock }}</span>
+                </p>
                 <p class="text-gray-600 text-sm mb-3"><i class="fas fa-map-marker-alt mr-2"></i>{{ $item->location }}</p>
                 
                 <!-- Alasan Tidak Tersedia -->
-                @if($isNotAvailable)
+                @if(!$canBorrow)
                     <div class="bg-red-50 border border-red-200 rounded-lg p-2 mb-3 text-xs">
-                        @if($item->status == 'borrowed' && $item->activeCirculation)
+                        @if($isBorrowed && $activeCirculation)
                             <p class="text-red-600">
-                                <i class="fas fa-user mr-1"></i> Dipinjam: <strong>{{ $item->activeCirculation->borrower_name }}</strong>
+                                <i class="fas fa-user mr-1"></i> Dipinjam: <strong>{{ $activeCirculation->borrower_name }}</strong>
                             </p>
                             <p class="text-red-500">
-                                <i class="fas fa-calendar-alt mr-1"></i> Kembali: {{ $item->activeCirculation->expected_return_date->format('d/m/Y') }}
+                                <i class="fas fa-calendar-alt mr-1"></i> Kembali: {{ $activeCirculation->expected_return_date->format('d/m/Y') }}
+                            </p>
+                        @elseif($isStockEmpty && $item->status == 'available')
+                            <p class="text-yellow-700">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> <strong>Stok Habis</strong>
                             </p>
                         @elseif($item->condition == 'rusak')
                             <p class="text-yellow-700"><i class="fas fa-exclamation-triangle mr-1"></i> <strong>Barang Rusak</strong></p>
@@ -174,7 +202,12 @@
                         </a>
                     @else
                         <button disabled class="flex-1 bg-gray-300 text-gray-500 text-center px-3 py-1.5 rounded cursor-not-allowed text-sm">
-                            <i class="fas fa-times mr-1"></i>Tidak Tersedia
+                            <i class="fas fa-times mr-1"></i>
+                            @if($isStockEmpty) Stok Habis
+                            @elseif($isBorrowed) Dipinjam
+                            @elseif($isBroken) Rusak
+                            @else Tidak Tersedia
+                            @endif
                         </button>
                     @endif
                 </div>

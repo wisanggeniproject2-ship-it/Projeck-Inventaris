@@ -65,36 +65,35 @@ class CirculationController extends Controller
     }
 
     public function approve(Circulation $circulation)
-    {
-        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
-            abort(403);
-        }
-        
-        if (!$circulation->isPending()) {
-            return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
-        }
-        
-        // Cek apakah barang tersedia
-        if ($circulation->item->status !== 'available') {
-            return back()->with('error', 'Barang sedang tidak tersedia.');
-        }
-        
-        // Update status sirkulasi
-        $circulation->status = 'approved';
-        $circulation->approved_by = auth()->id();
-        $circulation->approved_at = now();
-        $circulation->save();
-        
-        // UPDATE STATUS BARANG MENJADI BORROWED
-        $item = $circulation->item;
-        $item->status = 'borrowed';
-        $item->save();
-        
-        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (approved)
-        $this->notificationService->sendCirculationNotification($circulation, 'approved');
-        
-        return back()->with('success', 'Peminjaman berhasil disetujui! Status barang telah diupdate.');
+{
+    if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+        abort(403);
     }
+    
+    if (!$circulation->isPending()) {
+        return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
+    }
+    
+    // 🔥 CEK STOK BARANG
+    $item = $circulation->item;
+    if ($item->stock <= 0) {
+        return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
+    }
+    
+    // 🔥 KURANGI STOK
+    $item->decreaseStock(1);
+    
+    // Update status sirkulasi
+    $circulation->status = 'approved';
+    $circulation->approved_by = auth()->id();
+    $circulation->approved_at = now();
+    $circulation->save();
+    
+    // Kirim notifikasi
+    $this->notificationService->sendCirculationNotification($circulation, 'approved');
+    
+    return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->stock);
+}
 
     public function reject(Circulation $circulation)
     {
@@ -118,33 +117,30 @@ class CirculationController extends Controller
         return back()->with('success', 'Peminjaman berhasil ditolak.');
     }
 
-    // ==================== KONFIRMASI PENGEMBALIAN (BARU) ====================
-    public function confirmReturn(Circulation $circulation)
-    {
-        if ($circulation->item->unit_id !== auth()->user()->unit_id) {
-            abort(403);
-        }
-        
-        // Cek apakah status return_pending
-        if (!$circulation->isReturnPending()) {
-            return back()->with('error', 'Peminjaman ini tidak dalam status menunggu pengembalian.');
-        }
-        
-        // Update status sirkulasi
-        $circulation->status = 'returned';
-        $circulation->return_date = now();
-        $circulation->return_confirmed_by = auth()->id();
-        $circulation->return_confirmed_at = now();
-        $circulation->save();
-        
-        // UPDATE STATUS BARANG MENJADI AVAILABLE KEMBALI
-        $item = $circulation->item;
-        $item->status = 'available';
-        $item->save();
-        
-        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (returned)
-        $this->notificationService->sendCirculationNotification($circulation, 'returned');
-        
-        return back()->with('success', 'Pengembalian barang berhasil dikonfirmasi! Barang sudah tersedia kembali.');
+   public function confirmReturn(Circulation $circulation)
+{
+    if ($circulation->item->unit_id !== auth()->user()->unit_id) {
+        abort(403);
     }
+    
+    if (!$circulation->isReturnPending()) {
+        return back()->with('error', 'Peminjaman ini tidak dalam status menunggu pengembalian.');
+    }
+    
+    // 🔥 TAMBAHKAN STOK KEMBALI
+    $item = $circulation->item;
+    $item->increaseStock(1);
+    
+    // Update status sirkulasi
+    $circulation->status = 'returned';
+    $circulation->return_date = now();
+    $circulation->return_confirmed_by = auth()->id();
+    $circulation->return_confirmed_at = now();
+    $circulation->save();
+    
+    // Kirim notifikasi
+    $this->notificationService->sendCirculationNotification($circulation, 'returned');
+    
+    return back()->with('success', 'Pengembalian berhasil dikonfirmasi! Stok sekarang: ' . $item->stock);
+}
 }

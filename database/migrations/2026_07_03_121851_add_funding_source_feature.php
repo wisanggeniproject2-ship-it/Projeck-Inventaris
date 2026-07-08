@@ -8,35 +8,36 @@ return new class extends Migration
 {
     public function up()
     {
-        // 1. BUAT TABEL funding_sources
-        Schema::create('funding_sources', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->string('code')->unique()->nullable();
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
-        // 2. TAMBAHKAN KOLOM funding_source_id DI items
+        // HANYA TAMBAHKAN KOLOM KE TABEL items
         Schema::table('items', function (Blueprint $table) {
-            $table->foreignId('funding_source_id')
-                  ->nullable()
-                  ->after('price')
-                  ->constrained('funding_sources')
-                  ->nullOnDelete();
+            // Cek apakah kolom price sudah ada
+            if (!Schema::hasColumn('items', 'price')) {
+                $table->decimal('price', 15, 2)->nullable()->after('condition');
+            }
+            
+            // Cek apakah kolom funding_source_id sudah ada
+            if (!Schema::hasColumn('items', 'funding_source_id')) {
+                $table->foreignId('funding_source_id')
+                      ->nullable()
+                      ->constrained('funding_sources')
+                      ->nullOnDelete();
+            }
         });
     }
 
     public function down()
     {
-        // 1. HAPUS FOREIGN KEY & KOLOM DI items
         Schema::table('items', function (Blueprint $table) {
-            $table->dropForeign(['funding_source_id']);
-            $table->dropColumn('funding_source_id');
+            // Hapus foreign key jika ada
+            if (Schema::hasColumn('items', 'funding_source_id')) {
+                $table->dropForeign(['funding_source_id']);
+                $table->dropColumn('funding_source_id');
+            }
+            
+            // Hapus kolom price jika ada
+            if (Schema::hasColumn('items', 'price')) {
+                $table->dropColumn('price');
+            }
         });
-
-        // 2. HAPUS TABEL funding_sources
-        Schema::dropIfExists('funding_sources');
     }
 };

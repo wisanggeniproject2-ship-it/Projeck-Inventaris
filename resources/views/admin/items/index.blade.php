@@ -11,7 +11,7 @@
 
     <!-- Filter & Search -->
     <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <input type="text" name="search" value="{{ request('search') }}" 
                        placeholder="Cari kode, nama, atau lokasi..." 
@@ -27,11 +27,19 @@
                     @endforeach
                 </select>
             </div>
+            <div>
+                <select name="condition" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Semua Kondisi</option>
+                    <option value="baik" {{ request('condition') == 'baik' ? 'selected' : '' }}>Baik</option>
+                    <option value="rusak" {{ request('condition') == 'rusak' ? 'selected' : '' }}>Rusak</option>
+                    <option value="perbaikan" {{ request('condition') == 'perbaikan' ? 'selected' : '' }}>Perbaikan</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
                     <i class="fas fa-search mr-2"></i>Cari
                 </button>
-                @if(request('search') || request('unit'))
+                @if(request('search') || request('unit') || request('condition'))
                 <a href="{{ route('super_admin.items.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
                     Reset
                 </a>
@@ -50,6 +58,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Barang</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kondisi</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sumber Dana</th>
@@ -61,12 +70,18 @@
                     @forelse($items as $item)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4">
-                            <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
+                            <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
                                  class="w-12 h-12 rounded-lg object-cover border border-gray-200">
                         </td>
                         <td class="px-6 py-4 font-mono text-sm">{{ $item->code }}</td>
                         <td class="px-6 py-4 font-medium">{{ $item->name }}</td>
                         <td class="px-6 py-4">{{ $item->unit->name }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {{ $item->stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                {{ $item->stock }}
+                            </span>
+                        </td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs rounded-full
                                 {{ $item->condition == 'baik' ? 'bg-green-100 text-green-700' : 
@@ -98,11 +113,11 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 
-                                <!-- 🔥 CETAK PDF -->
+                                <!-- 🔥 DOWNLOAD PDF -->
                                 <a href="{{ route('super_admin.items.pdf', $item) }}" 
                                    target="_blank"
                                    class="text-red-600 hover:text-red-800" 
-                                   title="Cetak PDF">
+                                   title="Download PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                                 
@@ -124,7 +139,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="10" class="px-6 py-8 text-center text-gray-500">
                             <i class="fas fa-box-open text-4xl mb-2 block"></i>
                             Belum ada data barang
                         </td>

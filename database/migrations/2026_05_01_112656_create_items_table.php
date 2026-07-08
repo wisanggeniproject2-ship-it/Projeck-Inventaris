@@ -17,11 +17,16 @@ return new class extends Migration
             $table->date('purchase_date')->nullable();
             $table->enum('condition', ['baik', 'rusak', 'perbaikan'])->default('baik');
             $table->decimal('price', 15, 2)->nullable();
+            $table->integer('stock')->default(1);
             $table->string('location', 200)->nullable();
             $table->enum('status', ['available', 'borrowed', 'maintenance'])->default('available');
-            $table->string('image')->nullable(); // FIELD GAMBAR
+            $table->string('image')->nullable();
             $table->string('qr_code_path')->nullable();
             $table->text('description')->nullable();
+            
+            // COMMENT BARIS INI:
+            // $table->foreignId('funding_source_id')->nullable()->constrained('funding_sources')->nullOnDelete();
+            
             $table->timestamps();
         });
     }

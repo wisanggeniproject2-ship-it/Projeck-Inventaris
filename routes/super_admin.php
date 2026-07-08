@@ -7,14 +7,14 @@ use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CirculationController;
 use App\Http\Controllers\Admin\NotificationController;
-use App\Http\Controllers\Admin\FundingSourceController;  // 🔥 TAMBAHKAN INI
+use App\Http\Controllers\Admin\FundingSourceController;
 
 // ==================== DASHBOARD ====================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
 // ==================== ITEMS ====================
 Route::resource('items', ItemController::class);
-Route::get('items/{item}/pdf', [ItemController::class, 'generatePdf'])->name('items.pdf');
+Route::get('items/{item}/pdf', [ItemController::class, 'pdf'])->name('items.pdf');
 
 // ==================== CATEGORIES ====================
 Route::resource('categories', CategoryController::class);
