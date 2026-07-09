@@ -58,9 +58,9 @@ class DatabaseSeeder extends Seeder
 
         // ==================== SUPER ADMIN ====================
         User::updateOrCreate(
-            ['email' => 'superadmin@yayasan.com'],
+            ['email' => 'super_administrator'], // ✅ Username (tanpa @)
             [
-                'name' => 'Super Administrator',
+                'name' => 'Super_Administrator',
                 'password' => Hash::make('password'),
                 'role' => 'super_admin',
                 'unit_id' => null,
@@ -69,23 +69,23 @@ class DatabaseSeeder extends Seeder
         );
 
         // ==================== ADMIN UNIT ====================
-        $adminUnitEmails = [
-            'Daycare' => 'admin.daycare@yayasan.com',
-            'Preschool' => 'admin.preschool@yayasan.com',
-            'KBIT' => 'admin.kbit@yayasan.com',
-            'TKIT' => 'admin.tkit@yayasan.com',
-            'TKIP' => 'admin.tkip@yayasan.com',
-            'SDIT' => 'admin.sdit@yayasan.com',
-            'MI' => 'admin.mi@yayasan.com',
-            'SMPIT' => 'admin.smpit@yayasan.com',
-            'MA' => 'admin.ma@yayasan.com',
+        $adminUnitEmails = [ // ✅ Nama variabel tetap
+            'Daycare' => 'admin_daycare',
+            'Preschool' => 'admin_preschool',
+            'KBIT' => 'admin_kbit',
+            'TKIT' => 'admin_tkit',
+            'TKIP' => 'admin_tkip',
+            'SDIT' => 'admin_sdit',
+            'MI' => 'admin_mi',
+            'SMPIT' => 'admin_smpit',
+            'MA' => 'admin_ma',
         ];
 
-        foreach ($adminUnitEmails as $unitName => $email) {
+        foreach ($adminUnitEmails as $unitName => $email) { // ✅ Variabel $email tetap
             $unit = Unit::where('name', $unitName)->first();
             if ($unit) {
                 User::updateOrCreate(
-                    ['email' => $email],
+                    ['email' => $email], // ✅ Username (tanpa @)
                     [
                         'name' => 'Admin ' . $unitName,
                         'password' => Hash::make('password'),
@@ -99,7 +99,7 @@ class DatabaseSeeder extends Seeder
 
         // ==================== MANAGER ====================
         User::updateOrCreate(
-            ['email' => 'manager@yayasan.com'],
+            ['email' => 'manager_yayasan'], // ✅ Username (tanpa @)
             [
                 'name' => 'Manager Yayasan',
                 'password' => Hash::make('password'),
@@ -111,7 +111,7 @@ class DatabaseSeeder extends Seeder
 
         // ==================== USERS ====================
         User::updateOrCreate(
-            ['email' => 'user.daycare@yayasan.com'],
+            ['email' => 'user_daycare'], // ✅ Username (tanpa @)
             [
                 'name' => 'User Daycare',
                 'password' => Hash::make('password'),
@@ -122,7 +122,7 @@ class DatabaseSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'user.smpit@yayasan.com'],
+            ['email' => 'user_smpit'], // ✅ Username (tanpa @)
             [
                 'name' => 'User SMPIT',
                 'password' => Hash::make('password'),
@@ -133,16 +133,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // ==================== SAMPLE ITEMS ====================
-        // ✅ AMBIL CATEGORY ELEKTRONIK
         $electronics = $categories['ELC'] ?? Category::where('code', 'ELC')->first();
-        
-        // ✅ AMBIL CATEGORY FURNITURE (untuk sample tambahan)
         $furniture = $categories['FRN'] ?? Category::where('code', 'FRN')->first();
         
-        // Sample item untuk Daycare
         if ($electronics && isset($units['DCP'])) {
             Item::create([
-                // ✅ BENAR: 2 PARAMETER (unit_id, category_id)
                 'code' => Item::generateCode($units['DCP']->id, $electronics->id),
                 'name' => 'TV LED 32 Inch',
                 'category_id' => $electronics->id,
@@ -156,7 +151,6 @@ class DatabaseSeeder extends Seeder
                 'description' => 'TV untuk menonton video edukasi anak',
             ]);
 
-            // ✅ TAMBAHKAN SAMPLE ITEM LAIN DENGAN FURNITURE
             if ($furniture) {
                 Item::create([
                     'code' => Item::generateCode($units['DCP']->id, $furniture->id),
@@ -174,10 +168,8 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Sample item untuk SMPIT
         if ($electronics && isset($units['SMT'])) {
             Item::create([
-                // ✅ BENAR: 2 PARAMETER (unit_id, category_id)
                 'code' => Item::generateCode($units['SMT']->id, $electronics->id),
                 'name' => 'Projector Epson',
                 'category_id' => $electronics->id,
@@ -191,7 +183,6 @@ class DatabaseSeeder extends Seeder
                 'description' => 'Projector untuk pembelajaran multimedia',
             ]);
 
-            // ✅ TAMBAHKAN SAMPLE ITEM LAIN
             if ($furniture) {
                 Item::create([
                     'code' => Item::generateCode($units['SMT']->id, $furniture->id),

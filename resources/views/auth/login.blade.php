@@ -124,7 +124,6 @@
             opacity: 1;
         }
 
-        /* ===== LOADING STATE - FIXED CENTER ===== */
         .btn-login.loading {
             pointer-events: none;
             opacity: 0.85;
@@ -250,14 +249,14 @@
             <form method="POST" action="{{ route('login') }}" id="loginForm">
                 @csrf
                 
-                <!-- Email -->
+                <!-- Username -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-semibold mb-1.5">Email</label>
+                    <label class="block text-gray-700 text-sm font-semibold mb-1.5">Username</label>
                     <div class="input-wrapper relative">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" name="email" value="admin@yayasan.com" 
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="email" id="email" value="{{ old('email') }}"
                                class="input-field w-full pl-11 pr-4 py-3 rounded-xl text-gray-700 placeholder-gray-400 text-sm"
-                               placeholder="admin@yayasan.com" required>
+                               placeholder="Masukkan Username" required autofocus>
                     </div>
                 </div>
                 
@@ -269,7 +268,7 @@
                     </div>
                     <div class="input-wrapper relative">
                         <i class="fas fa-lock input-icon"></i>
-                        <input type="password" name="password" value="password"
+                        <input type="password" name="password" id="password"
                                class="input-field w-full pl-11 pr-4 py-3 rounded-xl text-gray-700 placeholder-gray-400 text-sm"
                                placeholder="********" required>
                     </div>
@@ -295,20 +294,20 @@
             <div class="mt-7 pt-6 border-t border-gray-100">
                 <p class="text-center text-xs text-gray-400 font-medium uppercase tracking-wider mb-3">Demo Account</p>
                 <div class="grid grid-cols-3 gap-2">
-                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="admin@yayasan.com">
+                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="superadmin">
                         <i class="fas fa-user-shield role-icon text-teal-600 text-lg block mb-0.5"></i>
-                        <span class="font-semibold text-gray-700 text-xs block">Admin</span>
-                        <p class="text-gray-400 text-[10px] truncate">admin@yayasan.com</p>
+                        <span class="font-semibold text-gray-700 text-xs block">Super Admin</span>
+                        <p class="text-gray-400 text-[10px] truncate">superadmin</p>
                     </div>
-                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="manager@smp.com">
+                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="manager_yayasan">
                         <i class="fas fa-user-tie role-icon text-blue-600 text-lg block mb-0.5"></i>
                         <span class="font-semibold text-gray-700 text-xs block">Manager</span>
-                        <p class="text-gray-400 text-[10px] truncate">manager@smp.com</p>
+                        <p class="text-gray-400 text-[10px] truncate">manager_yayasan</p>
                     </div>
-                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="user@yayasan.com">
+                    <div class="role-card bg-gray-50/80 rounded-xl p-2.5 text-center" data-email="user_daycare">
                         <i class="fas fa-user role-icon text-emerald-600 text-lg block mb-0.5"></i>
                         <span class="font-semibold text-gray-700 text-xs block">User</span>
-                        <p class="text-gray-400 text-[10px] truncate">user@yayasan.com</p>
+                        <p class="text-gray-400 text-[10px] truncate">user_daycare</p>
                     </div>
                 </div>
                 <p class="text-center text-[11px] text-gray-400 mt-2">

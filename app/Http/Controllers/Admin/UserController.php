@@ -25,7 +25,7 @@ class UserController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                  ->orWhere('email', 'like', "%{$search}%"); // Tetap email karena kolomnya email
             });
         }
         
@@ -51,9 +51,10 @@ class UserController extends Controller
     // ==================== STORE ====================
     public function store(Request $request)
     {
+        // ✅ Validasi: email diubah jadi username (string, unique, tanpa @)
         $request->validate([
             'name' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|string|unique:users,email', // ✅ HAPUS |email, GANTI |string
             'password' => 'required|min:6',
             'role' => 'required|in:super_admin,admin_unit,manager,user',
             'unit_id' => 'nullable|exists:units,id',
@@ -93,9 +94,10 @@ class UserController extends Controller
     // ==================== UPDATE ====================
     public function update(Request $request, User $user)
     {
+        // ✅ Validasi update: email diubah jadi username (string, unique, tanpa @)
         $request->validate([
             'name' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|string|unique:users,email,' . $user->id, // ✅ HAPUS |email, GANTI |string
             'password' => 'nullable|min:6',
             'role' => 'required|in:super_admin,admin_unit,manager,user',
             'unit_id' => 'nullable|exists:units,id',

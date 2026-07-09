@@ -3,7 +3,7 @@
 use App\Http\Controllers\AdminUnit\DashboardController;
 use App\Http\Controllers\AdminUnit\ItemController;
 use App\Http\Controllers\AdminUnit\CirculationController;
-use App\Http\Controllers\Admin\NotificationController;  // 🔥 TAMBAHKAN INI
+use App\Http\Controllers\Admin\NotificationController;
 
 // ==================== DASHBOARD ====================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -15,8 +15,11 @@ Route::prefix('items')->group(function () {
     Route::post('/', [ItemController::class, 'store'])->name('items.store');
     Route::get('/{item}', [ItemController::class, 'show'])->name('items.show');
     
-    // 🔥 TAMBAHKAN ROUTE PDF
+    // 🔥 ROUTE PDF
     Route::get('/{item}/pdf', [ItemController::class, 'generatePdf'])->name('items.pdf');
+    
+    // 🔥 ROUTE PNG (TAMBAHKAN INI)
+    Route::get('/{item}/png', [ItemController::class, 'generatePng'])->name('items.png');
 });
 
 // ==================== CIRCULATIONS ====================
@@ -26,7 +29,7 @@ Route::prefix('circulations')->group(function () {
     Route::post('/{circulation}/approve', [CirculationController::class, 'approve'])->name('circulations.approve');
     Route::post('/{circulation}/reject', [CirculationController::class, 'reject'])->name('circulations.reject');
     Route::post('/{circulation}/return', [CirculationController::class, 'markReturned'])->name('circulations.return');
-    Route::post('/{circulation}/confirm-return', [CirculationController::class, 'confirmReturn'])->name('circulations.confirm-return');  // 🔥 PERBAIKI TANDA PETIK
+    Route::post('/{circulation}/confirm-return', [CirculationController::class, 'confirmReturn'])->name('circulations.confirm-return');
 });
 
 // ==================== NOTIFICATIONS ====================

@@ -15,11 +15,13 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // ✅ UBAH VALIDASI: email → string (biar bisa input username)
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string', // ❌ Hapus |email, ganti |string
             'password' => 'required',
         ]);
 
+        // Tetap pake 'email' di Auth::attempt (karena kolom database tetap email)
         if (Auth::attempt($credentials, $request->remember)) {
             $request->session()->regenerate();
             
@@ -39,8 +41,9 @@ class AuthController extends Controller
             };
         }
 
+        // ✅ UBAH PESAN ERROR: email → username
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'email' => 'Username atau password salah.',
         ])->onlyInput('email');
     }
 
