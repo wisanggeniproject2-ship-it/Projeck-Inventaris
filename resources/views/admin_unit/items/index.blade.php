@@ -103,6 +103,14 @@
                                    title="Cetak PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
+
+                                <!-- 🔥 EXPORT PNG (download, BUKAN target=_blank) -->
+                                <a href="{{ route('admin_unit.items.png', $item) }}" 
+                                   download
+                                   class="text-teal-600 hover:text-teal-800" 
+                                   title="Export PNG">
+                                    <i class="fas fa-file-image"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>

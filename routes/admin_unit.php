@@ -3,7 +3,7 @@
 use App\Http\Controllers\AdminUnit\DashboardController;
 use App\Http\Controllers\AdminUnit\ItemController;
 use App\Http\Controllers\AdminUnit\CirculationController;
-use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\AdminUnit\NotificationController;
 
 // ==================== DASHBOARD ====================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

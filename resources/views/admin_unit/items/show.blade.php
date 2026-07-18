@@ -11,6 +11,14 @@
                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
                 <i class="fas fa-file-pdf mr-2"></i>Cetak PDF
             </a>
+
+            <!-- 🔥 TOMBOL EXPORT PNG (download, BUKAN target=_blank) -->
+            <a href="{{ route('admin_unit.items.png', $item) }}" 
+               download
+               class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition">
+                <i class="fas fa-file-image mr-2"></i>Export PNG
+            </a>
+            
             <a href="{{ route('admin_unit.items.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>

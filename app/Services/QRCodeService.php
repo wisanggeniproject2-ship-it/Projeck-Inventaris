@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Color\Color;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Item;
 
@@ -10,7 +15,7 @@ class QRCodeService
 {
     public function generateQrCode(Item $item)
     {
-        // ✅ BUAT TEKS INFORMASI BARANG (BUKAN URL / JSON)
+        // ✅ TEKS INFORMASI LENGKAP BARANG (sesuai permintaan)
         $teks = "==================================\n";
         $teks .= "      BARANG INVENTARIS\n";
         $teks .= "   SIT PERMATA MOJOKERTO\n";
@@ -26,16 +31,25 @@ class QRCodeService
         $teks .= "==================================\n";
         $teks .= "Scan pada: " . date('d/m/Y H:i:s') . "\n";
 
-        // Generate QR Code dari TEKS
-        $qrCode = QrCode::format('svg')
-            ->size(300)
-            ->margin(10)
-            ->errorCorrection('H')
-            ->generate($teks);  // ← QR berisi TEKS!
-        
-        $filename = 'qrcodes/' . $item->code . '.svg';
-        Storage::disk('public')->put($filename, $qrCode);
-        
+        // ✅ FORMAT TETAP PNG (dibaca GD untuk PDF & Export PNG) — pakai endroid/qr-code, tidak butuh Imagick
+        $qrCode = QrCode::create($teks)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High)
+            ->setSize(400)
+            ->setMargin(10)
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin)
+            ->setForegroundColor(new Color(0, 0, 0))
+            ->setBackgroundColor(new Color(255, 255, 255));
+
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
+
+        // ✅ NAMA FILE DIBERSIHKAN DARI TANDA "/" (WAJIB, supaya tidak error)
+        $cleanCode = str_replace('/', '-', $item->code);
+        $filename  = 'qrcodes/' . $cleanCode . '.png';
+
+        Storage::disk('public')->put($filename, $result->getString());
+
         return $filename;
     }
 }

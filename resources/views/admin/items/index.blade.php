@@ -1,15 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    // Mendeteksi otomatis hak akses untuk menyesuaikan rute agar tidak memicu error
+    $prefix = auth()->user()->role === 'super_admin' ? 'super_admin' : 'admin_unit';
+@endphp
+
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Manajemen Barang</h1>
-        <a href="{{ route('super_admin.items.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route($prefix . '.items.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
             <i class="fas fa-plus mr-2"></i>Tambah Barang
         </a>
     </div>
 
-    <!-- Filter & Search -->
     <div class="bg-white rounded-lg shadow p-4 mb-6">
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -40,7 +44,7 @@
                     <i class="fas fa-search mr-2"></i>Cari
                 </button>
                 @if(request('search') || request('unit') || request('condition'))
-                <a href="{{ route('super_admin.items.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                <a href="{{ route($prefix . '.items.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
                     Reset
                 </a>
                 @endif
@@ -48,7 +52,6 @@
         </form>
     </div>
 
-    <!-- Table dengan Gambar -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -107,27 +110,31 @@
                             @endif
                         </td>
                         <td class="px-6 py-4">
-                            <div class="flex gap-2">
-                                <!-- Detail -->
-                                <a href="{{ route('super_admin.items.show', $item) }}" class="text-blue-600 hover:text-blue-800" title="Detail">
+                            <div class="flex gap-2 items-center">
+                                <a href="{{ route($prefix . '.items.show', $item) }}" class="text-blue-600 hover:text-blue-800" title="Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 
-                                <!-- 🔥 DOWNLOAD PDF -->
-                                <a href="{{ route('super_admin.items.pdf', $item) }}" 
+                                <a href="{{ route($prefix . '.items.pdf', $item) }}" 
                                    target="_blank"
                                    class="text-red-600 hover:text-red-800" 
                                    title="Download PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
+
+                                <!-- 🔥 EXPORT PNG (download ditambahkan) -->
+                                <a href="{{ route('items.png', $item) }}" 
+                                   download
+                                   class="text-green-600 hover:text-green-800" 
+                                   title="Download PNG">
+                                    <i class="fas fa-file-image"></i>
+                                </a>
                                 
-                                <!-- Edit -->
-                                <a href="{{ route('super_admin.items.edit', $item) }}" class="text-yellow-600 hover:text-yellow-800" title="Edit">
+                                <a href="{{ route($prefix . '.items.edit', $item) }}" class="text-yellow-600 hover:text-yellow-800" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 
-                                <!-- Hapus -->
-                                <form action="{{ route('super_admin.items.destroy', $item) }}" method="POST" class="inline">
+                                <form action="{{ route($prefix . '.items.destroy', $item) }}" method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('Yakin hapus?')" title="Hapus">

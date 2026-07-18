@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CirculationController;
-use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\AdminUnit\NotificationController;
 use App\Http\Controllers\Admin\FundingSourceController;
 
 // ==================== DASHBOARD ====================

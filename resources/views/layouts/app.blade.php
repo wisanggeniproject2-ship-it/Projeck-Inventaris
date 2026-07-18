@@ -212,6 +212,17 @@
                 form.dataset.transitioning = '1';
                 showLoaderThenGo(() => form.submit());
             });
+
+            // Fix: kalau halaman ditampilkan lagi lewat tombol Back/Forward browser,
+            // JS-nya TIDAK dijalankan ulang dari awal (DOMContentLoaded tidak nembak lagi) -
+            // browser cuma "membekukan & mengembalikan" state lama apa adanya (bfcache).
+            // Akibatnya variabel isNavigating bisa nyangkut true, dan loader bisa nyangkut nyala,
+            // jadi semua klik link berikutnya diam saja sampai di-refresh manual.
+            // Listener ini menjamin keduanya di-reset setiap halaman ditampilkan lagi.
+            window.addEventListener('pageshow', function () {
+                isNavigating = false;
+                loader.classList.add('loader-hidden');
+            });
         });
     </script>
 
