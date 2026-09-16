@@ -17,7 +17,7 @@ use App\Http\Controllers\AdminUnit\ItemController as AdminUnitItemController;
 
 // Rute Beranda
 Route::get('/', function () {
-    return view('welcome');
+    return view('landing');
 })->name('landing');
 
 // =========================================================================
@@ -188,7 +188,16 @@ Route::middleware(['auth', 'role:admin_unit'])
         Route::get('/items/{item}', [AdminUnitItemController::class, 'show'])->name('items.show');
         Route::get('/items/{item}/pdf', [AdminUnitItemController::class, 'generatePdf'])->name('items.pdf');
         
+        // ============================================================
+        // SIRKULASI (mirip super_admin, tapi pakai AdminUnit controller)
+        // ============================================================
         Route::resource('circulations', \App\Http\Controllers\AdminUnit\CirculationController::class);
+
+        // ⬇️ Route custom — sama seperti super_admin tapi AdminUnit
+        Route::post('circulations/{circulation}/approve', [\App\Http\Controllers\AdminUnit\CirculationController::class, 'approve'])->name('circulations.approve');
+        Route::post('circulations/{circulation}/reject', [\App\Http\Controllers\AdminUnit\CirculationController::class, 'reject'])->name('circulations.reject');
+        Route::post('circulations/{circulation}/return', [\App\Http\Controllers\AdminUnit\CirculationController::class, 'markReturned'])->name('circulations.return');
+        Route::post('circulations/{circulation}/confirm-return', [\App\Http\Controllers\AdminUnit\CirculationController::class, 'confirmReturn'])->name('circulations.confirm-return');
 });
 
 // =========================================================================

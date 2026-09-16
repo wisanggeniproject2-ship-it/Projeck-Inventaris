@@ -79,6 +79,15 @@
                     @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                <!-- 🔥 STOK BARANG -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Jumlah Stok *</label>
+                    <input type="number" name="stock" value="{{ old('stock', $item->stock ?? 1) }}" min="0" required
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">Stok saat ini: <strong>{{ $item->stock ?? 0 }}</strong></p>
+                    @error('stock') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- 🔥 SUMBER DANA (DARI TABEL funding_sources) -->
                 <div>
                     <label class="block text-sm font-medium mb-2">Sumber Dana</label>

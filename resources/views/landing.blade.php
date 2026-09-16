@@ -103,29 +103,56 @@
             }
         }
 
-        /* ===== HERO ===== */
-        .hero-gradient {
-            background: linear-gradient(135deg, #0D9488 0%, #0F766E 35%, #115E59 65%, #134E4A 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 10s ease-in-out infinite;
+        /* ===== HERO DENGAN BACKGROUND IMAGE ===== */
+        .hero-bg {
             position: relative;
+            background-image: url('{{ asset("images/hero-yayasan.jpg") }}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
             overflow: hidden;
         }
 
-        .hero-gradient::before {
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(13, 148, 136, 0.92) 0%, 
+                rgba(15, 118, 110, 0.88) 35%, 
+                rgba(17, 94, 89, 0.92) 65%, 
+                rgba(19, 78, 74, 0.95) 100%);
+            z-index: 1;
+        }
+
+        .hero-bg::after {
             content: '';
             position: absolute;
             top: -50%;
             right: -50%;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
             animation: heroGlow 8s ease-in-out infinite;
+            z-index: 2;
+            pointer-events: none;
         }
 
         @keyframes heroGlow {
             0%, 100% { transform: translate(0, 0); }
             50% { transform: translate(-30%, -20%); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-gradient-fallback {
+            background: linear-gradient(135deg, #0D9488 0%, #0F766E 35%, #115E59 65%, #134E4A 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease-in-out infinite;
         }
 
         @keyframes gradientShift {
@@ -134,12 +161,49 @@
             100% { background-position: 0% 50%; }
         }
 
+        /* ===== CTA SECTION (DIPERPENDEK) ===== */
+        .cta-section {
+            position: relative;
+            background: linear-gradient(135deg, #0D9488 0%, #0F766E 50%, #115E59 100%);
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('{{ asset("images/hero-yayasan.jpg") }}');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: 1;
+        }
+
+        .cta-section::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: heroGlow 8s ease-in-out infinite;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 10;
+        }
+
         .particle {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             animation: floatParticle 15s infinite ease-in-out;
             pointer-events: none;
+            z-index: 3;
         }
 
         .particle:nth-child(1) { width: 300px; height: 300px; top: -100px; right: -100px; animation-delay: 0s; }
@@ -179,6 +243,7 @@
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            border-radius: 24px;
         }
 
         .card-hover::before {
@@ -237,6 +302,8 @@
         .btn-outline {
             border: 2px solid rgba(255, 255, 255, 0.6);
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .btn-outline:hover {
@@ -251,6 +318,7 @@
             backdrop-filter: blur(12px);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
         }
 
         .stat-card:hover {
@@ -289,6 +357,7 @@
 
         .qr-box-item {
             transition: all 0.3s ease;
+            border-radius: 16px;
         }
 
         .qr-box-item:hover {
@@ -299,7 +368,7 @@
         .feature-icon {
             width: 56px;
             height: 56px;
-            border-radius: 16px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -309,7 +378,7 @@
 
         /* ===== NAVBAR ===== */
         .navbar-logo {
-            height: 60px;
+            height: 55px;
             width: auto;
             object-fit: contain;
             transition: all 0.3s ease;
@@ -323,17 +392,20 @@
         .nav-link {
             position: relative;
             transition: all 0.3s ease;
+            padding: 8px 0;
+            font-weight: 500;
         }
 
         .nav-link::after {
             content: '';
             position: absolute;
-            bottom: -4px;
+            bottom: 0;
             left: 0;
             width: 0;
             height: 2px;
-            background: #0D9488;
+            background: linear-gradient(90deg, #0D9488, #14B8A6);
             transition: width 0.3s ease;
+            border-radius: 2px;
         }
 
         .nav-link:hover::after {
@@ -344,38 +416,36 @@
             color: #0D9488;
         }
 
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-glass.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .navbar-container {
+            border-radius: 0 0 24px 24px;
+        }
+
         /* ===== FOOTER ===== */
         .footer-logo {
             height: 48px;
             width: auto;
             object-fit: contain;
             filter: brightness(0) invert(1);
-            opacity: 0.8;
+            opacity: 0.9;
             transition: all 0.3s ease;
         }
 
         .footer-logo:hover {
             opacity: 1;
             transform: scale(1.05);
-        }
-
-        .social-link {
-            transition: all 0.3s ease;
-            width: 40px;
-            height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .social-link:hover {
-            background: rgba(13, 148, 136, 0.3);
-            border-color: #0D9488;
-            transform: translateY(-4px) scale(1.1);
-            box-shadow: 0 8px 25px rgba(13, 148, 136, 0.2);
         }
 
         /* ===== RESPONSIVE ===== */
@@ -423,6 +493,9 @@
             .footer-logo {
                 height: 36px;
             }
+            .hero-bg {
+                background-attachment: scroll;
+            }
         }
 
         @media (min-width: 641px) and (max-width: 1024px) {
@@ -434,7 +507,7 @@
                 gap: 12px;
             }
             .navbar-logo {
-                height: 52px;
+                height: 50px;
             }
         }
 
@@ -463,52 +536,66 @@
     </div>
 
     <!-- ===== NAVBAR ===== -->
-    <nav class="bg-white/95 backdrop-blur-xl shadow-lg fixed w-full z-50 top-0 transition-all duration-300 border-b border-white/20" id="navbar">
-        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center">
+    <nav class="navbar-glass navbar-container fixed w-full z-50 top-0 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="{{ url('/') }}" class="flex items-center gap-3 group">
                     <img src="{{ asset('images/logopermata.png') }}" alt="Logo Permata" class="navbar-logo">
-                </div>
+                    <div class="hidden sm:block">
+                        <h1 class="text-lg font-bold text-gray-800 leading-tight group-hover:text-teal-600 transition">
+                            Inventory System
+                        </h1>
+                        <p class="text-xs text-gray-500 -mt-0.5">Yayasan Permata</p>
+                    </div>
+                </a>
                 
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#features" class="nav-link text-gray-600 hover:text-teal-600 transition font-medium text-sm">Fitur</a>
-                    <a href="#about" class="nav-link text-gray-600 hover:text-teal-600 transition font-medium text-sm">Tentang</a>
-                    <a href="{{ route('login') }}" class="btn-gradient text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition font-medium text-sm flex items-center gap-2">
+                <div class="hidden md:flex items-center gap-2">
+                    <a href="#features" class="nav-link text-gray-600 hover:text-teal-600 transition text-sm px-4 py-2 rounded-xl hover:bg-teal-50">
+                        <i class="fas fa-th-large mr-2 text-xs"></i>Fitur
+                    </a>
+                    <a href="#about" class="nav-link text-gray-600 hover:text-teal-600 transition text-sm px-4 py-2 rounded-xl hover:bg-teal-50">
+                        <i class="fas fa-info-circle mr-2 text-xs"></i>Tentang
+                    </a>
+                    <a href="{{ route('login') }}" class="btn-gradient text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition font-medium text-sm flex items-center gap-2 ml-2">
                         <i class="fas fa-sign-in-alt"></i>Login
                     </a>
                 </div>
 
-                <button id="mobileMenuBtn" class="md:hidden text-gray-700 text-2xl focus:outline-none hover:text-teal-600 transition">
+                <button id="mobileMenuBtn" class="md:hidden text-gray-700 text-2xl focus:outline-none hover:text-teal-600 transition w-10 h-10 flex items-center justify-center rounded-xl hover:bg-teal-50">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
 
-            <div id="mobileMenu" class="hidden md:hidden mt-4 pb-2 border-t border-gray-100 pt-4">
-                <a href="#features" class="block py-2.5 text-gray-600 hover:text-teal-600 transition font-medium text-sm">Fitur</a>
-                <a href="#about" class="block py-2.5 text-gray-600 hover:text-teal-600 transition font-medium text-sm">Tentang</a>
-                <a href="{{ route('login') }}" class="block btn-gradient text-white px-6 py-2.5 rounded-xl text-center mt-2 text-sm">
-                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+            <div id="mobileMenu" class="hidden md:hidden pb-4 border-t border-gray-100 pt-4">
+                <a href="#features" class="flex items-center gap-3 py-3 px-4 text-gray-600 hover:text-teal-600 hover:bg-teal-50 transition font-medium text-sm rounded-xl">
+                    <i class="fas fa-th-large text-xs"></i>Fitur
+                </a>
+                <a href="#about" class="flex items-center gap-3 py-3 px-4 text-gray-600 hover:text-teal-600 hover:bg-teal-50 transition font-medium text-sm rounded-xl">
+                    <i class="fas fa-info-circle text-xs"></i>Tentang
+                </a>
+                <a href="{{ route('login') }}" class="flex items-center justify-center gap-2 btn-gradient text-white px-6 py-3 rounded-xl text-center mt-2 text-sm font-medium">
+                    <i class="fas fa-sign-in-alt"></i>Login
                 </a>
             </div>
         </div>
     </nav>
 
     <!-- ===== HERO SECTION ===== -->
-    <section class="hero-gradient min-h-screen flex items-center pt-16 overflow-hidden relative">
+    <section class="hero-bg hero-gradient-fallback flex items-center pt-20 overflow-hidden relative">
         <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
         
-        <div class="container mx-auto px-4 sm:px-6 py-12 sm:py-20 relative z-10">
+        <div class="container mx-auto px-4 sm:px-6 py-16 sm:py-20 hero-content">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                 <div class="text-center lg:text-left">
-                    <div class="inline-block bg-white/20 backdrop-blur-sm px-5 py-2 rounded-full mb-5 fade-in border border-white/20">
+                    <div class="inline-block bg-white/20 backdrop-blur-md px-5 py-2 rounded-full mb-5 fade-in border border-white/30 shadow-lg">
                         <span class="text-white text-xs sm:text-sm font-medium">
                             <i class="fas fa-check-circle mr-2"></i>Sistem Manajemen Inventaris
                         </span>
                     </div>
                     
-                    <h1 class="hero-title text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-tight mb-5 fade-in fade-in-delay-1">
+                    <h1 class="hero-title text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-tight mb-5 fade-in fade-in-delay-1 drop-shadow-lg">
                         Kelola Inventaris
                         <span class="text-yellow-300 relative">
                             Yayasan
@@ -519,65 +606,101 @@
                         <br>Dengan Mudah
                     </h1>
                     
-                    <p class="hero-sub text-base sm:text-lg lg:text-xl text-white/90 mb-7 max-w-lg mx-auto lg:mx-0 fade-in fade-in-delay-2 leading-relaxed">
+                    <p class="hero-sub text-base sm:text-lg lg:text-xl text-white/95 mb-7 max-w-lg mx-auto lg:mx-0 fade-in fade-in-delay-2 leading-relaxed drop-shadow">
                         Sistem manajemen inventaris berbasis multi-unit untuk yayasan. 
                         Kelola barang, peminjaman, dan laporan dengan efisien.
                     </p>
                     
                     <div class="flex flex-wrap gap-4 justify-center lg:justify-start fade-in fade-in-delay-3">
-                        <a href="{{ route('login') }}" class="bg-white text-teal-600 px-8 sm:px-10 py-3.5 rounded-xl font-semibold hover:shadow-2xl transition flex items-center gap-2 text-sm hover:scale-105">
+                        <a href="{{ route('login') }}" class="bg-white text-teal-600 px-8 sm:px-10 py-3.5 rounded-2xl font-semibold hover:shadow-2xl transition flex items-center gap-2 text-sm hover:scale-105 shadow-xl">
                             <i class="fas fa-sign-in-alt"></i>Login Sekarang
                         </a>
-                        <a href="#features" class="btn-outline text-white px-8 sm:px-10 py-3.5 rounded-xl font-semibold transition flex items-center gap-2 text-sm">
+                        <a href="#features" class="btn-outline text-white px-8 sm:px-10 py-3.5 rounded-2xl font-semibold transition flex items-center gap-2 text-sm">
                             <i class="fas fa-chevron-down"></i>Pelajari
                         </a>
                     </div>
                     
-                    <div class="stat-grid grid grid-cols-3 gap-3 sm:gap-4 mt-10 fade-in fade-in-delay-4">
-                        <div class="stat-card rounded-xl p-3 sm:p-4 text-center shadow-xl">
-                            <p class="stat-number text-2xl sm:text-3xl font-bold text-teal-600">{{ $totalItems ?? 0 }}</p>
-                            <p class="text-xs sm:text-sm text-gray-600 font-medium">Total Barang</p>
+                    <!-- ===== KELEBIHAN WEBSITE (GANTI DARI DATA STATISTIK) ===== -->
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4 mt-10 fade-in fade-in-delay-4">
+                        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 hover:bg-white/25 transition-all duration-300 hover:scale-105">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 bg-yellow-300/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-bolt text-yellow-300 text-sm sm:text-base"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-white font-bold text-xs sm:text-sm">Cepat & Efisien</p>
+                                    <p class="text-white/70 text-[10px] sm:text-xs leading-tight">Kelola ribuan data tanpa lemot</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="stat-card rounded-xl p-3 sm:p-4 text-center shadow-xl">
-                            <p class="stat-number text-2xl sm:text-3xl font-bold text-emerald-600">{{ $availableItems ?? 0 }}</p>
-                            <p class="text-xs sm:text-sm text-gray-600 font-medium">Tersedia</p>
+
+                        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 hover:bg-white/25 transition-all duration-300 hover:scale-105">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 bg-green-300/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-shield-alt text-green-300 text-sm sm:text-base"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-white font-bold text-xs sm:text-sm">Aman & Terkontrol</p>
+                                    <p class="text-white/70 text-[10px] sm:text-xs leading-tight">Hak akses berlapis per role</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="stat-card rounded-xl p-3 sm:p-4 text-center shadow-xl">
-                            <p class="stat-number text-2xl sm:text-3xl font-bold text-blue-600">{{ $totalUnits ?? 0 }}</p>
-                            <p class="text-xs sm:text-sm text-gray-600 font-medium">Total Unit</p>
+
+                        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 hover:bg-white/25 transition-all duration-300 hover:scale-105">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 bg-blue-300/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-chart-line text-blue-300 text-sm sm:text-base"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-white font-bold text-xs sm:text-sm">Laporan Real-time</p>
+                                    <p class="text-white/70 text-[10px] sm:text-xs leading-tight">Pantau data kapan saja</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 hover:bg-white/25 transition-all duration-300 hover:scale-105">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 bg-purple-300/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-globe text-purple-300 text-sm sm:text-base"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-white font-bold text-xs sm:text-sm">Akses di Mana Saja</p>
+                                    <p class="text-white/70 text-[10px] sm:text-xs leading-tight">Bisa dibuka dari mana pun</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="flex justify-center lg:justify-end fade-in fade-in-delay-2">
                     <div class="float-slow w-full max-w-md">
-                        <div class="bg-white/15 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/25 shadow-2xl qr-pulse">
+                        <div class="bg-white/15 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/30 shadow-2xl qr-pulse">
                             <div class="text-white text-center">
                                 <div class="relative inline-block">
-                                    <div class="bg-white/10 rounded-2xl p-4">
+                                    <div class="bg-white/10 rounded-3xl p-4">
                                         <i class="fas fa-qrcode text-7xl sm:text-8xl"></i>
                                     </div>
                                     <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 bg-yellow-300 rounded-full qr-scanner"></div>
                                 </div>
                                 <h3 class="text-xl sm:text-2xl font-bold mt-3">QR Code System</h3>
-                                <p class="text-white/80 text-sm sm:text-base mt-1">Scan QR Code untuk detail barang</p>
+                                <p class="text-white/85 text-sm sm:text-base mt-1">Scan QR Code untuk detail barang</p>
                             </div>
                             <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-                                <div class="qr-box-item bg-white/10 rounded-xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
+                                <div class="qr-box-item bg-white/10 rounded-2xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
                                     <i class="fas fa-boxes text-2xl sm:text-3xl text-yellow-300"></i>
-                                    <p class="text-xs sm:text-sm text-white/80 mt-1 font-medium">Multi Unit</p>
+                                    <p class="text-xs sm:text-sm text-white/85 mt-1 font-medium">Multi Unit</p>
                                 </div>
-                                <div class="qr-box-item bg-white/10 rounded-xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
+                                <div class="qr-box-item bg-white/10 rounded-2xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
                                     <i class="fas fa-chart-line text-2xl sm:text-3xl text-green-300"></i>
-                                    <p class="text-xs sm:text-sm text-white/80 mt-1 font-medium">Real Time</p>
+                                    <p class="text-xs sm:text-sm text-white/85 mt-1 font-medium">Real Time</p>
                                 </div>
-                                <div class="qr-box-item bg-white/10 rounded-xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
+                                <div class="qr-box-item bg-white/10 rounded-2xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
                                     <i class="fas fa-shield-alt text-2xl sm:text-3xl text-blue-300"></i>
-                                    <p class="text-xs sm:text-sm text-white/80 mt-1 font-medium">Secure</p>
+                                    <p class="text-xs sm:text-sm text-white/85 mt-1 font-medium">Secure</p>
                                 </div>
-                                <div class="qr-box-item bg-white/10 rounded-xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
+                                <div class="qr-box-item bg-white/10 rounded-2xl p-3 sm:p-4 text-center hover:bg-white/20 transition cursor-default">
                                     <i class="fas fa-users text-2xl sm:text-3xl text-purple-300"></i>
-                                    <p class="text-xs sm:text-sm text-white/80 mt-1 font-medium">Multi Role</p>
+                                    <p class="text-xs sm:text-sm text-white/85 mt-1 font-medium">Multi Role</p>
                                 </div>
                             </div>
                         </div>
@@ -588,187 +711,175 @@
     </section>
 
     <!-- ===== FEATURES SECTION ===== -->
-    <section id="features" class="py-16 sm:py-20 bg-gray-50">
-        <div class="container mx-auto px-4 sm:px-6">
-            <div class="text-center mb-12 sm:mb-16">
-                <span class="inline-block bg-teal-100 text-teal-600 px-4 py-1.5 rounded-full text-sm font-medium mb-3">Fitur Unggulan</span>
-                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-3">
+    <section id="features" class="py-20 sm:py-24 bg-gray-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-14 sm:mb-20">
+                <span class="inline-block bg-teal-100 text-teal-600 px-4 py-1.5 rounded-full text-sm font-medium mb-4">Fitur Unggulan</span>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-4">
                     Fitur <span class="text-teal-600">Lengkap</span>
                 </h2>
-                <p class="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
+                <p class="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
                     Sistem inventory management dengan fitur lengkap untuk kebutuhan yayasan Anda
                 </p>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-teal-100 text-teal-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-teal-100 text-teal-600 mb-5">
                         <i class="fas fa-boxes"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Manajemen Barang</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Kelola semua barang dengan kode unik, kategori, lokasi, dan sumber anggaran.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Manajemen Barang</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Kelola semua barang dengan kode unik, kategori, lokasi, dan sumber anggaran.</p>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-blue-100 text-blue-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-blue-100 text-blue-600 mb-5">
                         <i class="fas fa-exchange-alt"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Sirkulasi Peminjaman</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Sistem peminjaman dengan approval flow yang terstruktur dan transparan.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Sirkulasi Peminjaman</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Sistem peminjaman dengan approval flow yang terstruktur dan transparan.</p>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-emerald-100 text-emerald-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-emerald-100 text-emerald-600 mb-5">
                         <i class="fas fa-qrcode"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">QR Code</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Setiap barang dilengkapi QR Code untuk akses cepat ke informasi detail.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">QR Code</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Setiap barang dilengkapi QR Code untuk akses cepat ke informasi detail.</p>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-amber-100 text-amber-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-amber-100 text-amber-600 mb-5">
                         <i class="fas fa-building"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Multi Unit System</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Kelola beberapa unit dalam satu sistem terintegrasi.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Multi Unit System</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Kelola beberapa unit dalam satu sistem terintegrasi.</p>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-rose-100 text-rose-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-rose-100 text-rose-600 mb-5">
                         <i class="fas fa-user-shield"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Multi Role Access</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Hak akses berdasarkan role: Admin, Manager, dan User.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Multi Role Access</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Hak akses berdasarkan role: Admin, Manager, dan User.</p>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 card-hover border border-gray-100">
-                    <div class="feature-icon bg-indigo-100 text-indigo-600 mb-4">
+                <div class="bg-white rounded-3xl shadow-lg p-7 sm:p-9 card-hover border border-gray-100">
+                    <div class="feature-icon bg-indigo-100 text-indigo-600 mb-5">
                         <i class="fas fa-chart-pie"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Dashboard & Laporan</h3>
-                    <p class="text-gray-600 text-sm sm:text-base">Dashboard informatif dengan data real-time dan laporan peminjaman.</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Dashboard & Laporan</h3>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">Dashboard informatif dengan data real-time dan laporan peminjaman.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ===== ABOUT SECTION ===== -->
-    <section id="about" class="py-16 sm:py-20 bg-white">
-        <div class="container mx-auto px-4 sm:px-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+    <section id="about" class="py-20 sm:py-24 bg-white">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
-                    <span class="inline-block bg-teal-100 text-teal-600 px-4 py-1.5 rounded-full text-sm font-medium mb-3">Tentang</span>
-                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-5">
+                    <span class="inline-block bg-teal-100 text-teal-600 px-4 py-1.5 rounded-full text-sm font-medium mb-4">Tentang</span>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-6 leading-tight">
                         Sistem <span class="text-teal-600">Inventaris</span>
                     </h2>
-                    <p class="text-gray-600 text-sm sm:text-base mb-5 leading-relaxed">
+                    <p class="text-gray-600 text-sm sm:text-base mb-7 leading-relaxed">
                         Sistem Inventory Management ini dirancang khusus untuk yayasan dengan banyak unit. 
                         Dengan sistem ini, Anda dapat:
                     </p>
-                    <ul class="space-y-3">
+                    <ul class="space-y-4">
                         <li class="flex items-start group">
-                            <div class="bg-teal-100 rounded-full p-1 mt-0.5 mr-3 group-hover:bg-teal-200 transition">
+                            <div class="bg-teal-100 rounded-full p-1.5 mt-0.5 mr-3 group-hover:bg-teal-200 transition flex-shrink-0">
                                 <i class="fas fa-check text-teal-600 text-xs"></i>
                             </div>
                             <span class="text-gray-600 text-sm sm:text-base">Mengelola barang di setiap unit secara terpisah</span>
                         </li>
                         <li class="flex items-start group">
-                            <div class="bg-teal-100 rounded-full p-1 mt-0.5 mr-3 group-hover:bg-teal-200 transition">
+                            <div class="bg-teal-100 rounded-full p-1.5 mt-0.5 mr-3 group-hover:bg-teal-200 transition flex-shrink-0">
                                 <i class="fas fa-check text-teal-600 text-xs"></i>
                             </div>
                             <span class="text-gray-600 text-sm sm:text-base">Melacak peminjaman barang dengan status real-time</span>
                         </li>
                         <li class="flex items-start group">
-                            <div class="bg-teal-100 rounded-full p-1 mt-0.5 mr-3 group-hover:bg-teal-200 transition">
+                            <div class="bg-teal-100 rounded-full p-1.5 mt-0.5 mr-3 group-hover:bg-teal-200 transition flex-shrink-0">
                                 <i class="fas fa-check text-teal-600 text-xs"></i>
                             </div>
                             <span class="text-gray-600 text-sm sm:text-base">Memantau ketersediaan barang dengan mudah</span>
                         </li>
                         <li class="flex items-start group">
-                            <div class="bg-teal-100 rounded-full p-1 mt-0.5 mr-3 group-hover:bg-teal-200 transition">
+                            <div class="bg-teal-100 rounded-full p-1.5 mt-0.5 mr-3 group-hover:bg-teal-200 transition flex-shrink-0">
                                 <i class="fas fa-check text-teal-600 text-xs"></i>
                             </div>
                             <span class="text-gray-600 text-sm sm:text-base">Mengakses data dari mana saja secara online</span>
                         </li>
                     </ul>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gradient-to-br from-teal-50 to-white rounded-2xl shadow-xl p-6 text-center card-hover border border-teal-100">
-                        <div class="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-users text-3xl text-teal-600"></i>
+                <div class="grid grid-cols-2 gap-5 sm:gap-6">
+                    <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl shadow-xl p-7 text-center card-hover border border-teal-100">
+                        <div class="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-bolt text-3xl text-teal-600"></i>
                         </div>
-                        <p class="font-bold text-3xl text-gray-800">{{ $totalItems ?? 0 }}</p>
-                        <p class="text-sm text-gray-600 font-medium">Total Data Barang</p>
+                        <p class="font-bold text-lg text-gray-800 mb-1">Cepat</p>
+                        <p class="text-sm text-gray-600 font-medium">Proses instan</p>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-xl p-6 text-center card-hover border border-blue-100">
-                        <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-building text-3xl text-blue-600"></i>
+                    <div class="bg-gradient-to-br from-blue-50 to-white rounded-3xl shadow-xl p-7 text-center card-hover border border-blue-100">
+                        <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-shield-alt text-3xl text-blue-600"></i>
                         </div>
-                        <p class="font-bold text-3xl text-gray-800">{{ $totalUnits ?? 0 }}</p>
-                        <p class="text-sm text-gray-600 font-medium">Unit Aktif</p>
+                        <p class="font-bold text-lg text-gray-800 mb-1">Aman</p>
+                        <p class="text-sm text-gray-600 font-medium">Data terproteksi</p>
                     </div>
-                    <div class="bg-gradient-to-br from-emerald-50 to-white rounded-2xl shadow-xl p-6 text-center card-hover border border-emerald-100">
-                        <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-qrcode text-3xl text-emerald-600"></i>
+                    <div class="bg-gradient-to-br from-emerald-50 to-white rounded-3xl shadow-xl p-7 text-center card-hover border border-emerald-100">
+                        <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-mobile-alt text-3xl text-emerald-600"></i>
                         </div>
-                        <p class="font-bold text-3xl text-gray-800">{{ $totalItems ?? 0 }}</p>
-                        <p class="text-sm text-gray-600 font-medium">QR Code Aktif</p>
+                        <p class="font-bold text-lg text-gray-800 mb-1">Responsif</p>
+                        <p class="text-sm text-gray-600 font-medium">Semua perangkat</p>
                     </div>
-                    <div class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-xl p-6 text-center card-hover border border-amber-100">
-                        <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-exchange-alt text-3xl text-amber-600"></i>
+                    <div class="bg-gradient-to-br from-amber-50 to-white rounded-3xl shadow-xl p-7 text-center card-hover border border-amber-100">
+                        <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-sync-alt text-3xl text-amber-600"></i>
                         </div>
-                        <p class="font-bold text-3xl text-gray-800">{{ $totalCirculations ?? 0 }}</p>
-                        <p class="text-sm text-gray-600 font-medium">Total Sirkulasi</p>
+                        <p class="font-bold text-lg text-gray-800 mb-1">Real-time</p>
+                        <p class="text-sm text-gray-600 font-medium">Update otomatis</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ===== CTA SECTION ===== -->
-    <section class="hero-gradient py-16 sm:py-20 relative overflow-hidden">
-        <div class="particle" style="width:200px;height:200px;bottom:-50px;right:-50px;animation-delay:-4s;"></div>
-        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
-            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+    <!-- ===== CTA SECTION (DIPERPENDEK) ===== -->
+    <section class="cta-section py-14 sm:py-16 relative overflow-hidden">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center cta-content">
+            <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 drop-shadow-lg">
                 Siap Mengelola Inventaris?
             </h2>
-            <p class="text-white/90 text-base sm:text-lg mb-7 max-w-2xl mx-auto">
+            <p class="text-white/95 text-sm sm:text-base mb-6 max-w-2xl mx-auto drop-shadow leading-relaxed">
                 Login sekarang dan mulai kelola inventaris dengan lebih efisien dan terstruktur.
             </p>
-            <a href="{{ route('login') }}" class="bg-white text-teal-600 px-10 sm:px-12 py-4 rounded-xl font-semibold hover:shadow-2xl transition inline-flex items-center gap-2 hover:scale-105 text-sm sm:text-base">
+            <a href="{{ route('login') }}" class="bg-white text-teal-600 px-8 sm:px-10 py-3 rounded-2xl font-semibold hover:shadow-2xl transition inline-flex items-center gap-2 hover:scale-105 text-sm shadow-xl">
                 <i class="fas fa-sign-in-alt"></i>Login Sekarang
             </a>
         </div>
     </section>
 
     <!-- ===== FOOTER ===== -->
-    <footer class="bg-gray-900 text-white py-8 sm:py-12">
-        <div class="container mx-auto px-4 sm:px-6">
+    <footer class="bg-gray-900 text-white py-12 sm:py-14">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center space-x-3">
                     <img src="{{ asset('images/logopermata.png') }}" alt="Logo Permata" class="footer-logo">
-                    <span class="text-white/60 text-sm font-medium">Inventory System</span>
+                    <div>
+                        <p class="text-white font-semibold">Inventory System</p>
+                        <p class="text-white/50 text-xs">Yayasan Permata</p>
+                    </div>
                 </div>
                 <div class="text-sm text-gray-400 text-center">
                     &copy; {{ date('Y') }} Inventory Management System. All rights reserved.
                 </div>
-                <div class="flex space-x-3">
-                    <a href="#" class="social-link text-gray-400 hover:text-white">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <a href="#" class="social-link text-gray-400 hover:text-white">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="social-link text-gray-400 hover:text-white">
-                        <i class="fab fa-youtube"></i>
-                    </a>
-                    <a href="#" class="social-link text-gray-400 hover:text-white">
-                        <i class="fab fa-linkedin-in"></i>
-                    </a>
-                </div>
             </div>
-            <div class="mt-6 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
+            <div class="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
                 <p>Dibangun dengan <i class="fas fa-heart text-teal-500"></i> untuk Yayasan</p>
             </div>
         </div>
@@ -780,18 +891,6 @@
             setTimeout(function() {
                 document.getElementById('loading-screen').classList.add('hide');
             }, 2500);
-
-            // Ganti favicon Laravel dengan logo Permata
-            const favicon = document.querySelector('link[rel="icon"]');
-            if (favicon) {
-                favicon.href = "{{ asset('images/logopermata.png') }}";
-            }
-            
-            // Tambahkan juga untuk apple touch icon
-            const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
-            if (appleIcon) {
-                appleIcon.href = "{{ asset('images/logopermata.png') }}";
-            }
         });
 
         const mobileBtn = document.getElementById('mobileMenuBtn');
@@ -820,45 +919,9 @@
         window.addEventListener('scroll', function() {
             const navbar = document.getElementById('navbar');
             if (window.scrollY > 50) {
-                navbar.classList.add('shadow-lg', 'bg-white/95');
-                navbar.classList.remove('shadow-sm', 'bg-white/90');
+                navbar.classList.add('scrolled');
             } else {
-                navbar.classList.remove('shadow-lg', 'bg-white/95');
-                navbar.classList.add('shadow-sm', 'bg-white/90');
-            }
-        });
-
-        function animateCounters() {
-            document.querySelectorAll('.stat-number').forEach(el => {
-                const target = parseInt(el.textContent);
-                if (target > 0 && !el.dataset.animated) {
-                    el.dataset.animated = 'true';
-                    let current = 0;
-                    const increment = Math.ceil(target / 30);
-                    const timer = setInterval(() => {
-                        current += increment;
-                        if (current >= target) {
-                            el.textContent = target;
-                            clearInterval(timer);
-                        } else {
-                            el.textContent = current;
-                        }
-                    }, 30);
-                }
-            });
-        }
-
-        let counterTriggered = false;
-        window.addEventListener('scroll', function() {
-            if (!counterTriggered) {
-                const statsSection = document.querySelector('.stat-grid');
-                if (statsSection) {
-                    const rect = statsSection.getBoundingClientRect();
-                    if (rect.top < window.innerHeight) {
-                        counterTriggered = true;
-                        animateCounters();
-                    }
-                }
+                navbar.classList.remove('scrolled');
             }
         });
     </script>

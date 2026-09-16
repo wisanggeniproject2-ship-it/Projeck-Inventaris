@@ -103,39 +103,46 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 
-                                <!-- Approve -->
+                                <!-- Approve & Reject -->
                                 @if($circulation->status == 'pending')
-                                    <form action="{{ route('admin_unit.circulations.approve', $circulation) }}" 
-                                          method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-green-600 hover:text-green-800" 
-                                                title="Setujui Peminjaman"
-                                                onclick="return confirm('Setujui peminjaman ini?')">
-                                            <i class="fas fa-check-circle"></i>
-                                        </button>
-                                    </form>
-                                    <form action="{{ route('admin_unit.circulations.reject', $circulation) }}" 
-                                          method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-red-600 hover:text-red-800"
-                                                title="Tolak Peminjaman"
-                                                onclick="return confirm('Tolak peminjaman ini?')">
-                                            <i class="fas fa-times-circle"></i>
-                                        </button>
-                                    </form>
+                                    @if(Route::has('admin_unit.circulations.approve'))
+                                        <form action="{{ route('admin_unit.circulations.approve', $circulation) }}" 
+                                              method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="text-green-600 hover:text-green-800" 
+                                                    title="Setujui Peminjaman"
+                                                    onclick="return confirm('Setujui peminjaman ini?')">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    @if(Route::has('admin_unit.circulations.reject'))
+                                        <form action="{{ route('admin_unit.circulations.reject', $circulation) }}" 
+                                              method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="text-red-600 hover:text-red-800"
+                                                    title="Tolak Peminjaman"
+                                                    onclick="return confirm('Tolak peminjaman ini?')">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
                                 
                                 <!-- Confirm Return -->
                                 @if($circulation->status == 'return_pending')
-                                    <form action="{{ route('admin_unit.circulations.confirm-return', $circulation) }}"  
-                                          method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-green-600 hover:text-green-800"
-                                                title="Konfirmasi Pengembalian"
-                                                onclick="return confirm('Konfirmasi pengembalian barang ini?')">
-                                            <i class="fas fa-check-double"></i>
-                                        </button>
-                                    </form>
+                                    @if(Route::has('admin_unit.circulations.confirm-return'))
+                                        <form action="{{ route('admin_unit.circulations.confirm-return', $circulation) }}"  
+                                              method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="text-green-600 hover:text-green-800"
+                                                    title="Konfirmasi Pengembalian"
+                                                    onclick="return confirm('Konfirmasi pengembalian barang ini?')">
+                                                <i class="fas fa-check-double"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
                             </div>
                         </td>

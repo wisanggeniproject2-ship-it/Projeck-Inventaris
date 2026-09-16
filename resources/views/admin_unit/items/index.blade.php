@@ -50,6 +50,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Barang</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stok</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kondisi</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sumber Dana</th>
@@ -58,6 +59,25 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($items as $item)
+                    @php
+                        $stock = $item->stock ?? 0;
+                        if ($stock == 0) {
+                            $stockTextColor = 'text-red-600';
+                            $stockColor = 'bg-red-100 text-red-700 border-red-200';
+                            $stockIcon = 'fa-times-circle';
+                            $stockLabel = 'Habis';
+                        } elseif ($stock <= 3) {
+                            $stockTextColor = 'text-yellow-600';
+                            $stockColor = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                            $stockIcon = 'fa-exclamation-triangle';
+                            $stockLabel = 'Menipis';
+                        } else {
+                            $stockTextColor = 'text-green-600';
+                            $stockColor = 'bg-green-100 text-green-700 border-green-200';
+                            $stockIcon = 'fa-check-circle';
+                            $stockLabel = 'Tersedia';
+                        }
+                    @endphp
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4">
                             <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
@@ -69,6 +89,18 @@
                             <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
                                 {{ $item->category->name }}
                             </span>
+                        </td>
+                        <!-- 🔥 KOLOM STOK BARU -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="text-2xl font-bold {{ $stockTextColor }}">
+                                    {{ $stock }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border {{ $stockColor }}">
+                                    <i class="fas {{ $stockIcon }} text-[9px]"></i>
+                                    {{ $stockLabel }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs rounded-full
@@ -116,7 +148,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="9" class="px-6 py-8 text-center text-gray-500">
                             <i class="fas fa-box-open text-4xl mb-2 block"></i>
                             Belum ada data barang di unit ini
                         </td>
