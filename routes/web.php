@@ -156,6 +156,12 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::post('circulations/{circulation}/reject', [\App\Http\Controllers\Admin\CirculationController::class, 'reject'])->name('circulations.reject');
         Route::post('circulations/{circulation}/return', [\App\Http\Controllers\Admin\CirculationController::class, 'markReturned'])->name('circulations.return');
         Route::post('circulations/{circulation}/confirm-return', [\App\Http\Controllers\Admin\CirculationController::class, 'confirmReturn'])->name('circulations.confirm-return');
+        
+        // ============================================================
+        // 🔥 FITUR NILAI ASET — halaman detail nilai aset
+        // ============================================================
+        Route::get('assets', [\App\Http\Controllers\Admin\AssetController::class, 'index'])->name('assets.index');
+        
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
 });
 

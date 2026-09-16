@@ -74,16 +74,49 @@
                 </a>
             </li>
 
+            {{-- 🔥 SUMBER DANA — ikon diganti + animasi lembut --}}
             <li>
                 <a href="{{ route('super_admin.funding-sources.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
                           {{ request()->routeIs('super_admin.funding-sources.*')
                                 ? 'bg-white/20 text-white shadow-lg shadow-black/10'
                                 : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-coins w-5 text-center"></i>
-                    <span class="text-sm font-medium">Sumber Dana</span>
+
+                    {{-- Efek kilau melintas saat hover --}}
+                    <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
+
+                    {{-- Ikon baru: hand-holding-dollar (bukan koin) + animasi wiggle --}}
+                    <i class="fas fa-hand-holding-dollar w-5 text-center animate-wiggle-slow relative z-10"></i>
+
+                    <span class="text-sm font-medium relative z-10">Sumber Dana</span>
                 </a>
             </li>
+
+            {{-- ============================================================ --}}
+            {{-- 🔥 MENU NILAI ASET — bawah Sumber Dana                       --}}
+            {{-- ============================================================ --}}
+            <li>
+                <a href="{{ route('super_admin.assets.index') }}"
+                   class="group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
+                          {{ request()->routeIs('super_admin.assets.*')
+                                ? 'bg-gradient-to-r from-amber-500/50 via-amber-400/30 to-amber-500/10 text-white shadow-lg shadow-amber-900/30 border border-amber-300/40'
+                                : 'text-white/80 hover:bg-gradient-to-r hover:from-amber-500/40 hover:via-amber-400/20 hover:to-transparent hover:text-white hover:shadow-md hover:shadow-amber-900/20' }}">
+
+                    {{-- ✨ Efek kilau melintas --}}
+                    <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-amber-200/20 to-transparent pointer-events-none"></span>
+
+                    {{-- 🔥 Ikon koin dengan animasi bounce terus-menerus --}}
+                    <i class="fas fa-coins w-5 text-center text-amber-300 animate-bounce-slow relative z-10"></i>
+
+                    <span class="text-sm font-medium relative z-10">Nilai Aset</span>
+
+                    {{-- ✨ Sparkle kecil di kanan --}}
+                    <span class="ml-auto text-[9px] text-amber-200/80 group-hover:text-amber-100 transition-colors relative z-10">
+                        <i class="fas fa-sparkles animate-pulse-soft"></i>
+                    </span>
+                </a>
+            </li>
+            {{-- 🔥 END MENU NILAI ASET --}}
 
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Transaksi</li>
 
@@ -193,6 +226,103 @@
             @endif
 
         </ul>
+
+        {{-- ============================================================ --}}
+        {{-- 🔥 NILAI ASET — CARD RINGKASAN (HANYA UNTUK SUPER ADMIN)     --}}
+        {{-- ============================================================ --}}
+        @if($role === 'super_admin')
+        @php
+            $totalNilaiAset = 0;
+            $totalJumlahBarang = 0;
+            $perKategori = [];
+
+            if (class_exists(\App\Models\Item::class)) {
+                $items = \App\Models\Item::with('category')->get();
+
+                foreach ($items as $item) {
+                    $harga = (float) ($item->price ?? 0);
+                    $stok  = (int)   ($item->stock ?? 1);
+                    $subtotal = $harga * $stok;
+
+                    $totalNilaiAset    += $subtotal;
+                    $totalJumlahBarang += $stok;
+
+                    $namaKategori = optional($item->category)->name ?? 'Tanpa Kategori';
+
+                    if (!isset($perKategori[$namaKategori])) {
+                        $perKategori[$namaKategori] = ['jumlah' => 0, 'nilai' => 0];
+                    }
+
+                    $perKategori[$namaKategori]['jumlah'] += $stok;
+                    $perKategori[$namaKategori]['nilai']  += $subtotal;
+                }
+
+                uasort($perKategori, fn($a, $b) => $b['nilai'] <=> $a['nilai']);
+            }
+        @endphp
+
+        <div class="mt-6 mx-0 rounded-2xl bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-transparent border border-amber-300/30 overflow-hidden">
+
+            {{-- HEADER --}}
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-amber-300/20 bg-amber-500/10">
+                <div class="w-8 h-8 rounded-lg bg-amber-400/20 flex items-center justify-center shrink-0">
+                    <i class="fas fa-coins text-amber-300 text-sm animate-bounce-slow"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-white font-bold text-sm leading-tight">Nilai Aset</p>
+                    <p class="text-amber-200/80 text-[10px] leading-tight">Total kekayaan inventaris</p>
+                </div>
+            </div>
+
+            {{-- TOTAL NILAI ASET + JUMLAH BARANG --}}
+            <div class="px-4 py-3 border-b border-amber-300/10">
+                <p class="text-[10px] uppercase tracking-wider text-amber-200/70 mb-1">Total Nilai Aset</p>
+                <p class="text-xl font-bold text-white leading-tight">
+                    Rp {{ number_format($totalNilaiAset, 0, ',', '.') }}
+                </p>
+                <p class="text-[11px] text-amber-100/80 mt-1">
+                    <i class="fas fa-boxes-stacked mr-1 text-amber-300"></i>
+                    {{ number_format($totalJumlahBarang, 0, ',', '.') }} unit barang
+                </p>
+            </div>
+
+            {{-- PER KATEGORI --}}
+            <div class="px-4 py-3 border-b border-amber-300/10">
+                <p class="text-[10px] uppercase tracking-wider text-amber-200/70 mb-2">Per Kategori</p>
+
+                @if(empty($perKategori))
+                    <p class="text-[11px] text-amber-100/60 italic">Belum ada data barang</p>
+                @else
+                    <div class="space-y-2 max-h-48 overflow-y-auto thin-scroll pr-1">
+                        @foreach($perKategori as $nama => $data)
+                        <div class="flex items-start justify-between gap-2 text-[11px]">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-white font-medium truncate" title="{{ $nama }}">{{ $nama }}</p>
+                                <p class="text-amber-200/70 text-[10px]">{{ number_format($data['jumlah'], 0, ',', '.') }} unit</p>
+                            </div>
+                            <p class="text-amber-100 font-semibold whitespace-nowrap text-right">
+                                Rp {{ number_format($data['nilai'], 0, ',', '.') }}
+                            </p>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- TOTAL DI BAWAH --}}
+            <div class="px-4 py-3 bg-amber-500/10">
+                <div class="flex items-center justify-between">
+                    <p class="text-[11px] uppercase tracking-wider text-amber-200/90 font-semibold">Total Keseluruhan</p>
+                    <p class="text-sm font-bold text-white">Rp {{ number_format($totalNilaiAset, 0, ',', '.') }}</p>
+                </div>
+            </div>
+
+        </div>
+        @endif
+        {{-- ============================================================ --}}
+        {{-- END NILAI ASET --}}
+        {{-- ============================================================ --}}
+
     </nav>
 
     <!-- USER + LOGOUT -->
@@ -219,3 +349,53 @@
 
 <!-- Overlay untuk mobile -->
 <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+
+{{-- ============================================================ --}}
+{{-- 🔥 STYLE: Animasi untuk menu Sumber Dana & Nilai Aset        --}}
+{{-- ============================================================ --}}
+@push('styles')
+<style>
+    /* ===== Animasi bounce halus — ikon koin (Nilai Aset) ===== */
+    @keyframes bounceSlow {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(-3px); }
+    }
+
+    .animate-bounce-slow {
+        animation: bounceSlow 1.8s ease-in-out infinite;
+        display: inline-block;
+    }
+
+    .group:hover .animate-bounce-slow {
+        animation: bounceSlow 0.6s ease-in-out infinite;
+    }
+
+    /* ===== Animasi wiggle — ikon Sumber Dana ===== */
+    @keyframes wiggleSlow {
+        0%, 100% { transform: rotate(0deg); }
+        25%      { transform: rotate(-8deg); }
+        75%      { transform: rotate(8deg); }
+    }
+
+    .animate-wiggle-slow {
+        animation: wiggleSlow 2.5s ease-in-out infinite;
+        display: inline-block;
+        transform-origin: center;
+    }
+
+    .group:hover .animate-wiggle-slow {
+        animation: wiggleSlow 0.8s ease-in-out infinite;
+    }
+
+    /* ===== Pulse halus — ikon sparkles (Nilai Aset) ===== */
+    @keyframes pulseSoft {
+        0%, 100% { opacity: 0.5; transform: scale(1); }
+        50%      { opacity: 1; transform: scale(1.15); }
+    }
+
+    .animate-pulse-soft {
+        animation: pulseSoft 2s ease-in-out infinite;
+        display: inline-block;
+    }
+</style>
+@endpush
