@@ -59,7 +59,7 @@
         </form>
     </div>
 
-    <!-- 🔥 WRAPPER TABEL DENGAN OVERFLOW AUTO (BISA DIGESER) -->
+    <!-- TABEL DENGAN OVERFLOW AUTO -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -76,7 +76,9 @@
                 </thead>
                 <tbody>
                     @forelse($circulations as $circulation)
-                    <tr class="border-t {{ $circulation->status == 'pending' ? 'bg-yellow-50' : '' }}">
+                    <tr class="border-t 
+                        {{ $circulation->status == 'pending' ? 'bg-yellow-50' : '' }}
+                        {{ $circulation->status == 'rejected' ? 'bg-red-50/40' : '' }}">
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                             {{ $circulation->item->name }}
                             <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
@@ -90,7 +92,7 @@
                             @endif
                         </td>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap">{{ $circulation->return_date ? $circulation->return_date->format('d/m/Y') : '-' }}</td>
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 sm:px-6 py-4">
                             <span class="px-2 py-1 text-xs rounded-full
                                 {{ $circulation->status == 'approved' ? 'bg-green-100 text-green-700' : 
                                    ($circulation->status == 'pending' ? 'bg-yellow-100 text-yellow-700' : 
@@ -99,6 +101,24 @@
                             </span>
                             @if($circulation->status == 'pending')
                                 <span class="ml-1 text-xs text-yellow-600">⏳</span>
+                            @endif
+
+                            {{-- 🔥 ALASAN REJECT — muncul kalau status rejected --}}
+                            @if($circulation->status == 'rejected' && $circulation->rejection_reason)
+                                <div class="mt-2 p-2.5 bg-red-50 border-l-4 border-red-400 rounded-r-lg text-xs text-red-700 max-w-xs">
+                                    <p class="font-semibold mb-1 flex items-center gap-1">
+                                        <i class="fas fa-info-circle"></i>
+                                        Alasan Ditolak:
+                                    </p>
+                                    <p class="break-words leading-snug">{{ $circulation->rejection_reason }}</p>
+
+                                    @if($circulation->rejected_at)
+                                        <p class="mt-1.5 text-[10px] text-red-500/80">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            {{ $circulation->rejected_at->format('d/m/Y H:i') }}
+                                        </p>
+                                    @endif
+                                </div>
                             @endif
                         </td>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap">

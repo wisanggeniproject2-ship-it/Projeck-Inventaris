@@ -33,58 +33,73 @@ class CirculationController extends Controller
         return view('admin.circulations.show', compact('circulation'));
     }
 
-  public function approve(Circulation $circulation)
-{
-    if (!$circulation->isPending()) {
-        return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
+    public function approve(Circulation $circulation)
+    {
+        if (!$circulation->isPending()) {
+            return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
+        }
+        
+        // 🔥 CEK STOK BARANG
+        $item = $circulation->item;
+        if ($item->stock <= 0) {
+            return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
+        }
+        
+        // 🔥 KURANGI STOK
+        $item->decreaseStock(1);
+        
+        // Update status sirkulasi
+        $circulation->status = 'approved';
+        $circulation->approved_by = auth()->id();
+        $circulation->approved_at = now();
+        $circulation->save();
+        
+        return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->stock);
     }
-    
-    // 🔥 CEK STOK BARANG
-    $item = $circulation->item;
-    if ($item->stock <= 0) {
-        return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
-    }
-    
-    // 🔥 KURANGI STOK
-    $item->decreaseStock(1);
-    
-    // Update status sirkulasi
-    $circulation->status = 'approved';
-    $circulation->approved_by = auth()->id();
-    $circulation->approved_at = now();
-    $circulation->save();
-    
-    return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->stock);
-}
 
-public function reject(Circulation $circulation)
-{
-    if (!$circulation->isPending()) {
-        return back()->with('error', 'Peminjaman ini tidak bisa ditolak.');
-    }
-    
-    $circulation->status = 'rejected';
-    $circulation->save();
-    
-    // 🔥 STATUS BARANG TETAP AVAILABLE
-    return back()->with('success', 'Peminjaman berhasil ditolak.');
-}
+    /**
+     * 🔥 REJECT — dengan alasan penolakan
+     */
+    public function reject(Request $request, Circulation $circulation)
+    {
+        if (!$circulation->isPending()) {
+            return back()->with('error', 'Peminjaman ini tidak bisa ditolak.');
+        }
 
-public function markReturned(Circulation $circulation)
-{
-    if (!$circulation->isApproved()) {
-        return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
+        // Validasi input alasan
+        $request->validate([
+            'rejection_reason' => 'required|string|min:5|max:500',
+        ], [
+            'rejection_reason.required' => 'Alasan penolakan wajib diisi.',
+            'rejection_reason.min'      => 'Alasan minimal 5 karakter.',
+            'rejection_reason.max'      => 'Alasan maksimal 500 karakter.',
+        ]);
+
+        // Update status + simpan alasan + waktu
+        $circulation->status           = 'rejected';
+        $circulation->rejection_reason = $request->rejection_reason;
+        $circulation->rejected_at      = now();
+        $circulation->save();
+        
+        // 🔥 STATUS BARANG TETAP AVAILABLE
+        return back()->with('success', 'Peminjaman berhasil ditolak.');
     }
-    
-    // 🔥 TAMBAHKAN STOK KEMBALI
-    $item = $circulation->item;
-    $item->increaseStock(1);
-    
-    // Update status sirkulasi
-    $circulation->status = 'returned';
-    $circulation->return_date = now();
-    $circulation->save();
-    
-    return back()->with('success', 'Barang berhasil dikembalikan! Stok sekarang: ' . $item->stock);
-}
+
+    public function markReturned(Circulation $circulation)
+    {
+        if (!$circulation->isApproved()) {
+            return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
+        }
+        
+        // 🔥 TAMBAHKAN STOK KEMBALI
+        $item = $circulation->item;
+        $item->increaseStock(1);
+        
+        // Update status sirkulasi
+        $circulation->status = 'returned';
+        $circulation->return_date = now();
+        $circulation->save();
+        
+        return back()->with('success', 'Barang berhasil dikembalikan! Stok sekarang: ' . $item->stock);
+    }
 }

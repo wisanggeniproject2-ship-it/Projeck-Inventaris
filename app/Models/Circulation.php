@@ -12,7 +12,8 @@ class Circulation extends Model
     protected $fillable = [
         'item_id', 'user_id', 'borrower_name', 'borrow_date', 'return_date',
         'expected_return_date', 'status', 'purpose', 'notes', 
-        'approved_by', 'approved_at', 'return_confirmed_by', 'return_confirmed_at'
+        'approved_by', 'approved_at', 'return_confirmed_by', 'return_confirmed_at',
+        'rejection_reason', 'rejected_at',   // ← TAMBAHAN BARU
     ];
 
     protected $casts = [
@@ -21,6 +22,7 @@ class Circulation extends Model
         'expected_return_date' => 'date',
         'approved_at' => 'datetime',
         'return_confirmed_at' => 'datetime',
+        'rejected_at' => 'datetime',         // ← TAMBAHAN BARU
     ];
 
     public function item()
@@ -87,9 +89,20 @@ class Circulation extends Model
         }
     }
 
-    public function reject()
+    // ==================== REJECT (UPDATE) ====================
+    /**
+     * Tandai sirkulasi sebagai ditolak.
+     *
+     * @param  string|null  $reason  Alasan penolakan (wajib dari controller)
+     * @return void
+     */
+    public function reject(?string $reason = null)
     {
         $this->status = 'rejected';
+        $this->rejected_at = now();
+        if ($reason) {
+            $this->rejection_reason = $reason;
+        }
         $this->save();
     }
 

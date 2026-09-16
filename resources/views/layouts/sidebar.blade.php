@@ -27,12 +27,12 @@
             <li class="px-3 pb-1 pt-1 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Menu Utama</li>
             <li>
                 <a href="{{ route($role . '.dashboard') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs($role . '.dashboard')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-gauge-high w-5 text-center"></i>
-                    <span class="text-sm font-medium">Dashboard</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-gauge-high w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Dashboard</span>
                 </a>
             </li>
 
@@ -43,77 +43,72 @@
 
             <li>
                 <a href="{{ route('super_admin.items.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('super_admin.items.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-boxes-stacked w-5 text-center"></i>
-                    <span class="text-sm font-medium">Barang</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-boxes-stacked w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Barang</span>
                 </a>
             </li>
 
             <li>
                 <a href="{{ route('super_admin.categories.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('super_admin.categories.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-tags w-5 text-center"></i>
-                    <span class="text-sm font-medium">Kategori</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-tags w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Kategori</span>
                 </a>
             </li>
 
             <li>
                 <a href="{{ route('super_admin.units.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('super_admin.units.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-building w-5 text-center"></i>
-                    <span class="text-sm font-medium">Unit</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-building w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Unit</span>
                 </a>
             </li>
 
-            {{-- 🔥 SUMBER DANA — ikon diganti + animasi lembut --}}
+            {{-- 🔥 SUMBER DANA — ikon hand-holding-dollar + animasi wiggle --}}
             <li>
                 <a href="{{ route('super_admin.funding-sources.index') }}"
-                   class="group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
+                   class="menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
                           {{ request()->routeIs('super_admin.funding-sources.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
 
                     {{-- Efek kilau melintas saat hover --}}
                     <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
 
-                    {{-- Ikon baru: hand-holding-dollar (bukan koin) + animasi wiggle --}}
-                    <i class="fas fa-hand-holding-dollar w-5 text-center animate-wiggle-slow relative z-10"></i>
+                    {{-- Ikon: hand-holding-dollar + animasi wiggle --}}
+                    <i class="fas fa-hand-holding-dollar w-5 text-center animate-wiggle-slow relative z-10 transition-colors"></i>
 
-                    <span class="text-sm font-medium relative z-10">Sumber Dana</span>
+                    <span class="text-sm font-medium relative z-10 transition-colors">Sumber Dana</span>
                 </a>
             </li>
 
             {{-- ============================================================ --}}
-            {{-- 🔥 MENU NILAI ASET — bawah Sumber Dana                       --}}
+            {{-- 🔥 NILAI ASET — DISAMAKAN DENGAN SUMBER DANA                  --}}
             {{-- ============================================================ --}}
             <li>
                 <a href="{{ route('super_admin.assets.index') }}"
-                   class="group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
+                   class="menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
                           {{ request()->routeIs('super_admin.assets.*')
-                                ? 'bg-gradient-to-r from-amber-500/50 via-amber-400/30 to-amber-500/10 text-white shadow-lg shadow-amber-900/30 border border-amber-300/40'
-                                : 'text-white/80 hover:bg-gradient-to-r hover:from-amber-500/40 hover:via-amber-400/20 hover:to-transparent hover:text-white hover:shadow-md hover:shadow-amber-900/20' }}">
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
 
-                    {{-- ✨ Efek kilau melintas --}}
-                    <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-amber-200/20 to-transparent pointer-events-none"></span>
+                    {{-- Efek kilau melintas saat hover --}}
+                    <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
 
-                    {{-- 🔥 Ikon koin dengan animasi bounce terus-menerus --}}
-                    <i class="fas fa-coins w-5 text-center text-amber-300 animate-bounce-slow relative z-10"></i>
+                    {{-- Ikon koin + animasi bounce --}}
+                    <i class="fas fa-coins w-5 text-center animate-bounce-slow relative z-10 transition-colors"></i>
 
-                    <span class="text-sm font-medium relative z-10">Nilai Aset</span>
-
-                    {{-- ✨ Sparkle kecil di kanan --}}
-                    <span class="ml-auto text-[9px] text-amber-200/80 group-hover:text-amber-100 transition-colors relative z-10">
-                        <i class="fas fa-sparkles animate-pulse-soft"></i>
-                    </span>
+                    <span class="text-sm font-medium relative z-10 transition-colors">Nilai Aset</span>
                 </a>
             </li>
             {{-- 🔥 END MENU NILAI ASET --}}
@@ -122,12 +117,12 @@
 
             <li>
                 <a href="{{ route('super_admin.circulations.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('super_admin.circulations.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-right-left w-5 text-center"></i>
-                    <span class="text-sm font-medium">Sirkulasi</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-right-left w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Sirkulasi</span>
                 </a>
             </li>
 
@@ -135,12 +130,12 @@
 
             <li>
                 <a href="{{ route('super_admin.users.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('super_admin.users.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-user-gear w-5 text-center"></i>
-                    <span class="text-sm font-medium">Manajemen Akun</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-user-gear w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Manajemen Akun</span>
                 </a>
             </li>
 
@@ -150,24 +145,24 @@
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Data Master</li>
             <li>
                 <a href="{{ route('admin_unit.items.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('admin_unit.items.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-boxes-stacked w-5 text-center"></i>
-                    <span class="text-sm font-medium">Barang</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-boxes-stacked w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Barang</span>
                 </a>
             </li>
 
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Transaksi</li>
             <li>
                 <a href="{{ route('admin_unit.circulations.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('admin_unit.circulations.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-right-left w-5 text-center"></i>
-                    <span class="text-sm font-medium">Sirkulasi</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-right-left w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Sirkulasi</span>
                 </a>
             </li>
 
@@ -177,12 +172,12 @@
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Data Master</li>
             <li>
                 <a href="{{ route('manager.items.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('manager.items.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-boxes-stacked w-5 text-center"></i>
-                    <span class="text-sm font-medium">Barang</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-boxes-stacked w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Barang</span>
                 </a>
             </li>
 
@@ -192,34 +187,34 @@
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Data Master</li>
             <li>
                 <a href="{{ route('user.items.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('user.items.*')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-boxes-stacked w-5 text-center"></i>
-                    <span class="text-sm font-medium">Barang</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-boxes-stacked w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Barang</span>
                 </a>
             </li>
 
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Transaksi</li>
             <li>
                 <a href="{{ route('user.circulations.create') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('user.circulations.create')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-hand-holding w-5 text-center"></i>
-                    <span class="text-sm font-medium">Ajukan Peminjaman</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-hand-holding w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Ajukan Peminjaman</span>
                 </a>
             </li>
             <li>
                 <a href="{{ route('user.circulations.index') }}"
-                   class="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                           {{ request()->routeIs('user.circulations.index')
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10'
-                                : 'text-white/80 hover:bg-white/20 hover:text-white' }}">
-                    <i class="fas fa-clock-rotate-left w-5 text-center"></i>
-                    <span class="text-sm font-medium">Riwayat Peminjaman</span>
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-clock-rotate-left w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Riwayat Peminjaman</span>
                 </a>
             </li>
 
