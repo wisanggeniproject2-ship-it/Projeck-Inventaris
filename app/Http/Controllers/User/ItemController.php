@@ -74,4 +74,84 @@ class ItemController extends Controller
         
         return view('user.items.show', compact('item', 'isBorrowed', 'activeCirculation', 'canBorrow'));
     }
+
+    /**
+     * 🔥 BARU: Ambil daftar unit yang punya barang ini
+     *
+     * Konsep:
+     * - User mau pinjam "Mic"
+     * - Cek semua unit: apakah punya barang dengan NAMA SAMA?
+     * - Kalau iya & stok > 0 → bisa dipilih
+     * - Kalau stok 0 / rusak / tidak ada → disabled (abu-abu)
+     */
+    public function getUnitsForItem(Item $item)
+    {
+        // Ambil semua barang dengan NAMA SAMA (barang yang sama di unit berbeda)
+        $siblingItems = Item::with('unit')
+            ->where('name', $item->name)
+            ->whereNotNull('unit_id')
+            ->get()
+            ->keyBy('unit_id');
+
+        // Ambil semua unit yang aktif
+        $units = Unit::where('is_active', true)->orderBy('name')->get();
+
+        // Gabungkan: tiap unit, cek apakah punya item dengan nama sama
+        $unitsData = $units->map(function ($unit) use ($siblingItems) {
+            $sibling = $siblingItems->get($unit->id);
+
+            // Kalau unit tidak punya barang ini
+            if (!$sibling) {
+                return [
+                    'id'         => $unit->id,
+                    'name'       => $unit->name,
+                    'item_id'    => null,
+                    'stock'      => 0,
+                    'can_borrow' => false,
+                    'reason'     => 'Barang tidak tersedia di unit ini',
+                ];
+            }
+
+            // Cek apakah bisa dipinjam
+            $canBorrow = $sibling->stock > 0
+                      && $sibling->status === 'available'
+                      && $sibling->condition === 'baik';
+
+            // Tentukan alasan kalau tidak bisa dipinjam
+            if ($canBorrow) {
+                $reason = null;
+            } elseif ($sibling->stock <= 0) {
+                $reason = 'Stok habis';
+            } elseif ($sibling->condition === 'rusak') {
+                $reason = 'Barang rusak';
+            } elseif ($sibling->condition === 'perbaikan') {
+                $reason = 'Dalam perbaikan';
+            } elseif ($sibling->status === 'borrowed') {
+                $reason = 'Sedang dipinjam';
+            } else {
+                $reason = 'Tidak tersedia';
+            }
+
+            return [
+                'id'         => $unit->id,
+                'name'       => $unit->name,
+                'item_id'    => $sibling->id,
+                'stock'      => (int) $sibling->stock,
+                'can_borrow' => $canBorrow,
+                'reason'     => $reason,
+            ];
+        });
+
+        // Urutkan: yang bisa dipinjam di atas, yang tidak bisa di bawah
+        $unitsData = $unitsData->sortByDesc('can_borrow')->values();
+
+        return response()->json([
+            'item'  => [
+                'id'   => $item->id,
+                'name' => $item->name,
+                'code' => $item->code,
+            ],
+            'units' => $unitsData,
+        ]);
+    }
 }
