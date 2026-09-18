@@ -53,68 +53,132 @@ class CirculationController extends Controller
         return view('user.circulations.index', compact('circulations', 'stats'));
     }
 
+    /**
+     * 🔥 FORM CREATE — barang & unit auto-isi dari ?item=ID
+     *
+     * Alur baru:
+     * - User pilih barang di halaman items
+     * - Klik "Pinjam" → modal pilih unit
+     * - Klik unit → redirect ke sini dengan ?item=ID
+     * - Form auto-isi barang & unit (readonly)
+     */
     public function create(Request $request)
     {
-        $units = Unit::where('is_active', true)->get();
-        
-        // HANYA TAMPILKAN BARANG YANG BISA DIPINJAM (AVAILABLE + KONDISI BAIK)
-        $items = Item::where('status', 'available')
-            ->where('condition', 'baik')
-            ->with('unit')
-            ->get();
-        
-        $selectedItem = null;
-        if ($request->has('item')) {
-            $selectedItem = Item::find($request->item);
-            // Cek apakah barang bisa dipinjam
-            if ($selectedItem && !$selectedItem->canBeBorrowed()) {
-                return redirect()->route('user.items.index')
-                    ->with('error', 'Barang ini tidak tersedia untuk dipinjam.');
-            }
+        // 🔥 WAJIB ada parameter ?item=ID
+        // Kalau tidak ada, redirect ke daftar barang
+        if (!$request->filled('item')) {
+            return redirect()
+                ->route('user.items.index')
+                ->with('error', 'Silakan pilih barang terlebih dahulu.');
         }
-        
-        return view('user.circulations.create', compact('units', 'items', 'selectedItem'));
+
+        // 🔥 Ambil item + relasi
+        $selectedItem = Item::with(['category', 'unit', 'fundingSource'])
+            ->find($request->item);
+
+        // Kalau item tidak ditemukan
+        if (!$selectedItem) {
+            return redirect()
+                ->route('user.items.index')
+                ->with('error', 'Barang tidak ditemukan.');
+        }
+
+        // 🔥 Cek apakah barang bisa dipinjam
+        if (!$selectedItem->canBeBorrowed()) {
+            return redirect()
+                ->route('user.items.index')
+                ->with('error', 'Barang ini tidak bisa dipinjam saat ini (stok habis / rusak / sedang dipinjam).');
+        }
+
+        // 🔥 Cek apakah sudah ada peminjaman aktif untuk item ini oleh user
+        $existingCirculation = Circulation::where('item_id', $selectedItem->id)
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'approved', 'return_pending'])
+            ->exists();
+
+        if ($existingCirculation) {
+            return redirect()
+                ->route('user.circulations.index')
+                ->with('error', 'Anda sudah memiliki peminjaman aktif untuk barang ini.');
+        }
+
+        // Data unit (untuk dropdown — kalau suatu saat butuh)
+        $units = Unit::where('is_active', true)->get();
+
+        return view('user.circulations.create', compact('selectedItem', 'units'));
     }
 
+    /**
+     * 🔥 STORE — simpan peminjaman
+     */
     public function store(Request $request)
     {
+        // Validasi
         $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'borrower_name' => 'required|string|max:100',
+            'item_id'              => 'required|exists:items,id',
+            'borrower_name'        => 'required|string|max:100',
             'expected_return_date' => 'required|date|after:today',
-            'purpose' => 'required|string',
-        ]);
-        
-        $item = Item::findOrFail($request->item_id);
-        
-        // CEK APAKAH BARANG BISA DIPINJAM (STATUS AVAILABLE + KONDISI BAIK)
-        if (!$item->canBeBorrowed()) {
-            return back()->with('error', 'Barang tidak tersedia untuk dipinjam.');
-        }
-        
-        // CEK APAKAH BARANG SEDANG DALAM PROSES PEMINJAMAN
-        $activeCirculation = Circulation::where('item_id', $item->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
-            
-        if ($activeCirculation) {
-            return back()->with('error', 'Barang sedang dalam proses peminjaman.');
-        }
-        
-        $circulation = Circulation::create([
-            'item_id' => $request->item_id,
-            'user_id' => auth()->id(),
-            'borrower_name' => $request->borrower_name,
-            'borrow_date' => now(),
-            'expected_return_date' => $request->expected_return_date,
-            'purpose' => $request->purpose,
-            'status' => 'pending',
+            'purpose'              => 'required|string|max:1000',
+        ], [
+            'item_id.required'              => 'Barang wajib dipilih.',
+            'item_id.exists'                => 'Barang tidak valid.',
+            'borrower_name.required'        => 'Nama peminjam wajib diisi.',
+            'borrower_name.max'             => 'Nama peminjam maksimal 100 karakter.',
+            'expected_return_date.required' => 'Tanggal kembali wajib diisi.',
+            'expected_return_date.after'    => 'Tanggal kembali harus setelah hari ini.',
+            'purpose.required'              => 'Tujuan peminjaman wajib diisi.',
+            'purpose.max'                   => 'Tujuan peminjaman maksimal 1000 karakter.',
         ]);
 
-        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (pending)
+        // Ambil item
+        $item = Item::findOrFail($request->item_id);
+
+        // 🔥 Cek apakah barang masih bisa dipinjam
+        if (!$item->canBeBorrowed()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Barang tidak tersedia untuk dipinjam (stok habis / rusak / sedang dipinjam).');
+        }
+
+        // 🔥 Cek apakah sudah ada peminjaman aktif untuk item ini
+        $activeCirculation = Circulation::where('item_id', $item->id)
+            ->whereIn('status', ['pending', 'approved', 'return_pending'])
+            ->exists();
+
+        if ($activeCirculation) {
+            return back()
+                ->withInput()
+                ->with('error', 'Barang sedang dalam proses peminjaman oleh pihak lain.');
+        }
+
+        // 🔥 Cek apakah user sudah punya peminjaman aktif untuk item ini
+        $userExisting = Circulation::where('item_id', $item->id)
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'approved', 'return_pending'])
+            ->exists();
+
+        if ($userExisting) {
+            return back()
+                ->withInput()
+                ->with('error', 'Anda sudah memiliki peminjaman aktif untuk barang ini.');
+        }
+
+        // 🔥 Buat circulation
+        $circulation = Circulation::create([
+            'item_id'              => $item->id,
+            'user_id'              => auth()->id(),
+            'borrower_name'        => $request->borrower_name,
+            'borrow_date'          => now(),
+            'expected_return_date' => $request->expected_return_date,
+            'purpose'              => $request->purpose,
+            'status'               => 'pending',
+        ]);
+
+        // 🔥 Kirim notifikasi ke admin unit (pending)
         $this->notificationService->sendCirculationNotification($circulation, 'pending');
 
-        return redirect()->route('user.circulations.index')
+        return redirect()
+            ->route('user.circulations.index')
             ->with('success', 'Peminjaman berhasil diajukan! Menunggu persetujuan admin unit.');
     }
 
@@ -135,10 +199,11 @@ class CirculationController extends Controller
         $circulation->status = 'return_pending';
         $circulation->save();
 
-        // 🔥 KIRIM NOTIFIKASI KE ADMIN UNIT (return_pending)
+        // 🔥 Kirim notifikasi ke admin unit (return_pending)
         $this->notificationService->sendCirculationNotification($circulation, 'return_pending');
         
-        return redirect()->route('user.circulations.index')
+        return redirect()
+            ->route('user.circulations.index')
             ->with('success', 'Permintaan pengembalian berhasil diajukan! Menunggu konfirmasi admin unit.');
     }
 }
