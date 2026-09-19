@@ -80,6 +80,37 @@
 
             <div class="space-y-5">
 
+                {{-- ============================================================ --}}
+                {{-- 🔥 WAKTU SEKARANG (LIVE) — cuma info, bukan input          --}}
+                {{-- ============================================================ --}}
+                <div class="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                            <i class="fas fa-clock text-teal-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-teal-700 uppercase tracking-wide">
+                                <span class="relative inline-flex items-center gap-1.5">
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                                    </span>
+                                    Waktu Sekarang
+                                </span>
+                            </p>
+                            <p class="text-lg font-bold text-teal-800 mt-0.5">
+                                <span id="liveDate">{{ now()->format('d M Y') }}</span> — 
+                                <span class="text-2xl tabular-nums" id="liveClock">{{ now()->format('H:i:s') }}</span>
+                                <span class="text-sm font-medium">WIB</span>
+                            </p>
+                            <p class="text-[11px] text-teal-600 mt-0.5">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Referensi waktu saat ini (WIB)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Info Terkunci (readonly, biar user tahu) --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -135,26 +166,161 @@
                     @enderror
                 </div>
 
-                {{-- Tanggal Kembali --}}
+                {{-- ============================================================ --}}
+                {{-- 🔥 WAKTU PINJAM — Tanggal + Jam (PILIH SENDIRI)             --}}
+                {{-- ============================================================ --}}
                 <div>
                     <label class="block text-sm font-medium mb-2 text-gray-700">
-                        <i class="fas fa-calendar-alt text-brand-500 mr-1.5"></i>
-                        Tanggal Kembali (Estimasi) <span class="text-red-500">*</span>
+                        <i class="fas fa-sign-out-alt text-brand-500 mr-1.5"></i>
+                        Waktu Pinjam <span class="text-red-500">*</span>
                     </label>
-                    <input type="date" 
-                           name="expected_return_date" 
-                           value="{{ old('expected_return_date') }}" 
-                           required
-                           min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                           class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition">
-                    @error('expected_return_date') 
-                        <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                            <i class="fas fa-exclamation-circle"></i>{{ $message }}
-                        </p> 
-                    @enderror
-                    <p class="text-xs text-gray-400 mt-1.5">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {{-- Tanggal Pinjam --}}
+                        <div>
+                            <div class="relative">
+                                <i class="fas fa-calendar-alt absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                                <input type="date" 
+                                       name="borrow_date" 
+                                       id="borrowDateInput"
+                                       value="{{ old('borrow_date', now()->format('Y-m-d')) }}" 
+                                       required
+                                       min="{{ now()->format('Y-m-d') }}"
+                                       class="w-full pl-10 pr-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition">
+                            </div>
+                            @error('borrow_date') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                        </div>
+
+                        {{-- 🔥 Jam Pinjam (Dropdown 24 Jam) --}}
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="relative flex-1">
+                                    <i class="fas fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none z-10"></i>
+                                    <select name="borrow_hour" id="borrowHourInput" required
+                                            class="w-full pl-9 pr-8 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition appearance-none bg-white cursor-pointer">
+                                        @for ($h = 0; $h <= 23; $h++)
+                                            @php $val = str_pad($h, 2, '0', STR_PAD_LEFT); @endphp
+                                            <option value="{{ $val }}" {{ old('borrow_hour', now()->format('H')) == $val ? 'selected' : '' }}>
+                                                {{ $val }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                                </div>
+                                <span class="text-gray-400 font-bold text-lg select-none">:</span>
+                                <div class="relative flex-1">
+                                    <select name="borrow_minute" id="borrowMinuteInput" required
+                                            class="w-full px-3 pr-8 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition appearance-none bg-white cursor-pointer">
+                                        @for ($m = 0; $m <= 59; $m++)
+                                            @php $val = str_pad($m, 2, '0', STR_PAD_LEFT); @endphp
+                                            <option value="{{ $val }}" {{ old('borrow_minute', now()->format('i')) == $val ? 'selected' : '' }}>
+                                                {{ $val }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-1">Format 24 jam: 00:00 – 23:59</p>
+                            @error('borrow_hour') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                            @error('borrow_minute') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-2">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Pilih tanggal minimal besok
+                        Pilih <strong>tanggal & jam</strong> kapan mau ambil barang. Bisa hari ini atau besok/lusa.
+                    </p>
+                </div>
+
+                {{-- ============================================================ --}}
+                {{-- 🔥 TENGGAT KEMBALI — Tanggal + Jam                          --}}
+                {{-- ============================================================ --}}
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-700">
+                        <i class="fas fa-calendar-check text-brand-500 mr-1.5"></i>
+                        Tenggat Pengembalian <span class="text-red-500">*</span>
+                    </label>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {{-- Tanggal Kembali --}}
+                        <div>
+                            <div class="relative">
+                                <i class="fas fa-calendar-alt absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                                <input type="date" 
+                                       name="expected_return_date" 
+                                       id="returnDateInput"
+                                       value="{{ old('expected_return_date', now()->format('Y-m-d')) }}" 
+                                       required
+                                       min="{{ now()->format('Y-m-d') }}"
+                                       class="w-full pl-10 pr-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition">
+                            </div>
+                            @error('expected_return_date') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                        </div>
+
+                        {{-- 🔥 Jam Kembali (Dropdown 24 Jam) --}}
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="relative flex-1">
+                                    <i class="fas fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none z-10"></i>
+                                    <select name="return_hour" id="returnHourInput" required
+                                            class="w-full pl-9 pr-8 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition appearance-none bg-white cursor-pointer">
+                                        @for ($h = 0; $h <= 23; $h++)
+                                            @php $val = str_pad($h, 2, '0', STR_PAD_LEFT); @endphp
+                                            <option value="{{ $val }}" {{ old('return_hour', '15') == $val ? 'selected' : '' }}>
+                                                {{ $val }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                                </div>
+                                <span class="text-gray-400 font-bold text-lg select-none">:</span>
+                                <div class="relative flex-1">
+                                    <select name="return_minute" id="returnMinuteInput" required
+                                            class="w-full px-3 pr-8 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition appearance-none bg-white cursor-pointer">
+                                        @for ($m = 0; $m <= 59; $m++)
+                                            @php $val = str_pad($m, 2, '0', STR_PAD_LEFT); @endphp
+                                            <option value="{{ $val }}" {{ old('return_minute', '00') == $val ? 'selected' : '' }}>
+                                                {{ $val }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-1">Format 24 jam: 00:00 – 23:59</p>
+                            @error('return_hour') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                            @error('return_minute') 
+                                <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                                </p> 
+                            @enderror
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Bisa pilih <strong>tanggal yang sama</strong> kalau cuma pinjam beberapa jam (contoh: 18/09/2026 jam 10:00 → 18/09/2026 jam 12:00).
                     </p>
                 </div>
 
@@ -189,6 +355,10 @@
                                 Status akan berubah menjadi <span class="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">approved</span> 
                                 setelah disetujui.
                             </p>
+                            <p class="mt-2 flex items-start gap-1.5">
+                                <i class="fas fa-clock mt-0.5 text-blue-500"></i>
+                                <span>Pastikan barang dikembalikan <strong>sebelum tenggat</strong> yang kamu pilih.</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -211,3 +381,61 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // ============================================================
+    // 🔥 LIVE CLOCK — Sinkron dengan waktu server (WIB)
+    // ============================================================
+    (function () {
+        const serverTimeStr = "{{ now()->format('Y-m-d\TH:i:s') }}";
+        const serverTime    = new Date(serverTimeStr).getTime();
+        const clientTime    = Date.now();
+        const offset        = serverTime - clientTime;
+
+        const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+        function updateLiveClock() {
+            const now = new Date(Date.now() + offset);
+
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+
+            const tanggal = `${now.getDate()} ${NAMA_BULAN[now.getMonth()]} ${now.getFullYear()}`;
+
+            const clockEl = document.getElementById('liveClock');
+            const dateEl  = document.getElementById('liveDate');
+
+            if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
+            if (dateEl)  dateEl.textContent  = tanggal;
+        }
+
+        updateLiveClock();
+        setInterval(updateLiveClock, 1000);
+    })();
+
+    // ============================================================
+    // 🔥 AUTO-SYNC TANGGAL — min return_date = borrow_date (boleh sama)
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function () {
+        const borrowDateInput = document.getElementById('borrowDateInput');
+        const returnDateInput = document.getElementById('returnDateInput');
+
+        if (borrowDateInput && returnDateInput) {
+            borrowDateInput.addEventListener('change', function () {
+                const borrow = this.value;
+                if (!borrow) return;
+
+                // 🔥 Min return_date = borrow_date (boleh sama, untuk pinjam beberapa jam)
+                returnDateInput.min = borrow;
+
+                // Kalau return_date sekarang < borrow_date, auto-update
+                if (returnDateInput.value && returnDateInput.value < borrow) {
+                    returnDateInput.value = borrow;
+                }
+            });
+        }
+    });
+</script>
+@endpush

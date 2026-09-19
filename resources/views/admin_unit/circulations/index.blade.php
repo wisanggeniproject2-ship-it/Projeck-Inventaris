@@ -74,13 +74,48 @@
                                 {{ $circulation->item->unit->name }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
-                        <td class="px-6 py-4 text-sm">
-                            {{ $circulation->expected_return_date->format('d/m/Y') }}
+
+                        {{-- 🔥 Tanggal Pinjam: sekarang tampil jam juga --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm">
+                                <i class="fas fa-calendar-alt text-gray-400 text-xs mr-1"></i>
+                                {{ $circulation->borrow_date->format('d/m/Y') }}
+                            </div>
+                            <div class="text-xs text-gray-500 mt-0.5">
+                                <i class="fas fa-clock text-gray-400 text-[10px] mr-1"></i>
+                                {{ $circulation->borrow_date->format('H:i') }}
+                            </div>
+                        </td>
+
+                        {{-- 🔥 Tenggat: tanggal + jam + nama peminjam + badge TERLAMBAT --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{-- Tanggal --}}
+                            <div class="text-sm font-medium text-gray-800">
+                                <i class="fas fa-calendar-alt text-gray-400 text-xs mr-1"></i>
+                                {{ $circulation->expected_return_date->format('d/m/Y') }}
+                            </div>
+                            
+                            {{-- Jam --}}
+                            <div class="text-xs text-gray-600 mt-0.5">
+                                <i class="fas fa-clock text-gray-400 text-[10px] mr-1"></i>
+                                Jam {{ $circulation->expected_return_date->format('H:i') }}
+                            </div>
+
+                            {{-- Peminjam (siapa yang tenggat) --}}
+                            <div class="text-xs text-gray-500 mt-1">
+                                <i class="fas fa-user text-gray-400 text-[10px] mr-1"></i>
+                                {{ $circulation->borrower_name }}
+                            </div>
+
+                            {{-- Status terlambat --}}
                             @if($circulation->status == 'approved' && $circulation->expected_return_date < now())
-                                <span class="text-red-500 text-xs block font-bold">⚠️ Terlambat!</span>
+                                <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 border border-red-200">
+                                    <i class="fas fa-exclamation-triangle text-[9px]"></i>
+                                    TERLAMBAT
+                                </span>
                             @endif
                         </td>
+
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs rounded-full
                                 {{ $circulation->status == 'approved' ? 'bg-green-100 text-green-700' : 

@@ -5,15 +5,22 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Circulation;
 use App\Models\Item;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class CirculationController extends Controller
 {
-    public function __construct()
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
     {
-        // HAPUS: $this->middleware('role:super_admin');
+        $this->notificationService = $notificationService;
+        // Middleware sudah di-handle di routes/web.php (role:super_admin)
     }
 
+    /**
+     * 📋 DAFTAR SIRKULASI
+     */
     public function index(Request $request)
     {
         $query = Circulation::with(['item', 'user', 'approver']);
@@ -27,12 +34,18 @@ class CirculationController extends Controller
         return view('admin.circulations.index', compact('circulations'));
     }
 
+    /**
+     * 👁️ DETAIL SIRKULASI
+     */
     public function show(Circulation $circulation)
     {
         $circulation->load(['item', 'user', 'approver']);
         return view('admin.circulations.show', compact('circulation'));
     }
 
+    /**
+     * ✅ APPROVE — setujui peminjaman (pending → approved)
+     */
     public function approve(Circulation $circulation)
     {
         if (!$circulation->isPending()) {
@@ -41,6 +54,10 @@ class CirculationController extends Controller
         
         // 🔥 CEK STOK BARANG
         $item = $circulation->item;
+        if (!$item) {
+            return back()->with('error', 'Barang tidak ditemukan.');
+        }
+        
         if ($item->stock <= 0) {
             return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
         }
@@ -49,16 +66,21 @@ class CirculationController extends Controller
         $item->decreaseStock(1);
         
         // Update status sirkulasi
-        $circulation->status = 'approved';
+        $circulation->status      = 'approved';
         $circulation->approved_by = auth()->id();
         $circulation->approved_at = now();
         $circulation->save();
+
+        // 🔔 Notifikasi ke user
+        if (method_exists($this->notificationService, 'sendCirculationNotification')) {
+            $this->notificationService->sendCirculationNotification($circulation, 'approved');
+        }
         
-        return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->stock);
+        return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->fresh()->stock);
     }
 
     /**
-     * 🔥 REJECT — dengan alasan penolakan
+     * ❌ REJECT — tolak peminjaman dengan alasan (pending → rejected)
      */
     public function reject(Request $request, Circulation $circulation)
     {
@@ -80,11 +102,21 @@ class CirculationController extends Controller
         $circulation->rejection_reason = $request->rejection_reason;
         $circulation->rejected_at      = now();
         $circulation->save();
+
+        // 🔔 Notifikasi ke user
+        if (method_exists($this->notificationService, 'sendCirculationNotification')) {
+            $this->notificationService->sendCirculationNotification($circulation, 'rejected');
+        }
         
-        // 🔥 STATUS BARANG TETAP AVAILABLE
         return back()->with('success', 'Peminjaman berhasil ditolak.');
     }
 
+    /**
+     * 📦 MARK RETURNED — langsung tandai barang kembali (approved → returned)
+     * 
+     * ⚠️ Ini untuk SKENARIO: admin lihat barang sudah dibawa user kembali
+     *    dan langsung tandai. Tidak perlu user klik "Ajukan Pengembalian" dulu.
+     */
     public function markReturned(Circulation $circulation)
     {
         if (!$circulation->isApproved()) {
@@ -93,13 +125,64 @@ class CirculationController extends Controller
         
         // 🔥 TAMBAHKAN STOK KEMBALI
         $item = $circulation->item;
+        if (!$item) {
+            return back()->with('error', 'Barang tidak ditemukan.');
+        }
+        
         $item->increaseStock(1);
         
         // Update status sirkulasi
-        $circulation->status = 'returned';
-        $circulation->return_date = now();
+        $circulation->status              = 'returned';
+        $circulation->return_date         = now();
+        $circulation->return_confirmed_by = auth()->id();
+        $circulation->return_confirmed_at = now();
         $circulation->save();
+
+        // 🔔 Notifikasi ke user
+        if (method_exists($this->notificationService, 'sendCirculationNotification')) {
+            $this->notificationService->sendCirculationNotification($circulation, 'returned');
+        }
         
-        return back()->with('success', 'Barang berhasil dikembalikan! Stok sekarang: ' . $item->stock);
+        return back()->with('success', 'Barang berhasil dikembalikan! Stok sekarang: ' . $item->fresh()->stock);
+    }
+
+    /**
+     * 🔥🔥🔥 CONFIRM RETURN — konfirmasi pengembalian (return_pending → returned)
+     * 
+     * ⚠️ INI YANG HILANG SEBELUMNYA!
+     * 
+     * Alur:
+     *   1. User klik "Ajukan Pengembalian" → status jadi 'return_pending'
+     *   2. Admin/super_admin klik "Konfirmasi Pengembalian" (method INI) → status jadi 'returned'
+     *   3. Stok barang kembali bertambah
+     */
+    public function confirmReturn(Circulation $circulation)
+    {
+        // Hanya bisa konfirmasi kalau status return_pending
+        if ($circulation->status !== 'return_pending') {
+            return back()->with('error', 'Hanya pengembalian yang menunggu konfirmasi yang bisa diproses.');
+        }
+
+        $item = $circulation->item;
+        if (!$item) {
+            return back()->with('error', 'Barang tidak ditemukan.');
+        }
+
+        // 🔥 TAMBAHKAN STOK KEMBALI
+        $item->increaseStock(1);
+
+        // 🔥 Update status + isi return_date & return_confirmed_at
+        $circulation->status              = 'returned';
+        $circulation->return_date         = now();
+        $circulation->return_confirmed_by = auth()->id();
+        $circulation->return_confirmed_at = now();
+        $circulation->save();
+
+        // 🔔 Notifikasi ke user
+        if (method_exists($this->notificationService, 'sendCirculationNotification')) {
+            $this->notificationService->sendCirculationNotification($circulation, 'returned');
+        }
+
+        return back()->with('success', 'Pengembalian berhasil dikonfirmasi! Stok barang sekarang: ' . $item->fresh()->stock);
     }
 }

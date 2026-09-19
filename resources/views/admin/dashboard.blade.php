@@ -59,6 +59,18 @@
     $hasTrendData = isset($chartTrend);
 
     $hasUnitBreakdown = isset($unitBreakdown) && count($unitBreakdown) > 0;
+
+    // ============================================================
+    // 🔥 TENGGAT HARI INI — query langsung di blade (tanpa ubah controller)
+    // ============================================================
+    $todayDeadlines = collect();
+    if (class_exists(\App\Models\Circulation::class)) {
+        $todayDeadlines = \App\Models\Circulation::with(['item', 'user'])
+            ->where('status', 'approved')
+            ->whereDate('expected_return_date', now()->toDateString())
+            ->orderBy('expected_return_date', 'asc')
+            ->get();
+    }
 @endphp
 
 {{-- ============================================================ --}}
@@ -177,6 +189,25 @@
         0%, 100% { transform: translate(0, 0) scale(1); }
         50%      { transform: translate(-10px, 10px) scale(1.1); }
     }
+
+    /* 🔥 Icon jam di card tenggat — tick animation */
+    @keyframes tick {
+        0%, 100% { transform: rotate(0deg); }
+        25%      { transform: rotate(-8deg); }
+        75%      { transform: rotate(8deg); }
+    }
+    .clock-tick {
+        animation: tick 2s ease-in-out infinite;
+    }
+
+    /* 🔥 Pulse halus untuk card tenggat */
+    .deadline-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .deadline-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px -10px rgba(245, 158, 11, 0.4);
+    }
 </style>
 @endpush
 
@@ -286,6 +317,69 @@
             <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-0.5 tracking-tight">{{ number_format($totalUsers) }}</p>
         </div>
     </div>
+
+    {{-- ============================================================ --}}
+    {{-- 🔥 CARD: TENGGAT PENGEMBALIAN HARI INI                       --}}
+    {{-- ============================================================ --}}
+    @if($todayDeadlines->count() > 0)
+    <div class="card-elevated deadline-card p-4 sm:p-5 mb-5 sm:mb-6 animate-fadeInUp border-l-4 border-l-amber-500">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <i class="fas fa-clock text-amber-600 text-sm clock-tick"></i>
+                </span>
+                Tenggat Pengembalian Hari Ini
+                <span class="ml-1 px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full bg-amber-500 text-white">
+                    {{ $todayDeadlines->count() }}
+                </span>
+            </h3>
+            <span class="text-[10px] sm:text-xs text-gray-400 hidden sm:block">{{ now()->format('d F Y') }}</span>
+        </div>
+
+        <div class="space-y-2 max-h-60 overflow-y-auto thin-scroll pr-1">
+            @foreach($todayDeadlines as $c)
+            @php
+                $isOverdue = $c->expected_return_date < now();
+            @endphp
+            <div class="flex items-center gap-3 p-3 rounded-xl border {{ $isOverdue ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100' }} transition hover:shadow-sm">
+                {{-- Jam --}}
+                <div class="shrink-0 text-center min-w-[52px]">
+                    <p class="text-base sm:text-lg font-bold {{ $isOverdue ? 'text-red-600' : 'text-amber-600' }} leading-none">
+                        {{ $c->expected_return_date->format('H:i') }}
+                    </p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">WIB</p>
+                </div>
+
+                {{-- Divider --}}
+                <div class="w-px h-10 {{ $isOverdue ? 'bg-red-200' : 'bg-gray-200' }}"></div>
+
+                {{-- Info --}}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">
+                        {{ $c->item->name ?? '-' }}
+                    </p>
+                    <p class="text-xs text-gray-500 truncate mt-0.5">
+                        <i class="fas fa-user text-[10px] mr-1"></i>{{ $c->borrower_name }}
+                    </p>
+                </div>
+
+                {{-- Status --}}
+                @if($isOverdue)
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white">
+                        <i class="fas fa-exclamation-triangle text-[9px]"></i>
+                        LEWAT
+                    </span>
+                @else
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-green-500 text-white">
+                        <i class="fas fa-check text-[9px]"></i>
+                        HARI INI
+                    </span>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     {{-- CHARTS + ACTIVITY --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
