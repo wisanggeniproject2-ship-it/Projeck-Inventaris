@@ -126,6 +126,26 @@
                 </a>
             </li>
 
+            {{-- 🔥 PENGAJUAN PENGHAPUSAN ASET --}}
+            <li>
+                @php $pendingDisposalCount = \App\Models\AssetDisposal::where('status', 'pending')->count(); @endphp
+                <a href="{{ route('super_admin.disposals.index') }}"
+                   class="menu-item group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all
+                          {{ request()->routeIs('super_admin.disposals.*')
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <span class="flex items-center gap-3">
+                        <i class="fas fa-trash-can w-5 text-center transition-colors"></i>
+                        <span class="text-sm font-medium transition-colors">Pengajuan Aset</span>
+                    </span>
+                    @if($pendingDisposalCount > 0)
+                        <span class="bg-red-500 text-white text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center animate-pulse">
+                            {{ $pendingDisposalCount }}
+                        </span>
+                    @endif
+                </a>
+            </li>
+
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Sistem</li>
 
             <li>
@@ -215,6 +235,28 @@
                                 : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
                     <i class="fas fa-clock-rotate-left w-5 text-center transition-colors"></i>
                     <span class="text-sm font-medium transition-colors">Riwayat Peminjaman</span>
+                </a>
+            </li>
+
+            {{-- 🔥 PENGAJUAN ASET (PENGHAPUSAN BARANG RUSAK) --}}
+            <li>
+                <a href="{{ route('user.disposals.create') }}"
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                          {{ request()->routeIs('user.disposals.create')
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-trash-can w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Ajukan Penghapusan</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('user.disposals.index') }}"
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                          {{ request()->routeIs('user.disposals.index')
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-clipboard-list w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Riwayat Pengajuan</span>
                 </a>
             </li>
 
@@ -320,7 +362,7 @@
 
     </nav>
 
-    <!-- USER + LOGOUT -->
+    <!-- USER + PROFIL + LOGOUT -->
     <div class="relative z-10 p-4 border-t border-white/10">
         <div class="flex items-center gap-3 px-1 pb-3">
             <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -331,6 +373,16 @@
                 <p class="text-[11px] text-teal-200 truncate">{{ ucfirst(str_replace('_', ' ', $role)) }}</p>
             </div>
         </div>
+
+        <a href="{{ route('profile.edit') }}"
+           class="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all mb-1
+                  {{ request()->routeIs('profile.edit')
+                        ? 'bg-white/20 text-orange-400'
+                        : 'text-teal-100 hover:bg-white/15 hover:text-white' }}">
+            <i class="fas fa-user w-5 text-center"></i>
+            <span class="text-sm font-medium">Profil Saya</span>
+        </a>
+
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit"

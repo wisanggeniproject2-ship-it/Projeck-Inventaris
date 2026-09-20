@@ -137,6 +137,85 @@
         </div>
     </div>
 
+    <!-- Informasi Penyusutan Aset -->
+    <div class="mt-6 bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-300">
+        <div class="flex items-center gap-2 mb-5">
+            <div class="bg-teal-100 text-teal-600 p-2 rounded-lg">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="font-semibold text-lg">Penyusutan Aset</h3>
+        </div>
+
+        @if($item->price && $item->purchase_date)
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+                <!-- Nilai Buku -->
+                <div class="group relative bg-green-50 border border-green-100 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-green-700 uppercase tracking-wide">Nilai Buku Saat Ini</span>
+                        <i class="fas fa-wallet text-green-400 group-hover:scale-110 transition-transform"></i>
+                    </div>
+                    <p class="font-bold text-2xl text-green-600">
+                        Rp {{ number_format($item->getBookValue(), 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <!-- Akumulasi Penyusutan -->
+                <div class="group relative bg-red-50 border border-red-100 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-red-700 uppercase tracking-wide">Akumulasi Penyusutan</span>
+                        <i class="fas fa-arrow-trend-down text-red-400 group-hover:scale-110 transition-transform"></i>
+                    </div>
+                    <p class="font-bold text-2xl text-red-500">
+                        Rp {{ number_format($item->getAccumulatedDepreciation(), 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <!-- Penyusutan per Tahun -->
+                <div class="group relative bg-blue-50 border border-blue-100 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-blue-700 uppercase tracking-wide">Penyusutan / Tahun</span>
+                        <i class="fas fa-calendar text-blue-400 group-hover:scale-110 transition-transform"></i>
+                    </div>
+                    <p class="font-bold text-2xl text-blue-600">
+                        Rp {{ number_format($item->getAnnualDepreciation(), 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="bg-gray-50 rounded-xl p-4">
+                <div class="mb-2 flex justify-between items-center text-sm">
+                    <span class="font-medium text-gray-600">Progres Penyusutan</span>
+                    <span class="font-bold {{ $item->isFullyDepreciated() ? 'text-red-500' : 'text-teal-600' }}">
+                        {{ $item->getDepreciationPercentage() }}%
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div class="h-3 rounded-full transition-all duration-700 ease-out {{ $item->isFullyDepreciated() ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-teal-400 to-teal-600' }}"
+                         style="width: {{ min($item->getDepreciationPercentage(), 100) }}%"></div>
+                </div>
+
+                <p class="text-xs text-gray-400 mt-3 flex items-center gap-1.5">
+                    <i class="fas fa-circle-info"></i>
+                    Masa manfaat kategori "{{ $item->category->name }}": {{ $item->getUsefulLifeYears() }} tahun.
+                    @if($item->isFullyDepreciated())
+                        <span class="text-red-500 font-medium ml-1">
+                            <i class="fas fa-triangle-exclamation"></i> Barang ini sudah melewati masa manfaatnya.
+                        </span>
+                    @endif
+                </p>
+            </div>
+        @else
+            <div class="text-center py-6">
+                <i class="fas fa-circle-info text-gray-300 text-3xl mb-2"></i>
+                <p class="text-gray-400 text-sm">
+                    Data penyusutan tidak dapat dihitung karena harga atau tanggal pembelian belum diisi.
+                </p>
+            </div>
+        @endif
+    </div>
+
     <!-- Riwayat Peminjaman -->
     <div class="mt-6 bg-white rounded-lg shadow p-6">
         <h3 class="font-semibold text-lg mb-4">Riwayat Peminjaman</h3>

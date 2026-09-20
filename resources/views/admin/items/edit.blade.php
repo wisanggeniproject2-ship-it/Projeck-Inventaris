@@ -73,9 +73,13 @@
                     <label class="block text-sm font-medium mb-2">Harga</label>
                     <div class="relative">
                         <span class="absolute left-3 top-2 text-gray-500">Rp</span>
-                        <input type="number" name="price" value="{{ old('price', $item->price) }}" step="0.01"
-                               class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <input type="text" inputmode="numeric" id="price_display"
+                               value="{{ old('price', $item->price ? number_format($item->price, 0, ',', '.') : '') }}"
+                               class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="0" autocomplete="off">
+                        <input type="hidden" name="price" id="price_raw" value="{{ old('price', $item->price) }}">
                     </div>
+                    <p class="text-xs text-gray-400 mt-1">Contoh: ketik <strong>130000</strong> untuk Rp 130.000</p>
                     @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -156,4 +160,22 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const display = document.getElementById('price_display');
+    const raw = document.getElementById('price_raw');
+
+    function formatRupiah(digitsOnly) {
+        if (!digitsOnly) return '';
+        return new Intl.NumberFormat('id-ID').format(parseInt(digitsOnly, 10));
+    }
+
+    display.addEventListener('input', function () {
+        const digits = display.value.replace(/\D/g, ''); // buang semua selain angka
+        display.value = formatRupiah(digits);
+        raw.value = digits;
+    });
+});
+</script>
 @endsection

@@ -51,6 +51,16 @@ class Item extends Model
         return $this->belongsTo(FundingSource::class);
     }
 
+    public function disposals()
+    {
+        return $this->hasMany(AssetDisposal::class);
+    }
+
+    public function activeDisposalRequest()
+    {
+        return $this->hasOne(AssetDisposal::class)->where('status', 'pending')->latest();
+    }
+
     // ==================== STATUS METHODS ====================
     
     // CEK APAKAH BARANG BISA DIPINJAM
@@ -69,6 +79,18 @@ class Item extends Model
     public function isLocked()
     {
         return $this->status === 'borrowed' || $this->status === 'maintenance' || $this->stock <= 0;
+    }
+
+    // CEK APAKAH BARANG SUDAH DIHAPUS/DINONAKTIFKAN
+    public function isDisposed()
+    {
+        return $this->status === 'disposed';
+    }
+
+    // CEK APAKAH BARANG SEDANG ADA PENGAJUAN PENGHAPUSAN YANG MASIH PENDING
+    public function hasPendingDisposalRequest()
+    {
+        return $this->disposals()->where('status', 'pending')->exists();
     }
 
     // ==================== STOK METHODS ====================
@@ -206,6 +228,98 @@ class Item extends Model
             9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
         ];
         return $romanMonths[$month] ?? 'I';
+    }
+
+    // ==================== PENYUSUTAN ASET ====================
+
+    /**
+     * Masa manfaat (tahun) diambil dari kategori barang.
+     */
+    public function getUsefulLifeYears()
+    {
+        return $this->category->useful_life_years ?? 5;
+    }
+
+    /**
+     * Penyusutan per tahun (metode garis lurus, nilai sisa = 0).
+     * Rumus: Harga Beli / Masa Manfaat
+     */
+    public function getAnnualDepreciation()
+    {
+        if (!$this->price || !$this->purchase_date) {
+            return 0;
+        }
+
+        $usefulLife = $this->getUsefulLifeYears();
+        if ($usefulLife <= 0) {
+            return 0;
+        }
+
+        return round($this->price / $usefulLife, 2);
+    }
+
+    /**
+     * Jumlah tahun sejak tanggal beli (bisa pecahan, dihitung proporsional).
+     */
+    public function getYearsInUse()
+    {
+        if (!$this->purchase_date) {
+            return 0;
+        }
+
+        $years = $this->purchase_date->diffInDays(now()) / 365;
+        return max(0, $years);
+    }
+
+    /**
+     * Total penyusutan yang sudah berjalan (akumulasi).
+     * Tidak akan melebihi harga beli.
+     */
+    public function getAccumulatedDepreciation()
+    {
+        if (!$this->price || !$this->purchase_date) {
+            return 0;
+        }
+
+        $usefulLife = $this->getUsefulLifeYears();
+        $yearsInUse = min($this->getYearsInUse(), $usefulLife); // gak lewat masa manfaat
+        $accumulated = $this->getAnnualDepreciation() * $yearsInUse;
+
+        return round(min($accumulated, $this->price), 2);
+    }
+
+    /**
+     * Nilai buku saat ini (Harga Beli - Akumulasi Penyusutan).
+     * Minimal Rp 0.
+     */
+    public function getBookValue()
+    {
+        if (!$this->price) {
+            return 0;
+        }
+
+        $bookValue = $this->price - $this->getAccumulatedDepreciation();
+        return round(max($bookValue, 0), 2);
+    }
+
+    /**
+     * Persentase penyusutan yang sudah terjadi (0-100%).
+     */
+    public function getDepreciationPercentage()
+    {
+        if (!$this->price || $this->price <= 0) {
+            return 0;
+        }
+
+        return round(($this->getAccumulatedDepreciation() / $this->price) * 100, 1);
+    }
+
+    /**
+     * Cek apakah barang sudah habis masa manfaatnya.
+     */
+    public function isFullyDepreciated()
+    {
+        return $this->getYearsInUse() >= $this->getUsefulLifeYears();
     }
 
     // ==================== GETTER ====================

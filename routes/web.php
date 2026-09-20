@@ -74,6 +74,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     Route::post('/logout', function (Request $request) {
@@ -165,6 +166,16 @@ Route::middleware(['auth', 'role:super_admin'])
         // 🔥 FITUR NILAI ASET
         // ============================================================
         Route::get('assets', [\App\Http\Controllers\Admin\AssetController::class, 'index'])->name('assets.index');
+
+        // ============================================================
+        // 🔥 PENGAJUAN PENGHAPUSAN ASET
+        // ⚠️ URUTAN PENTING: route statis ('index') aman di sini karena
+        //    tidak ada bentrok dengan '{disposal}' yang pakai model binding.
+        // ============================================================
+        Route::get('disposals', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'index'])->name('disposals.index');
+        Route::get('disposals/{disposal}', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'show'])->name('disposals.show');
+        Route::post('disposals/{disposal}/approve', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'approve'])->name('disposals.approve');
+        Route::post('disposals/{disposal}/reject', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'reject'])->name('disposals.reject');
         
         // Manajemen User
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);

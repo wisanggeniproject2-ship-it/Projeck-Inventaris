@@ -10,7 +10,7 @@ class Notification extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'circulation_id', 'title', 'message', 'type', 'status', 'read_at'
+        'user_id', 'circulation_id', 'disposal_id', 'title', 'message', 'type', 'status', 'read_at'
     ];
 
     protected $casts = [
@@ -25,6 +25,11 @@ class Notification extends Model
     public function circulation()
     {
         return $this->belongsTo(Circulation::class);
+    }
+
+    public function disposal()
+    {
+        return $this->belongsTo(AssetDisposal::class, 'disposal_id');
     }
 
     // ==================== SCOPES ====================

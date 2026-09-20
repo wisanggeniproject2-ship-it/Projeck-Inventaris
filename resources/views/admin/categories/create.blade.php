@@ -31,6 +31,15 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium mb-2">Masa Manfaat (Tahun) *</label>
+                    <input type="number" name="useful_life_years" value="{{ old('useful_life_years', 5) }}" required min="1" max="50"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Contoh: 4">
+                    <p class="text-xs text-gray-400 mt-1">Umur ekonomis barang untuk perhitungan penyusutan nilai aset.</p>
+                    @error('useful_life_years') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium mb-2">Deskripsi</label>
                     <textarea name="description" rows="3" 
                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

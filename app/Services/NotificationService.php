@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\Circulation;
+use App\Models\AssetDisposal;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -23,6 +24,25 @@ class NotificationService
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to create notification: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    // ==================== 🔥 CREATE NOTIFICATION UNTUK PENGAJUAN ASET ====================
+    public function createDisposalNotification($userId, $disposalId, $title, $message, $type = 'info')
+    {
+        try {
+            return Notification::create([
+                'user_id' => $userId,
+                'circulation_id' => null,
+                'disposal_id' => $disposalId,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'status' => 'unread',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create disposal notification: ' . $e->getMessage());
             return null;
         }
     }
@@ -80,12 +100,76 @@ class NotificationService
         }
     }
 
+    // ==================== 🔥 SEND NOTIFICATION FOR ASSET DISPOSAL ====================
+    /**
+     * Kirim notifikasi soal pengajuan penghapusan aset.
+     *
+     * $action:
+     * - 'pending'  → kirim ke SEMUA Super Admin (ada pengajuan baru menunggu konfirmasi)
+     * - 'approved' → kirim ke User yang mengajukan (pengajuan disetujui, barang dihapus)
+     * - 'rejected' → kirim ke User yang mengajukan (pengajuan ditolak)
+     */
+    public function sendDisposalNotification(AssetDisposal $disposal, $action)
+    {
+        $itemName = $disposal->item->name ?? 'Barang';
+
+        if ($action === 'pending') {
+            // Notif ke semua Super Admin
+            $superAdmins = User::where('role', 'super_admin')->get();
+
+            foreach ($superAdmins as $admin) {
+                $this->createDisposalNotification(
+                    $admin->id,
+                    $disposal->id,
+                    'Pengajuan Penghapusan Aset Baru',
+                    ($disposal->user->name ?? 'User') . ' mengajukan penghapusan barang "' . $itemName . '" karena: ' . $disposal->reason,
+                    'disposal_pending'
+                );
+            }
+            return;
+        }
+
+        if ($action === 'approved') {
+            $this->createDisposalNotification(
+                $disposal->user_id,
+                $disposal->id,
+                'Pengajuan Penghapusan Disetujui',
+                'Pengajuan penghapusan barang "' . $itemName . '" telah disetujui dan barang sudah dihapus dari daftar aset.',
+                'disposal_approved'
+            );
+
+            // 🔥 Notif monitoring balik ke semua Super Admin (termasuk yang approve)
+            $superAdmins = User::where('role', 'super_admin')->get();
+            foreach ($superAdmins as $admin) {
+                $this->createDisposalNotification(
+                    $admin->id,
+                    $disposal->id,
+                    'Aset Dihapus',
+                    'Barang "' . $itemName . '" telah dihapus dari sistem karena rusak (disetujui oleh ' . (auth()->user()->name ?? 'Super Admin') . ').',
+                    'disposal_info'
+                );
+            }
+            return;
+        }
+
+        if ($action === 'rejected') {
+            $this->createDisposalNotification(
+                $disposal->user_id,
+                $disposal->id,
+                'Pengajuan Penghapusan Ditolak',
+                'Pengajuan penghapusan barang "' . $itemName . '" ditolak. Alasan: ' . ($disposal->rejection_reason ?? '-'),
+                'disposal_rejected'
+            );
+            return;
+        }
+    }
+
     // ==================== GET UNREAD NOTIFICATIONS ====================
     public function getUnreadNotifications($userId)
     {
         return Notification::where('user_id', $userId)
             ->where('status', 'unread')
-            ->with('circulation.item')
+            ->with(['circulation.item', 'disposal.item'])
             ->latest()
             ->get();
     }

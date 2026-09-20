@@ -208,6 +208,8 @@
                 $ribbonColor    = 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)';
                 $glowColor      = 'rgba(239, 68, 68, 0.4)';
             }
+
+            $hasPendingDisposal = $item->hasPendingDisposalRequest();
         @endphp
 
         {{-- 🔥 CARD dengan animasi baru --}}
@@ -234,6 +236,15 @@
                         {{ $statusBadge }}
                     </span>
                 </div>
+
+                @if($hasPendingDisposal)
+                <div class="absolute top-4 left-3 z-10">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full text-white shadow-lg ring-2 ring-white/40 backdrop-blur-sm bg-gradient-to-r from-orange-500 to-red-500 animate-pulse">
+                        <i class="fas fa-trash-can text-[10px]"></i>
+                        Diajukan Hapus
+                    </span>
+                </div>
+                @endif
 
                 @if($isBorrowed || $isStockEmpty)
                     <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">

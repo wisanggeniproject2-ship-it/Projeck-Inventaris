@@ -20,6 +20,7 @@ class CategoryRequest extends FormRequest
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:50|unique:categories,code,' . $id,
             'description' => 'nullable|string',
+            'useful_life_years' => 'required|integer|min:1|max:50',
         ];
     }
 }

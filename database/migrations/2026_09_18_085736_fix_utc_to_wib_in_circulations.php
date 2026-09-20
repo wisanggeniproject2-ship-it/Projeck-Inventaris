@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -35,9 +36,13 @@ return new class extends Migration
                        SET rejected_at = DATE_ADD(rejected_at, INTERVAL 7 HOUR) 
                        WHERE rejected_at IS NOT NULL");
 
-        DB::statement("UPDATE circulations 
-                       SET return_confirmed_at = DATE_ADD(return_confirmed_at, INTERVAL 7 HOUR) 
-                       WHERE return_confirmed_at IS NOT NULL");
+        // Kolom return_confirmed_at baru ditambahkan pada migration
+        // 2026_09_19_141212. Guard supaya tidak error saat migrate:fresh.
+        if (Schema::hasColumn('circulations', 'return_confirmed_at')) {
+            DB::statement("UPDATE circulations 
+                           SET return_confirmed_at = DATE_ADD(return_confirmed_at, INTERVAL 7 HOUR) 
+                           WHERE return_confirmed_at IS NOT NULL");
+        }
 
         DB::statement("UPDATE circulations 
                        SET created_at = DATE_ADD(created_at, INTERVAL 7 HOUR) 
@@ -75,9 +80,12 @@ return new class extends Migration
                        SET rejected_at = DATE_SUB(rejected_at, INTERVAL 7 HOUR) 
                        WHERE rejected_at IS NOT NULL");
 
-        DB::statement("UPDATE circulations 
-                       SET return_confirmed_at = DATE_SUB(return_confirmed_at, INTERVAL 7 HOUR) 
-                       WHERE return_confirmed_at IS NOT NULL");
+        // Guard yang sama untuk rollback
+        if (Schema::hasColumn('circulations', 'return_confirmed_at')) {
+            DB::statement("UPDATE circulations 
+                           SET return_confirmed_at = DATE_SUB(return_confirmed_at, INTERVAL 7 HOUR) 
+                           WHERE return_confirmed_at IS NOT NULL");
+        }
 
         DB::statement("UPDATE circulations 
                        SET created_at = DATE_SUB(created_at, INTERVAL 7 HOUR) 

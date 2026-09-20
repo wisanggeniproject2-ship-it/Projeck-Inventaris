@@ -208,7 +208,10 @@
                                 </p>
                             @endif
                         </div>
-                        <form method="POST" action="{{ route('logout') }}" class="border-t border-gray-100 mt-1">
+                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition border-t border-gray-100">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>Profil Saya
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-gray-50 transition">
                                 <i class="fas fa-arrow-right-from-bracket mr-2"></i>Logout

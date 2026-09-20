@@ -3,6 +3,7 @@
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\ItemController;
 use App\Http\Controllers\User\CirculationController;
+use App\Http\Controllers\User\AssetDisposalController;
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -25,3 +26,11 @@ Route::get('circulations/create', [CirculationController::class, 'create'])->nam
 Route::post('circulations', [CirculationController::class, 'store'])->name('circulations.store');
 Route::put('circulations/{circulation}/return', [CirculationController::class, 'returnItem'])->name('circulations.return');
 Route::put('circulations/{circulation}/request-return', [CirculationController::class, 'requestReturn'])->name('circulations.requestReturn');
+
+// ============================================================
+// 🔥 PENGAJUAN ASET (PENGHAPUSAN BARANG RUSAK)
+// ⚠️ URUTAN PENTING: 'create' HARUS sebelum route lain yang statis, aman di sini
+// ============================================================
+Route::get('disposals', [AssetDisposalController::class, 'index'])->name('disposals.index');
+Route::get('disposals/create', [AssetDisposalController::class, 'create'])->name('disposals.create');
+Route::post('disposals', [AssetDisposalController::class, 'store'])->name('disposals.store');
