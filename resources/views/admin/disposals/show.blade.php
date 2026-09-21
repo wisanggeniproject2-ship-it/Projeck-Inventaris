@@ -22,6 +22,11 @@
         </div>
 
         <div>
+            <label class="text-sm text-gray-500">Jumlah Unit Rusak</label>
+            <p class="font-bold">{{ $disposal->quantity }} unit</p>
+        </div>
+
+        <div>
             <label class="text-sm text-gray-500">Tanggal Pengajuan</label>
             <p>{{ $disposal->created_at->format('d/m/Y H:i') }}</p>
         </div>
@@ -31,6 +36,19 @@
             <p class="bg-gray-50 rounded-lg p-3 text-sm">{{ $disposal->reason }}</p>
         </div>
 
+        @if($disposal->photos && count($disposal->photos) > 0)
+        <div>
+            <label class="text-sm text-gray-500">Foto Bukti Kerusakan</label>
+            <div class="grid grid-cols-3 gap-2 mt-2">
+                @foreach($disposal->photos as $photo)
+                <a href="{{ \Storage::url($photo) }}" target="_blank">
+                    <img src="{{ \Storage::url($photo) }}" class="rounded-lg border object-cover w-full h-24 hover:opacity-80 transition">
+                </a>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <div>
             <label class="text-sm text-gray-500">Status</label>
             <p>
@@ -38,7 +56,7 @@
                     {{ $disposal->status == 'pending' ? 'bg-yellow-100 text-yellow-700' :
                        ($disposal->status == 'approved' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') }}">
                     {{ $disposal->status == 'pending' ? 'Menunggu Konfirmasi' :
-                       ($disposal->status == 'approved' ? 'Disetujui (Dihapus)' : 'Ditolak') }}
+                       ($disposal->status == 'approved' ? 'Disetujui (Stok Dikurangi)' : 'Ditolak') }}
                 </span>
             </p>
         </div>
@@ -47,7 +65,7 @@
             <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                 <i class="fas fa-circle-check mr-1"></i>
                 Disetujui oleh {{ $disposal->approver->name ?? '-' }} pada {{ $disposal->approved_at?->format('d/m/Y H:i') }}.
-                Barang sudah dihapus dari daftar aset.
+                Stok barang sudah dikurangi sebanyak {{ $disposal->quantity }} unit.
             </div>
         @elseif($disposal->status == 'rejected')
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
@@ -60,10 +78,10 @@
             <div class="pt-4 border-t space-y-4">
                 <!-- Tombol Approve -->
                 <form action="{{ route('super_admin.disposals.approve', $disposal) }}" method="POST"
-                      onsubmit="return confirm('Yakin mau setujui? Barang ini akan otomatis dihapus dari daftar aset.');">
+                      onsubmit="return confirm('Yakin mau setujui? {{ $disposal->quantity }} unit barang ini akan dikurangi dari stok.');">
                     @csrf
                     <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg transition">
-                        <i class="fas fa-check mr-2"></i>Setujui & Hapus Barang
+                        <i class="fas fa-check mr-2"></i>Setujui & Kurangi Stok
                     </button>
                 </form>
 

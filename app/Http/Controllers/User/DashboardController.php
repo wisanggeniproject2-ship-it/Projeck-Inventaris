@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Circulation;
 use App\Models\Unit;
+use App\Models\AssetDisposal;   // 🔥 TAMBAH INI
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -48,12 +49,20 @@ class DashboardController extends Controller
         
         // Ambil semua unit untuk filter
         $units = Unit::where('is_active', true)->get();
+
+        // 🔥 TAMBAH INI — pengajuan penghapusan terbaru milik user
+        $myDisposals = AssetDisposal::with('item')
+            ->where('user_id', $userId)
+            ->latest()
+            ->take(5)
+            ->get();
         
         return view('user.dashboard', compact(
             'availableItems', 
             'myCirculations', 
             'stats', 
-            'units'
+            'units',
+            'myDisposals'   // 🔥 TAMBAH INI
         ));
     }
 }

@@ -125,6 +125,71 @@
         </div>
     </div>
 
+    <!-- 🔥 WIDGET BARU: Pengajuan Kerusakan Terbaru -->
+    <div class="bg-white rounded-lg shadow mb-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h3 class="font-semibold text-lg">
+                <i class="fas fa-triangle-exclamation text-red-500 mr-2"></i>
+                Pengajuan Kerusakan Terbaru
+            </h3>
+            <a href="{{ route('user.disposals.index') }}" class="text-blue-500 hover:text-blue-700 text-sm">
+                Lihat Semua →
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            @if($myDisposals->count() > 0)
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alasan</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($myDisposals as $disposal)
+                    <tr class="border-t hover:bg-gray-50 transition">
+                        <td class="px-6 py-4">
+                            {{ $disposal->item->name ?? '-' }}
+                            <br>
+                            <small class="font-mono text-[10px] font-semibold break-all"
+                                   style="color: #0F6B5F;">
+                                {{ $disposal->item->full_code ?? $disposal->item->code ?? '-' }}
+                            </small>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-semibold">{{ $disposal->quantity }} unit</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                            {{ $disposal->reason }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ $disposal->created_at->format('d/m/Y H:i') }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {{ $disposal->status == 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                   ($disposal->status == 'approved' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') }}">
+                                {{ $disposal->status == 'pending' ? 'Menunggu' :
+                                   ($disposal->status == 'approved' ? 'Disetujui' : 'Ditolak') }}
+                            </span>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            @else
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-clipboard-check text-4xl mb-2 block"></i>
+                <p>Belum ada pengajuan kerusakan</p>
+                <a href="{{ route('user.disposals.create') }}" class="text-blue-500 hover:text-blue-700 mt-2 inline-block">
+                    Ajukan Penghapusan →
+                </a>
+            </div>
+            @endif
+        </div>
+    </div>
+
     <!-- Available Items from ALL UNITS -->
     <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b flex justify-between items-center">

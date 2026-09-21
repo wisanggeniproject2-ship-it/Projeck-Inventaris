@@ -34,6 +34,7 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diajukan Oleh</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alasan</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
@@ -48,6 +49,7 @@
                             <p class="font-medium">{{ $disposal->item->name ?? '-' }}</p>
                             <p class="text-xs text-gray-400 font-mono">{{ $disposal->item->code ?? '-' }}</p>
                         </td>
+                        <td class="px-4 py-3 text-sm font-semibold">{{ $disposal->quantity }} unit</td>
                         <td class="px-4 py-3 text-sm">{{ $disposal->user->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{{ $disposal->reason }}</td>
                         <td class="px-4 py-3 text-sm text-gray-500">{{ $disposal->created_at->format('d/m/Y H:i') }}</td>
@@ -56,7 +58,7 @@
                                 {{ $disposal->status == 'pending' ? 'bg-yellow-100 text-yellow-700' :
                                    ($disposal->status == 'approved' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') }}">
                                 {{ $disposal->status == 'pending' ? 'Menunggu Konfirmasi' :
-                                   ($disposal->status == 'approved' ? 'Disetujui (Dihapus)' : 'Ditolak') }}
+                                   ($disposal->status == 'approved' ? 'Disetujui (Stok Dikurangi)' : 'Ditolak') }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
@@ -68,7 +70,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                             Belum ada pengajuan penghapusan aset.
                         </td>
                     </tr>

@@ -20,24 +20,33 @@
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form action="{{ route('user.disposals.store') }}" method="POST">
+        <form action="{{ route('user.disposals.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">Pilih Barang *</label>
-                    <select name="item_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <select name="item_id" id="item_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                         <option value="">-- Pilih Barang --</option>
                         @foreach($items as $item)
-                        <option value="{{ $item->id }}"
+                        <option value="{{ $item->id }}" data-stock="{{ $item->stock }}"
                             {{ old('item_id', $selectedItem?->id) == $item->id ? 'selected' : '' }}
                             {{ $item->hasPendingDisposalRequest() ? 'disabled' : '' }}>
-                            {{ $item->name }} ({{ $item->code }})
+                            {{ $item->name }} ({{ $item->code }}) — Stok: {{ $item->stock }}
                             @if($item->hasPendingDisposalRequest()) — sudah ada pengajuan pending @endif
                         </option>
                         @endforeach
                     </select>
                     @error('item_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Jumlah Unit Rusak *</label>
+                    <input type="number" name="quantity" id="quantity" min="1"
+                           value="{{ old('quantity', 1) }}" required
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <p class="text-xs text-gray-400 mt-1" id="stock-hint">Pilih barang dulu untuk melihat stok tersedia.</p>
+                    @error('quantity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -47,6 +56,15 @@
                               placeholder="Jelaskan kondisi barang, misal: layar TV pecah dan tidak bisa menyala sama sekali.">{{ old('reason') }}</textarea>
                     <p class="text-xs text-gray-400 mt-1">Minimal 10 karakter, jelaskan kondisi barang sedetail mungkin.</p>
                     @error('reason') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Foto Bukti Kerusakan *</label>
+                    <input type="file" name="photos[]" multiple accept="image/*" required
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <p class="text-xs text-gray-400 mt-1">Boleh upload lebih dari 1 foto. Format JPG/PNG, maks 2MB per foto.</p>
+                    @error('photos') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    @error('photos.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
@@ -62,3 +80,28 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const itemSelect = document.getElementById('item_id');
+    const qtyInput = document.getElementById('quantity');
+    const stockHint = document.getElementById('stock-hint');
+
+    function updateStockInfo() {
+        const selected = itemSelect.options[itemSelect.selectedIndex];
+        const stock = selected ? selected.dataset.stock : null;
+        if (stock) {
+            qtyInput.max = stock;
+            stockHint.textContent = 'Stok tersedia: ' + stock + ' unit.';
+        } else {
+            qtyInput.removeAttribute('max');
+            stockHint.textContent = 'Pilih barang dulu untuk melihat stok tersedia.';
+        }
+    }
+
+    itemSelect.addEventListener('change', updateStockInfo);
+    updateStockInfo();
+});
+</script>
+@endpush

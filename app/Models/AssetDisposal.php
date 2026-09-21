@@ -10,13 +10,14 @@ class AssetDisposal extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id', 'user_id', 'reason', 'status',
-        'approved_by', 'approved_at', 'rejection_reason', 'rejected_at',
+    'item_id', 'user_id', 'reason', 'quantity', 'photos', 'status',
+    'approved_by', 'approved_at', 'rejection_reason', 'rejected_at',
     ];
 
     protected $casts = [
-        'approved_at' => 'datetime',
-        'rejected_at' => 'datetime',
+    'photos' => 'array',
+    'approved_at' => 'datetime',
+    'rejected_at' => 'datetime',
     ];
 
     public function item()
@@ -58,11 +59,11 @@ class AssetDisposal extends Model
         $this->approved_at = now();
         $this->save();
 
-        // 🔥 Barang otomatis dihapus/dinonaktifkan dari daftar aset aktif
+        // 🔥 Stok dikurangi sesuai jumlah yang diajukan.
+        // Kalau stok habis, disposeStock() OTOMATIS set status='disposed' + condition='rusak'.
+        // Kalau stok masih ada, item TETAP 'available' + 'baik' biar sisanya bisa dipinjam.
         if ($this->item) {
-            $this->item->status = 'disposed';
-            $this->item->condition = 'rusak';
-            $this->item->save();
+            $this->item->disposeStock($this->quantity);
         }
     }
 

@@ -112,6 +112,7 @@ class NotificationService
     public function sendDisposalNotification(AssetDisposal $disposal, $action)
     {
         $itemName = $disposal->item->name ?? 'Barang';
+        $qty = $disposal->quantity ?? 1;
 
         if ($action === 'pending') {
             // Notif ke semua Super Admin
@@ -122,7 +123,7 @@ class NotificationService
                     $admin->id,
                     $disposal->id,
                     'Pengajuan Penghapusan Aset Baru',
-                    ($disposal->user->name ?? 'User') . ' mengajukan penghapusan barang "' . $itemName . '" karena: ' . $disposal->reason,
+                    ($disposal->user->name ?? 'User') . ' mengajukan penghapusan ' . $qty . ' unit "' . $itemName . '" karena: ' . $disposal->reason,
                     'disposal_pending'
                 );
             }
@@ -134,7 +135,7 @@ class NotificationService
                 $disposal->user_id,
                 $disposal->id,
                 'Pengajuan Penghapusan Disetujui',
-                'Pengajuan penghapusan barang "' . $itemName . '" telah disetujui dan barang sudah dihapus dari daftar aset.',
+                'Pengajuan penghapusan ' . $qty . ' unit "' . $itemName . '" telah disetujui. Stok barang sudah dikurangi.',
                 'disposal_approved'
             );
 
@@ -144,8 +145,8 @@ class NotificationService
                 $this->createDisposalNotification(
                     $admin->id,
                     $disposal->id,
-                    'Aset Dihapus',
-                    'Barang "' . $itemName . '" telah dihapus dari sistem karena rusak (disetujui oleh ' . (auth()->user()->name ?? 'Super Admin') . ').',
+                    'Stok Barang Rusak Dikurangi',
+                    $qty . ' unit "' . $itemName . '" dihapus dari stok karena rusak (disetujui oleh ' . (auth()->user()->name ?? 'Super Admin') . ').',
                     'disposal_info'
                 );
             }
@@ -157,7 +158,7 @@ class NotificationService
                 $disposal->user_id,
                 $disposal->id,
                 'Pengajuan Penghapusan Ditolak',
-                'Pengajuan penghapusan barang "' . $itemName . '" ditolak. Alasan: ' . ($disposal->rejection_reason ?? '-'),
+                'Pengajuan penghapusan ' . $qty . ' unit "' . $itemName . '" ditolak. Alasan: ' . ($disposal->rejection_reason ?? '-'),
                 'disposal_rejected'
             );
             return;

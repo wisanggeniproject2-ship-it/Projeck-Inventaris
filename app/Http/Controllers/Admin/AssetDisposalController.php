@@ -50,12 +50,18 @@ class AssetDisposalController extends Controller
             return back()->with('error', 'Pengajuan ini sudah diproses sebelumnya.');
         }
 
+        if ($disposal->quantity > $disposal->item->stock) {
+            return back()->with('error',
+                'Stok barang sudah berubah dan tidak mencukupi untuk menyetujui pengajuan ini (sisa stok: ' . $disposal->item->stock . ').');
+        }
+
         $disposal->approve(auth()->id());
 
         // 🔔 Notif ke user pengaju + monitoring ke Super Admin
         $this->notificationService->sendDisposalNotification($disposal, 'approved');
 
-        return back()->with('success', 'Pengajuan disetujui. Barang "' . $disposal->item->name . '" sudah dihapus dari daftar aset.');
+        return back()->with('success',
+            $disposal->quantity . ' unit "' . $disposal->item->name . '" berhasil dihapus dari stok.');
     }
 
     /**

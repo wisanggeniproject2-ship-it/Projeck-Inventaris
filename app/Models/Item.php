@@ -21,6 +21,7 @@ class Item extends Model
         'condition', 
         'price', 
         'stock', 
+        'disposed_stock',      // 🔥 TAMBAH INI
         'location', 
         'status', 
         'image', 
@@ -33,6 +34,7 @@ class Item extends Model
         'purchase_date' => 'date',
         'price' => 'decimal:2',
         'stock' => 'integer',
+        'disposed_stock' => 'integer',   // 🔥 TAMBAH INI
     ];
 
     // ==================== RELATIONS ====================
@@ -132,6 +134,26 @@ class Item extends Model
             $this->status = 'available';
             $this->save();
         }
+        return true;
+    }
+
+    // 🔥 TAMBAH INI — kurangi stok karena penghapusan aset
+    public function disposeStock($qty = 1)
+    {
+        // Safety net: nggak boleh mengurangi lebih dari stok yang ada
+        $qty = min($qty, $this->stock);
+
+        $this->stock -= $qty;
+        $this->disposed_stock = ($this->disposed_stock ?? 0) + $qty;
+
+        // Barang baru berstatus disposed/rusak kalau SEMUA stoknya habis
+        if ($this->stock <= 0) {
+            $this->stock = 0;
+            $this->status = 'disposed';
+            $this->condition = 'rusak';
+        }
+
+        $this->save();
         return true;
     }
 
