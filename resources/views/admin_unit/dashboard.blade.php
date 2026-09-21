@@ -85,8 +85,14 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     @foreach($recentItems as $item)
-                    <tr>
-                        <td class="px-6 py-4">{{ $item->code }}</td>
+                    <tr class="hover:bg-gray-50 transition">
+                        {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
+                        <td class="px-6 py-4">
+                            <div class="font-mono text-[11px] font-semibold leading-tight break-all"
+                                 style="color: #0F6B5F;">
+                                {{ $item->full_code ?? $item->code }}
+                            </div>
+                        </td>
                         <td class="px-6 py-4">{{ $item->name }}</td>
                         <td class="px-6 py-4">{{ $item->category->name }}</td>
                         <td class="px-6 py-4">
@@ -135,7 +141,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     @foreach($recentCirculations as $circulation)
-                    <tr>
+                    <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4">{{ $circulation->item->name }}</td>
                         <td class="px-6 py-4">{{ $circulation->borrower_name }}</td>
                         <td class="px-6 py-4">{{ $circulation->borrow_date->format('d/m/Y') }}</td>

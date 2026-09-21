@@ -38,9 +38,16 @@
             <h3 class="font-semibold text-gray-700 text-sm mb-4 border-b pb-2">Informasi Barang</h3>
             
             <div class="space-y-2 text-sm">
-                <div class="flex justify-between py-1.5 border-b border-gray-100 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
-                    <span class="text-gray-500">Kode Barang</span>
-                    <span class="font-mono font-medium">{{ $item->code }}</span>
+                {{-- 🔥 KODE LENGKAP (menggantikan Kode Barang) --}}
+                <div class="py-2 border-b border-gray-100 rounded px-1 -mx-1" style="background: #0F6B5F08;">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <i class="fas fa-qrcode text-xs" style="color: #0F6B5F;"></i>
+                        <span class="text-xs font-semibold" style="color: #0F6B5F;">Kode Barang</span>
+                    </div>
+                    <div class="font-mono text-xs font-bold px-2.5 py-1.5 rounded-lg border-2 break-all"
+                         style="color: #0F6B5F; background: white; border-color: #0F6B5F40;">
+                        {{ $item->full_code ?? $item->code }}
+                    </div>
                 </div>
 
                 <div class="flex justify-between py-1.5 border-b border-gray-100 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
@@ -89,6 +96,13 @@
                 </div>
 
                 <div class="flex justify-between py-1.5 border-b border-gray-100 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
+                    <span class="text-gray-500">Stok</span>
+                    <span class="font-semibold {{ $item->stock > 0 ? 'text-green-600' : 'text-red-500' }}">
+                        {{ $item->stock }} unit
+                    </span>
+                </div>
+
+                <div class="flex justify-between py-1.5 border-b border-gray-100 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
                     <span class="text-gray-500">Harga</span>
                     <span>{{ $item->price ? 'Rp ' . number_format($item->price, 0, ',', '.') : '-' }}</span>
                 </div>
@@ -122,6 +136,51 @@
             </div>
         </div>
     </div>
+
+    {{-- ============================================================ --}}
+    {{-- 🔥 DAFTAR KODE PER STOK                                      --}}
+    {{-- ============================================================ --}}
+    @if($item->stock > 1 && $item->full_code)
+    <div class="mt-4 sm:mt-6 bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-lg transition-shadow duration-300">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="p-2 rounded-lg shrink-0" style="background: #0F6B5F20; color: #0F6B5F;">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-800 text-sm sm:text-base">Daftar Kode per Unit Stok</h3>
+                <p class="text-xs text-gray-500 mt-0.5">{{ $item->stock }} unit tersedia — masing-masing punya kode unik</p>
+            </div>
+        </div>
+
+        <div class="rounded-xl border-2 overflow-hidden" style="border-color: #0F6B5F30;">
+            <div class="max-h-64 overflow-y-auto">
+                <table class="min-w-full text-xs sm:text-sm">
+                    <thead class="sticky top-0" style="background: #0F6B5F10;">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-semibold w-16" style="color: #0F6B5F;">Unit</th>
+                            <th class="px-3 py-2 text-left font-semibold" style="color: #0F6B5F;">Kode Stok</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($item->getAllStockCodes() as $sc)
+                        <tr class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                            <td class="px-3 py-2">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-md font-bold text-xs"
+                                      style="background: #0F6B5F20; color: #0F6B5F;">
+                                    {{ str_pad($sc['no'], 2, '0', STR_PAD_LEFT) }}
+                                </span>
+                            </td>
+                            <td class="px-3 py-2 font-mono break-all" style="color: #0F6B5F;">
+                                {{ $sc['code'] }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- ==================== AJUKAN PENGHAPUSAN ASET ==================== -->
     <div class="mt-4 sm:mt-6 bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-lg transition-shadow duration-300">
@@ -173,7 +232,7 @@
         <div class="bg-gray-50 rounded-lg p-3 mb-4">
             <p class="text-xs text-gray-500">Barang</p>
             <p class="font-semibold text-gray-800">{{ $item->name }}</p>
-            <p class="text-xs text-gray-400 font-mono">{{ $item->code }}</p>
+            <p class="text-xs text-gray-400 font-mono">{{ $item->full_code ?? $item->code }}</p>
         </div>
 
         <form action="{{ route('user.disposals.store') }}" method="POST">

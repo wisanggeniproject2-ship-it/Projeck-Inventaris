@@ -20,7 +20,6 @@
     {{-- INFO CARD --}}
     <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 mb-6 shadow-lg"
          style="background: linear-gradient(135deg, #0F6B5F 0%, #14857A 50%, #0F6B5F 100%);">
-        {{-- Dekorasi background --}}
         <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
         <div class="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
 
@@ -166,12 +165,11 @@
             $isBroken = $item->isBroken();
             $activeCirculation = $item->activeCirculation;
             
-            // Tentukan status untuk badge + accent border
             if ($canBorrow) {
                 $statusBadge    = 'Tersedia';
                 $statusIcon     = 'fa-check-circle';
-                $statusColor    = '#0F6B5F';   // 🔥 Brand color
-                $statusColor2   = '#14857A';   // 🔥 Brand color lighter
+                $statusColor    = '#0F6B5F';
+                $statusColor2   = '#14857A';
                 $accentColor    = '#0F6B5F';
                 $ribbonColor    = 'linear-gradient(90deg, #0F6B5F 0%, #14857A 50%, #0F6B5F 100%)';
                 $glowColor      = 'rgba(15, 107, 95, 0.4)';
@@ -212,13 +210,11 @@
             $hasPendingDisposal = $item->hasPendingDisposalRequest();
         @endphp
 
-        {{-- 🔥 CARD dengan animasi baru --}}
         <div class="group relative bg-white rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 card-glow"
              style="border: 3px solid {{ $accentColor }}30; animation: cardFadeIn 0.5s ease-out {{ $index * 0.05 }}s both; --glow-color: {{ $glowColor }};"
              onmouseover="this.style.borderColor='{{ $accentColor }}'; this.style.boxShadow='0 25px 50px -12px {{ $glowColor }}';"
              onmouseout="this.style.borderColor='{{ $accentColor }}30'; this.style.boxShadow='';">
 
-            {{-- Shine effect --}}
             <div class="card-shine"></div>
 
             {{-- GAMBAR --}}
@@ -254,7 +250,6 @@
                     </div>
                 @endif
 
-                {{-- Dekorasi lingkaran --}}
                 <div class="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/10 blur-2xl group-hover:bg-white/30 transition-all duration-500"></div>
             </div>
 
@@ -276,10 +271,16 @@
                 </div>
 
                 <div class="space-y-1.5 mb-3 text-sm">
-                    <div class="flex items-center gap-2 text-gray-600">
-                        <i class="fas fa-barcode text-gray-400 w-4"></i>
-                        <span class="font-mono text-xs">{{ $item->code }}</span>
+                    {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
+                    <div class="flex items-start gap-2">
+                        <i class="fas fa-qrcode w-4 mt-0.5 text-[10px]" style="color: #0F6B5F;"></i>
+                        <span class="font-mono text-[10px] font-semibold leading-tight break-all"
+                              style="color: #0F6B5F;">
+                            {{ $item->full_code ?? $item->code }}
+                        </span>
                     </div>
+
+                    {{-- Stok --}}
                     <div class="flex items-center gap-2 text-gray-600">
                         <i class="fas fa-boxes text-gray-400 w-4"></i>
                         <span>Stok: 
@@ -288,6 +289,8 @@
                             </strong>
                         </span>
                     </div>
+
+                    {{-- Lokasi --}}
                     <div class="flex items-center gap-2 text-gray-600">
                         <i class="fas fa-map-marker-alt text-gray-400 w-4"></i>
                         <span class="line-clamp-1">{{ $item->location ?? '-' }}</span>
@@ -334,7 +337,6 @@
                     </a>
 
                     @if($canBorrow)
-                        {{-- 🔥 TOMBOL PINJAM --}}
                         <button type="button"
                                 onclick="openUnitModal({{ $item->id }}, '{{ addslashes($item->name) }}')"
                                 class="group/btn relative flex-1 text-white text-center px-3 py-2.5 rounded-xl transition-all text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-lg hover:shadow-2xl hover:-translate-y-0.5 overflow-hidden"
@@ -386,7 +388,6 @@
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeUnitModal()"></div>
 
     <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col" style="animation: modalIn 0.25s ease-out;">
-        {{-- HEADER --}}
         <div class="px-5 py-4 flex items-center gap-3 shrink-0"
              style="background: linear-gradient(135deg, #0F6B5F 0%, #14857A 100%);">
             <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 ring-2 ring-white/30">
@@ -404,7 +405,6 @@
             </button>
         </div>
 
-        {{-- BODY --}}
         <div class="p-5 overflow-y-auto">
             <div class="rounded-xl p-3 mb-4 text-xs leading-relaxed border-2"
                  style="background: #0F6B5F10; border-color: #0F6B5F30; color: #0F6B5F;">
@@ -412,16 +412,13 @@
                 Pilih unit yang memiliki stok barang ini. Unit dengan stok habis tidak bisa dipilih.
             </div>
 
-            {{-- Loading --}}
             <div id="unitLoading" class="text-center py-8">
                 <i class="fas fa-spinner fa-spin text-3xl" style="color: #0F6B5F;"></i>
                 <p class="text-sm text-gray-500 mt-2">Memuat daftar unit...</p>
             </div>
 
-            {{-- List Unit --}}
             <div id="unitList" class="space-y-2.5 hidden"></div>
 
-            {{-- Kosong --}}
             <div id="unitEmpty" class="hidden text-center py-8">
                 <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
                     <i class="fas fa-box-open text-2xl text-gray-300"></i>
@@ -434,9 +431,6 @@
 </div>
 
 <style>
-    /* ============================================================ */
-    /* 🔥 ANIMASI CARD                                              */
-    /* ============================================================ */
     @keyframes modalIn {
         from { opacity: 0; transform: scale(0.95) translateY(10px); }
         to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -452,7 +446,6 @@
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* 🔥 Float animation untuk icon */
     @keyframes float {
         0%, 100% { transform: translateY(0px); }
         50%      { transform: translateY(-8px); }
@@ -462,7 +455,6 @@
         animation: float 3s ease-in-out infinite;
     }
 
-    /* 🔥 Shine effect (kilau melintas) */
     .card-shine {
         position: absolute;
         top: 0;
@@ -484,7 +476,6 @@
         100% { left: 150%; }
     }
 
-    /* 🔥 Card glow on hover */
     .card-glow {
         position: relative;
     }

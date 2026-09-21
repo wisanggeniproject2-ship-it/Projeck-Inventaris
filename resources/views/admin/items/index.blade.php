@@ -76,7 +76,19 @@
                             <img src="{{ $item->image_url }}" alt="{{ $item->name }}" 
                                  class="w-12 h-12 rounded-lg object-cover border border-gray-200">
                         </td>
-                        <td class="px-6 py-4 font-mono text-sm">{{ $item->code }}</td>
+
+                        {{-- 🔥 KOLOM KODE — sekarang cuma tampil kode lengkap --}}
+                        <td class="px-6 py-4">
+                            <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border"
+                                 style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                                <i class="fas fa-qrcode text-[9px] mt-0.5" style="color: #0F6B5F;"></i>
+                                <span class="font-mono text-[10px] font-semibold leading-tight break-all"
+                                      style="color: #0F6B5F;">
+                                    {{ $item->full_code ?? $item->code }}
+                                </span>
+                            </div>
+                        </td>
+
                         <td class="px-6 py-4 font-medium">{{ $item->name }}</td>
                         <td class="px-6 py-4">{{ $item->unit->name }}</td>
                         <td class="px-6 py-4 text-center">
@@ -122,7 +134,6 @@
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
 
-                                <!-- 🔥 EXPORT PNG (download ditambahkan) -->
                                 <a href="{{ route('items.png', $item) }}" 
                                    download
                                    class="text-green-600 hover:text-green-800" 

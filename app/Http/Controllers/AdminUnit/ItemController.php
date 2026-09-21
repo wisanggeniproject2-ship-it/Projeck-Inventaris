@@ -157,140 +157,385 @@ class ItemController extends Controller
         return $pdf->download($fileName);
     }
 
-    // ==================== GENERATE PNG STIKER ====================
+    // ============================================================
+    // 🔥 GENERATE PNG STIKER — MULTI-STOK (OPTIMIZED)
+    // ⚡ AUTO-SPLIT per 25 stok → ZIP
+    // ============================================================
     public function generatePng(Item $item)
     {
+        // 🔥 Cek akses admin unit
         if ($item->unit_id !== auth()->user()->unit_id) {
             abort(403, 'Anda tidak memiliki akses ke barang ini.');
         }
 
+        // 🔥 Naikkan PHP limits biar tidak crash
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', '600');
+
         $item->load(['category', 'unit', 'fundingSource']);
 
+        $stockCodes = $item->getAllStockCodes();
+        $totalStok  = count($stockCodes);
+
+        if ($totalStok === 0) {
+            $stockCodes = [
+                ['no' => 1, 'code' => $item->full_code ?? $item->code],
+            ];
+            $totalStok = 1;
+        }
+
+        // 🔥 BATAS MAKSIMAL PER PNG = 25 STOK
+        $maxPerFile = 25;
+
+        // Kalau stok <= 25 → 1 file PNG biasa
+        if ($totalStok <= $maxPerFile) {
+            return $this->generateSinglePngFile($item, $stockCodes, $totalStok);
+        }
+
+        // Kalau stok > 25 → ZIP berisi multiple PNG
+        return $this->generateMultiPngZip($item, $stockCodes, $totalStok, $maxPerFile);
+    }
+
+    /**
+     * 🔥 Generate 1 file PNG (untuk stok <= 25)
+     */
+    private function generateSinglePngFile(Item $item, array $stockCodes, int $totalStok)
+    {
         $fontRegular = public_path('fonts/font-regular.ttf');
         $fontBold    = public_path('fonts/font-bold.ttf');
 
-        $width  = 920;
-        $height = 290;
+        $stickerW = 920;
+        $stickerH = 290;
 
-        $col1End = 180;  
-        $col2Start = 180; $col2End = 720;  
-        $col3Start = 720; $col3End = 920;  
+        $gapX = 30;
+        $gapY = 30;
+        $padOuter = 30;
+
+        $cols = 2;
+        $rows = (int) ceil($totalStok / $cols);
+
+        $width  = ($stickerW * $cols) + ($gapX * ($cols - 1)) + ($padOuter * 2);
+        $height = ($stickerH * $rows) + ($gapY * ($rows - 1)) + ($padOuter * 2);
 
         $canvas = imagecreatetruecolor($width, $height);
-        $white  = imagecolorallocate($canvas, 255, 255, 255);
-        $teal   = imagecolorallocate($canvas, 0, 121, 107);
-        $gray   = imagecolorallocate($canvas, 153, 153, 153);
-        $dark   = imagecolorallocate($canvas, 34, 34, 34);
-        imagefill($canvas, 0, 0, $white);
+        $bgGray = imagecolorallocate($canvas, 245, 245, 245);
+        imagefill($canvas, 0, 0, $bgGray);
 
-        imagesetthickness($canvas, 4);
-        imagerectangle($canvas, 2, 2, $width - 3, $height - 3, $teal);
+        // 🔥 CACHE LOGO
+        $logoData = $this->loadLogoData();
 
-        imageline($canvas, $col1End, 0, $col1End, $height, $teal);
-        imageline($canvas, $col2End, 0, $col2End, $height, $teal);
+        foreach ($stockCodes as $index => $sc) {
+            $col = $index % $cols;
+            $row = (int) floor($index / $cols);
 
-        imagesetthickness($canvas, 2);
-        imageline($canvas, $col2Start, 85, $col2End, 85, $teal);
-        imagesetthickness($canvas, 1);
-        imageline($canvas, $col2Start, 150, $col2End, 150, $teal);
-        imageline($canvas, $col2Start, 220, $col2End, 220, $teal);
+            $offsetX = $padOuter + ($col * ($stickerW + $gapX));
+            $offsetY = $padOuter + ($row * ($stickerH + $gapY));
 
-        $logoPath = public_path('images/logopermata.png');
-        if (file_exists($logoPath)) {
-            $logoTargetWidth = 120;
-            $logoSize = $this->getScaledSize($logoPath, $logoTargetWidth);
-            if ($logoSize) {
-                $logoX = (int) (($col1End - $logoSize[0]) / 2);
-                $logoY = (int) (($height - $logoSize[1]) / 2);
-                $this->placeImageOnCanvas($canvas, $logoPath, $logoX, $logoY, $logoTargetWidth);
-            }
+            $this->drawSticker(
+                $canvas, $item, $sc,
+                $offsetX, $offsetY,
+                $stickerW, $stickerH,
+                $fontRegular, $fontBold,
+                $logoData
+            );
         }
 
-        imagettftext($canvas, 18, 0, 200, 45, $teal, $fontBold, 'BARANG INVENTARIS');
-        imagettftext($canvas, 10, 0, 200, 68, $gray, $fontRegular, 'MILIK SIT PERMATA MOJOKERTO');
-
-        imagettftext($canvas, 8, 0, 200, 105, $gray, $fontBold, 'KODE');
-        imagettftext($canvas, 15, 0, 200, 130, $dark, $fontBold, $item->code);
-
-        imagettftext($canvas, 8, 0, 460, 105, $gray, $fontBold, 'TANGGAL');
-        $tanggal = $item->purchase_date ? \Carbon\Carbon::parse($item->purchase_date)->translatedFormat('d/m/Y') : '-';
-        imagettftext($canvas, 15, 0, 460, 130, $dark, $fontBold, $tanggal);
-
-        imagettftext($canvas, 8, 0, 200, 175, $gray, $fontBold, 'NAMA BARANG');
-        imagettftext($canvas, 15, 0, 200, 200, $dark, $fontBold, $item->name);
-
-        imagettftext($canvas, 8, 0, 200, 245, $gray, $fontBold, 'SUMBER DANA');
-        imagettftext($canvas, 15, 0, 200, 270, $dark, $fontBold, $item->fundingSource->name ?? '-');
-
-        $col3CenterX = $col3Start + (($col3End - $col3Start) / 2);
-        $qrTargetWidth = 160;
-
-        $totalBlockHeight = 12 + 12 + $qrTargetWidth + 12 + 12;
-        $blockStartY = (int) (($height - $totalBlockHeight) / 2);
-
-        $labelBaselineY = $blockStartY + 12;
-        $qrTopY         = $labelBaselineY + 12;
-        $codeBaselineY  = $qrTopY + $qrTargetWidth + 12 + 12;
-
-        $this->centeredText($canvas, 9, $col3CenterX, $labelBaselineY, $teal, $fontBold, 'SCAN ME');
-
-        $qrX = (int) ($col3CenterX - ($qrTargetWidth / 2));
-        $this->drawQrOnCanvas($canvas, $this->buildQrText($item), $qrX, $qrTopY, $qrTargetWidth);
-
-        $this->centeredText($canvas, 9, $col3CenterX, $codeBaselineY, $teal, $fontBold, $item->code);
-
         ob_start();
-        imagepng($canvas);
+        imagepng($canvas, null, 6); // 🔥 compression 6
         $imageData = ob_get_clean();
         imagedestroy($canvas);
 
-        $cleanCode = str_replace('/', '-', $item->code);
-        $fileName  = 'stiker-' . $cleanCode . '.png';
+        $cleanCode = str_replace(['/', '.'], '-', $item->code);
+        $fileName  = 'stiker-' . $cleanCode . '-x' . $totalStok . '.png';
 
         return response($imageData)
             ->header('Content-Type', 'image/png')
-            ->header('Content-Disposition' , 'attachment; filename="' . $fileName . '"');
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
     }
 
-    private function getScaledSize(string $imagePath, int $targetWidth): ?array
+    /**
+     * 🔥 Generate multiple PNG → dibungkus ZIP (untuk stok > 25)
+     */
+    private function generateMultiPngZip(Item $item, array $stockCodes, int $totalStok, int $maxPerFile)
     {
-        $imageInfo = getimagesize($imagePath);
+        $fontRegular = public_path('fonts/font-regular.ttf');
+        $fontBold    = public_path('fonts/font-bold.ttf');
+
+        $stickerW = 920;
+        $stickerH = 290;
+        $gapX = 30;
+        $gapY = 30;
+        $padOuter = 30;
+        $cols = 2;
+
+        // Bagi jadi beberapa batch
+        $chunks     = array_chunk($stockCodes, $maxPerFile);
+        $totalBatch = count($chunks);
+
+        // 🔥 CACHE LOGO sekali
+        $logoData = $this->loadLogoData();
+
+        // Buat ZIP temporary
+        $zipFileName = tempnam(sys_get_temp_dir(), 'stiker_') . '.zip';
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipFileName, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Gagal membuat ZIP file');
+        }
+
+        $cleanCode = str_replace(['/', '.'], '-', $item->code);
+
+        foreach ($chunks as $batchIndex => $batch) {
+            $batchNum   = $batchIndex + 1;
+            $batchCount = count($batch);
+
+            $rows = (int) ceil($batchCount / $cols);
+
+            $width  = ($stickerW * $cols) + ($gapX * ($cols - 1)) + ($padOuter * 2);
+            $height = ($stickerH * $rows) + ($gapY * ($rows - 1)) + ($padOuter * 2);
+
+            $canvas = imagecreatetruecolor($width, $height);
+            $bgGray = imagecolorallocate($canvas, 245, 245, 245);
+            imagefill($canvas, 0, 0, $bgGray);
+
+            foreach ($batch as $index => $sc) {
+                $col = $index % $cols;
+                $row = (int) floor($index / $cols);
+
+                $offsetX = $padOuter + ($col * ($stickerW + $gapX));
+                $offsetY = $padOuter + ($row * ($stickerH + $gapY));
+
+                $this->drawSticker(
+                    $canvas, $item, $sc,
+                    $offsetX, $offsetY,
+                    $stickerW, $stickerH,
+                    $fontRegular, $fontBold,
+                    $logoData
+                );
+            }
+
+            ob_start();
+            imagepng($canvas, null, 6); // 🔥 compression 6
+            $imageData = ob_get_clean();
+            imagedestroy($canvas);
+
+            $stikerNum = str_pad($batchNum, 3, '0', STR_PAD_LEFT);
+            $totalNum  = str_pad($totalBatch, 3, '0', STR_PAD_LEFT);
+            $fileName  = "stiker-{$cleanCode}-part{$stikerNum}-of{$totalNum}-x{$batchCount}.png";
+
+            $zip->addFromString($fileName, $imageData);
+        }
+
+        $zip->close();
+
+        $zipDownloadName = 'stiker-' . $cleanCode . '-x' . $totalStok . '.zip';
+
+        return response()->download($zipFileName, $zipDownloadName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * 🔥 Load logo SEKALI
+     */
+    private function loadLogoData(): ?array
+    {
+        $logoPath = public_path('images/logopermata.png');
+        if (!file_exists($logoPath)) return null;
+
+        $imageInfo = getimagesize($logoPath);
         if (!$imageInfo) return null;
-        return [$targetWidth, (int) round($targetWidth * ($imageInfo[1] / $imageInfo[0]))];
-    }
 
-    private function placeImageOnCanvas($canvas, string $imagePath, int $x, int $y, int $targetWidth): void
-    {
-        $imageInfo = getimagesize($imagePath);
-        if (!$imageInfo) return;
         $source = match ($imageInfo['mime']) {
-            'image/png'  => imagecreatefrompng($imagePath),
-            'image/jpeg' => imagecreatefromjpeg($imagePath),
-            'image/gif'  => imagecreatefromgif($imagePath),
+            'image/png'  => imagecreatefrompng($logoPath),
+            'image/jpeg' => imagecreatefromjpeg($logoPath),
             default      => null,
         };
-        if (!$source) return;
-        imagealphablending($canvas, true);
-        imagesavealpha($canvas, true);
-        imagecopyresampled($canvas, $source, $x, $y, 0, 0, $targetWidth, (int) round($targetWidth * (imagesy($source) / imagesx($source))), imagesx($source), imagesy($source));
-        imagedestroy($source);
+        if (!$source) return null;
+
+        return [
+            'resource' => $source,
+            'width'    => imagesx($source),
+            'height'   => imagesy($source),
+        ];
     }
 
-    private function centeredText($canvas, int $size, int $centerX, int $baselineY, $color, string $fontPath, string $text): void
+    /**
+     * 🔥 Gambar 1 sticker di canvas pada posisi tertentu
+     */
+    private function drawSticker($canvas, Item $item, array $stockCode, int $offsetX, int $offsetY, int $stickerW, int $stickerH, string $fontRegular, string $fontBold, ?array $logoData): void
     {
-        $bbox = imagettfbbox($size, 0, $fontPath, $text);
-        imagettftext($canvas, $size, 0, (int) ($centerX - (abs($bbox[4] - $bbox[0]) / 2)), $baselineY, $color, $fontPath, $text);
+        $teal  = imagecolorallocate($canvas, 0, 121, 107);
+        $gray  = imagecolorallocate($canvas, 153, 153, 153);
+        $dark  = imagecolorallocate($canvas, 34, 34, 34);
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+
+        // Background putih
+        imagefilledrectangle($canvas, $offsetX, $offsetY, $offsetX + $stickerW, $offsetY + $stickerH, $white);
+
+        // Border sticker
+        imagesetthickness($canvas, 4);
+        imagerectangle($canvas, $offsetX + 2, $offsetY + 2, $offsetX + $stickerW - 3, $offsetY + $stickerH - 3, $teal);
+
+        // Koordinat kolom
+        $col1End   = $offsetX + 180;
+        $col2Start = $offsetX + 180;
+        $col2End   = $offsetX + 720;
+        $col3Start = $offsetX + 720;
+        $col3End   = $offsetX + 920;
+
+        // Garis vertikal
+        imagesetthickness($canvas, 4);
+        imageline($canvas, $col1End, $offsetY, $col1End, $offsetY + $stickerH, $teal);
+        imageline($canvas, $col2End, $offsetY, $col2End, $offsetY + $stickerH, $teal);
+
+        // Garis horizontal (kolom 2)
+        imagesetthickness($canvas, 2);
+        imageline($canvas, $col2Start, $offsetY + 85, $col2End, $offsetY + 85, $teal);
+        imagesetthickness($canvas, 1);
+        imageline($canvas, $col2Start, $offsetY + 150, $col2End, $offsetY + 150, $teal);
+        imageline($canvas, $col2Start, $offsetY + 220, $col2End, $offsetY + 220, $teal);
+
+        // ============ LOGO (cached) ============
+        if ($logoData) {
+            $logoTargetWidth = 120;
+            $logoH = (int) round($logoTargetWidth * ($logoData['height'] / $logoData['width']));
+            $logoX = (int) ($offsetX + (($col1End - $offsetX - $logoTargetWidth) / 2));
+            $logoY = (int) ($offsetY + (($stickerH - $logoH) / 2));
+
+            imagecopyresampled(
+                $canvas, $logoData['resource'],
+                $logoX, $logoY, 0, 0,
+                $logoTargetWidth, $logoH,
+                $logoData['width'], $logoData['height']
+            );
+        }
+
+        // ============ INFO ============
+        $infoX = $offsetX + 200;
+
+        // Header
+        imagettftext($canvas, 18, 0, $infoX, $offsetY + 45, $teal, $fontBold, 'BARANG INVENTARIS');
+        imagettftext($canvas, 10, 0, $infoX, $offsetY + 68, $gray, $fontRegular, 'MILIK SIT PERMATA MOJOKERTO');
+
+        // KODE per stok
+        imagettftext($canvas, 8, 0, $infoX, $offsetY + 105, $gray, $fontBold, 'KODE');
+
+        $maxCodeWidth = 250;
+        $codeFontSize = 11;
+        $minFontSize  = 7;
+
+        while ($codeFontSize > $minFontSize) {
+            $bbox = imagettfbbox($codeFontSize, 0, $fontBold, $stockCode['code']);
+            $codeWidth = abs($bbox[4] - $bbox[0]);
+            if ($codeWidth <= $maxCodeWidth) break;
+            $codeFontSize -= 0.5;
+        }
+
+        imagettftext($canvas, (int) $codeFontSize, 0, $infoX, $offsetY + 130, $dark, $fontBold, $stockCode['code']);
+
+        // TANGGAL
+        $tanggal = $item->purchase_date
+            ? \Carbon\Carbon::parse($item->purchase_date)->translatedFormat('d/m/Y')
+            : '-';
+        imagettftext($canvas, 8, 0, $offsetX + 460, $offsetY + 105, $gray, $fontBold, 'TANGGAL');
+        imagettftext($canvas, 15, 0, $offsetX + 460, $offsetY + 130, $dark, $fontBold, $tanggal);
+
+        // NAMA BARANG
+        imagettftext($canvas, 8, 0, $infoX, $offsetY + 175, $gray, $fontBold, 'NAMA BARANG');
+
+        $maxNameWidth = 500;
+        $nameFontSize = 15;
+        while ($nameFontSize > 9) {
+            $bbox = imagettfbbox($nameFontSize, 0, $fontBold, $item->name);
+            $nameWidth = abs($bbox[4] - $bbox[0]);
+            if ($nameWidth <= $maxNameWidth) break;
+            $nameFontSize -= 0.5;
+        }
+
+        imagettftext($canvas, (int) $nameFontSize, 0, $infoX, $offsetY + 200, $dark, $fontBold, $item->name);
+
+        // SUMBER DANA
+        imagettftext($canvas, 8, 0, $infoX, $offsetY + 245, $gray, $fontBold, 'SUMBER DANA');
+        imagettftext($canvas, 15, 0, $infoX, $offsetY + 270, $dark, $fontBold, $item->fundingSource->name ?? '-');
+
+        // ============ QR CODE ============
+        $col3CenterX = $col3Start + (($col3End - $col3Start) / 2);
+        $qrTargetWidth = 160;
+
+        $gapLabelToQr = 12;
+        $gapQrToCode  = 40;
+
+        $totalBlockHeight = $gapLabelToQr + 12 + $qrTargetWidth + $gapQrToCode;
+
+        $blockStartY    = (int) ($offsetY + (($stickerH - $totalBlockHeight) / 2));
+        $labelBaselineY = $blockStartY;
+        $qrTopY         = $labelBaselineY + 12;
+        $codeBaselineY  = $qrTopY + $qrTargetWidth + $gapQrToCode;
+
+        // SCAN ME
+        $bbox1 = imagettfbbox(9, 0, $fontBold, 'SCAN ME');
+        imagettftext($canvas, 9, 0, (int) ($col3CenterX - (abs($bbox1[4] - $bbox1[0]) / 2)), $labelBaselineY, $teal, $fontBold, 'SCAN ME');
+
+        // QR Code
+        $qrText = $this->buildQrTextForStock($item, $stockCode['code']);
+
+        $matrix = (\BaconQrCode\Encoder\Encoder::encode(
+            $qrText,
+            \BaconQrCode\Common\ErrorCorrectionLevel::M()
+        ))->getMatrix();
+
+        $matrixWidth = $matrix->getWidth();
+        $qrX = (int) ($col3CenterX - ($qrTargetWidth / 2));
+
+        imagefilledrectangle($canvas, $qrX, $qrTopY, $qrX + $qrTargetWidth, $qrTopY + $qrTargetWidth, $white);
+
+        $moduleSize = $qrTargetWidth / $matrixWidth;
+
+        for ($row = 0; $row < $matrixWidth; $row++) {
+            for ($col = 0; $col < $matrixWidth; $col++) {
+                if ($matrix->get($col, $row) == 1) {
+                    imagefilledrectangle(
+                        $canvas,
+                        $qrX + (int) round($col * $moduleSize),
+                        $qrTopY + (int) round($row * $moduleSize),
+                        $qrX + (int) round(($col + 1) * $moduleSize) - 1,
+                        $qrTopY + (int) round(($row + 1) * $moduleSize) - 1,
+                        $dark
+                    );
+                }
+            }
+        }
+
+        // KODE DI BAWAH QR
+        $maxQrCodeWidth = 195;
+        $qrCodeFontSize = 7;
+        while ($qrCodeFontSize > 4) {
+            $bbox2 = imagettfbbox($qrCodeFontSize, 0, $fontBold, $stockCode['code']);
+            $qrCodeWidth = abs($bbox2[4] - $bbox2[0]);
+            if ($qrCodeWidth <= $maxQrCodeWidth) break;
+            $qrCodeFontSize -= 0.5;
+        }
+
+        $bbox2 = imagettfbbox($qrCodeFontSize, 0, $fontBold, $stockCode['code']);
+        imagettftext(
+            $canvas, $qrCodeFontSize, 0,
+            (int) ($col3CenterX - (abs($bbox2[4] - $bbox2[0]) / 2)),
+            $codeBaselineY, $teal, $fontBold, $stockCode['code']
+        );
     }
 
-    // 🔥 PERBAIKAN: Menyamakan persis output teks scan seperti di QRCodeService
-    private function buildQrText(Item $item): string
+    /**
+     * 🔥 Build teks QR untuk kode stok spesifik
+     */
+    private function buildQrTextForStock(Item $item, string $stockCode): string
     {
         $teks = "==================================\n";
         $teks .= "      BARANG INVENTARIS\n";
         $teks .= "   SIT PERMATA MOJOKERTO\n";
         $teks .= "==================================\n\n";
         $teks .= "Nama Barang   : " . $item->name . "\n";
-        $teks .= "Kode          : " . $item->code . "\n";
+        $teks .= "Kode          : " . $stockCode . "\n";
         $teks .= "Unit          : " . ($item->unit->name ?? '-') . "\n";
         $teks .= "Lokasi        : " . ($item->location ?? '-') . "\n";
         $teks .= "Kondisi       : " . ucfirst($item->condition ?? '-') . "\n";
@@ -301,22 +546,5 @@ class ItemController extends Controller
         $teks .= "Scan pada: " . date('d/m/Y H:i:s') . "\n";
 
         return $teks;
-    }
-
-    private function drawQrOnCanvas($canvas, string $text, int $x, int $y, int $targetSize): void
-    {
-        $matrix = (\BaconQrCode\Encoder\Encoder::encode($text, \BaconQrCode\Common\ErrorCorrectionLevel::M())) ->getMatrix();
-        $matrixWidth = $matrix->getWidth();
-        $black = imagecolorallocate($canvas, 0, 0, 0);
-        $white = imagecolorallocate($canvas, 255, 255, 255);
-        imagefilledrectangle($canvas, $x, $y, $x + $targetSize, $y + $targetSize, $white);
-        $moduleSize = $targetSize / $matrixWidth;
-        for ($row = 0; $row < $matrixWidth; $row++) {
-            for ($col = 0; $col < $matrixWidth; $col++) {
-                if ($matrix->get($col, $row) == 1) {
-                    imagefilledrectangle($canvas, $x + (int)round($col * $moduleSize), $y + (int)round($row * $moduleSize), $x + (int)round(($col + 1) * $moduleSize) - 1, $y + (int)round(($row + 1) * $moduleSize) - 1, $black);
-                }
-            }
-        }
     }
 }

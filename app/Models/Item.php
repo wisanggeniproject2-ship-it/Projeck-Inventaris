@@ -12,9 +12,21 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'name', 'category_id', 'unit_id', 'purchase_date',
-        'condition', 'price', 'stock', 'location', 'status', 'image', 
-        'qr_code_path', 'description', 'funding_source_id'
+        'code', 
+        'full_code',           // 🔥 TAMBAH INI
+        'name', 
+        'category_id', 
+        'unit_id', 
+        'purchase_date',
+        'condition', 
+        'price', 
+        'stock', 
+        'location', 
+        'status', 
+        'image', 
+        'qr_code_path', 
+        'description', 
+        'funding_source_id'
     ];
 
     protected $casts = [
@@ -141,19 +153,11 @@ class Item extends Model
         return $query->where('unit_id', $unitId);
     }
 
-    // ==================== GENERATE KODE ====================
+    // ==================== GENERATE KODE LAMA ====================
     /**
      * Generate kode unik untuk item.
      * Format: {prefixUnit}/{sequence}/{categoryId}/{month}/{romanMonth}/{year}/Y
      * Contoh: A/001/01/09/IX/2026/Y
-     *
-     * Prefix unit pakai HURUF UNIK berdasarkan unit_id:
-     * - unit_id 1 → A
-     * - unit_id 2 → B
-     * - unit_id 4 → D
-     * - unit_id 5 → E
-     * dst.
-     * Ini mencegah bentrok kalau ada 2 unit dengan huruf pertama nama yang sama.
      */
     public static function generateCode($unitId, $categoryId, $purchaseDate = null)
     {
@@ -168,12 +172,9 @@ class Item extends Model
         }
 
         // 🔥 PREFIX UNIK PER UNIT — pakai unit_id, bukan huruf pertama nama unit
-        // Rumus: chr(64 + $unit->id) → 64 = 'A', jadi unit_id 1 = 'A', 2 = 'B', dst.
-        // Kalau unit_id > 26, fallback ke 2 huruf (AA, AB, dst) — pakai mod 26
         if ($unit->id <= 26) {
             $unitCode = chr(64 + (int) $unit->id);
         } else {
-            // Fallback untuk unit_id > 26: pakai kombinasi 2 huruf
             $first  = chr(64 + (int) floor(($unit->id - 1) / 26));
             $second = chr(65 + (($unit->id - 1) % 26));
             $unitCode = $first . $second;
@@ -185,7 +186,6 @@ class Item extends Model
             ->first();
 
         if ($lastItem) {
-            // Ambil 3 karakter setelah prefix (misal "A/001/..." → ambil "001")
             $lastNumber = (int) substr($lastItem->code, 2, 3);
             $sequence   = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
         } else {
@@ -214,7 +214,7 @@ class Item extends Model
             $code = $unitCode . '/' . $sequence . '/' . $categoryCode . '/' . $month . '/' . $monthRoman . '/' . $year . '/' . $yayasanCode;
 
             $attempt++;
-            if ($attempt > 100) break; // biar tidak infinite loop
+            if ($attempt > 100) break;
         }
 
         return $code;
@@ -228,6 +228,93 @@ class Item extends Model
             9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
         ];
         return $romanMonths[$month] ?? 'I';
+    }
+
+    // ============================================================
+    // 🔥 GENERATE KODE BARU — FULL CODE (format baru)
+    // ============================================================
+
+    /**
+     * 🔥 Generate & simpan full_code
+     * 
+     * Format: {KATEGORI}/{KODE_BARANG}.{LOKASI}.{UNIT}/{NO_URUT}.{NO_STOK}/{TGL}/{BLN_ROMAWI}/{THN}
+     * Contoh: ELC/TVL-001.RUA.DCP/1.01/21/IX/2026
+     * 
+     * @param int $stockNumber Nomor stok (default 1)
+     * @return string
+     */
+    public function generateFullCode(int $stockNumber = 1): string
+    {
+        $generator = app(\App\Services\ItemCodeGenerator::class);
+        $this->full_code = $generator->generate($this, $stockNumber);
+        $this->save();
+        return $this->full_code;
+    }
+
+    /**
+     * 🔥 Get full_code per stok (tidak disimpan, cuma di-generate)
+     * 
+     * Contoh: 
+     *   getStockCode(1) → ELC/TVL-001.RUA.DCP/1.01/21/IX/2026
+     *   getStockCode(2) → ELC/TVL-001.RUA.DCP/1.02/21/IX/2026
+     *   getStockCode(5) → ELC/TVL-001.RUA.DCP/1.05/21/IX/2026
+     * 
+     * @param int $stockNumber Nomor stok (1 s/d stock)
+     * @return string|null
+     */
+    public function getStockCode(int $stockNumber): ?string
+    {
+        if (!$this->full_code) {
+            return null;
+        }
+
+        // Ganti bagian ".01/" jadi ".XX/" sesuai stok
+        return preg_replace(
+            '/\.\d{2}\//',
+            '.' . str_pad($stockNumber, 2, '0', STR_PAD_LEFT) . '/',
+            $this->full_code,
+            1
+        );
+    }
+
+    /**
+     * 🔥 Get semua kode stok (array)
+     * 
+     * Return: [
+     *   ['no' => 1, 'code' => 'ELC/TVL-001.RUA.DCP/1.01/21/IX/2026'],
+     *   ['no' => 2, 'code' => 'ELC/TVL-001.RUA.DCP/1.02/21/IX/2026'],
+     *   ...
+     * ]
+     * 
+     * @return array
+     */
+    public function getAllStockCodes(): array
+    {
+        $codes = [];
+
+        if (!$this->full_code) {
+            return $codes;
+        }
+
+        for ($i = 1; $i <= $this->stock; $i++) {
+            $codes[] = [
+                'no'   => $i,
+                'code' => $this->getStockCode($i),
+            ];
+        }
+
+        return $codes;
+    }
+
+    /**
+     * 🔥 Accessor: full_code_formatted
+     * 
+     * Pakai di blade: {{ $item->full_code_formatted }}
+     * Kalau full_code kosong, fallback ke code lama.
+     */
+    public function getFullCodeFormattedAttribute(): string
+    {
+        return $this->full_code ?? $this->code ?? '-';
     }
 
     // ==================== PENYUSUTAN ASET ====================
@@ -282,7 +369,7 @@ class Item extends Model
         }
 
         $usefulLife = $this->getUsefulLifeYears();
-        $yearsInUse = min($this->getYearsInUse(), $usefulLife); // gak lewat masa manfaat
+        $yearsInUse = min($this->getYearsInUse(), $usefulLife);
         $accumulated = $this->getAnnualDepreciation() * $yearsInUse;
 
         return round(min($accumulated, $this->price), 2);

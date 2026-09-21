@@ -533,7 +533,13 @@
                     <tbody class="divide-y divide-gray-50">
                         @foreach($recentItems as $item)
                         <tr class="hover:bg-gray-50/70 transition">
-                            <td class="px-4 sm:px-5 py-3.5 font-medium text-gray-700">{{ $item->code }}</td>
+                            {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
+                            <td class="px-4 sm:px-5 py-3.5">
+                                <div class="font-mono text-[11px] font-semibold leading-tight break-all"
+                                     style="color: #0F6B5F;">
+                                    {{ $item->full_code ?? $item->code }}
+                                </div>
+                            </td>
                             <td class="px-4 sm:px-5 py-3.5 text-gray-700">{{ $item->name }}</td>
                             <td class="px-4 sm:px-5 py-3.5 text-gray-500">{{ $item->unit->name ?? '-' }}</td>
                             <td class="px-4 sm:px-5 py-3.5 text-gray-500 hidden md:table-cell">{{ $item->location }}</td>

@@ -67,10 +67,15 @@
                 </thead>
                 <tbody>
                     @foreach($myCirculations as $circulation)
-                    <tr class="border-t">
+                    <tr class="border-t hover:bg-gray-50 transition">
                         <td class="px-6 py-4">
                             {{ $circulation->item->name }}
-                            <br><small class="text-gray-500">{{ $circulation->item->code }}</small>
+                            <br>
+                            {{-- 🔥 Kode Lengkap --}}
+                            <small class="font-mono text-[10px] font-semibold break-all"
+                                   style="color: #0F6B5F;">
+                                {{ $circulation->item->full_code ?? $circulation->item->code }}
+                            </small>
                         </td>
                         <td class="px-6 py-4">{{ $circulation->item->unit->name }}</td>
                         <td class="px-6 py-4">{{ $circulation->borrow_date->format('d/m/Y') }}</td>
@@ -132,14 +137,22 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 @forelse($availableItems as $item)
                 <div class="border rounded-lg p-4 hover:shadow-lg transition">
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-start mb-2">
                         <h4 class="font-semibold">{{ $item->name }}</h4>
                         <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $item->unit->name }}</span>
                     </div>
-                    <p class="text-sm text-gray-600">Kode: {{ $item->code }}</p>
-                    <p class="text-sm text-gray-600">Lokasi: {{ $item->location }}</p>
+
+                    {{-- 🔥 Kode Lengkap --}}
+                    <p class="font-mono text-[10px] font-semibold leading-tight break-all mb-1"
+                       style="color: #0F6B5F;">
+                        {{ $item->full_code ?? $item->code }}
+                    </p>
+
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-map-marker-alt text-[10px] mr-1"></i>Lokasi: {{ $item->location }}
+                    </p>
                     <a href="{{ route('user.circulations.create', ['item' => $item->id]) }}" 
-                       class="mt-2 inline-block text-blue-500 text-sm hover:text-blue-700">
+                       class="mt-3 inline-block text-blue-500 text-sm hover:text-blue-700 font-medium">
                         <i class="fas fa-hand-paper mr-1"></i>Pinjam →
                     </a>
                 </div>

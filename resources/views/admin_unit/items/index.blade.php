@@ -4,7 +4,8 @@
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Daftar Barang - {{ auth()->user()->unit->name }}</h1>
-        <a href="{{ route('admin_unit.items.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route('admin_unit.items.create') }}" 
+           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition shadow-sm">
             <i class="fas fa-plus mr-2"></i>Tambah Barang
         </a>
     </div>
@@ -83,14 +84,26 @@
                             <img src="{{ $item->image_url ?? asset('images/no-image.png') }}" alt="{{ $item->name }}" 
                                  class="w-12 h-12 rounded-lg object-cover border border-gray-200">
                         </td>
-                        <td class="px-6 py-4 font-mono text-sm">{{ $item->code }}</td>
+
+                        {{-- 🔥 KOLOM KODE — sekarang cuma tampil kode lengkap --}}
+                        <td class="px-6 py-4">
+                            <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border"
+                                 style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                                <i class="fas fa-qrcode text-[9px] mt-0.5" style="color: #0F6B5F;"></i>
+                                <span class="font-mono text-[10px] font-semibold leading-tight break-all"
+                                      style="color: #0F6B5F;">
+                                    {{ $item->full_code ?? $item->code }}
+                                </span>
+                            </div>
+                        </td>
+
                         <td class="px-6 py-4 font-medium">{{ $item->name }}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
                                 {{ $item->category->name }}
                             </span>
                         </td>
-                        <!-- 🔥 KOLOM STOK BARU -->
+                        <!-- 🔥 KOLOM STOK -->
                         <td class="px-6 py-4 text-center">
                             <div class="flex flex-col items-center gap-1">
                                 <span class="text-2xl font-bold {{ $stockTextColor }}">
@@ -136,7 +149,7 @@
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
 
-                                <!-- 🔥 EXPORT PNG (download, BUKAN target=_blank) -->
+                                <!-- 🔥 EXPORT PNG -->
                                 <a href="{{ route('admin_unit.items.png', $item) }}" 
                                    download
                                    class="text-teal-600 hover:text-teal-800" 
