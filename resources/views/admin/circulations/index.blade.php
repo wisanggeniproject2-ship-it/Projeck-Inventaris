@@ -73,7 +73,7 @@
                 Filter
             </button>
             @if(request('status'))
-            <a href="{{ route('super_admin.circulations.index') }}" 
+            <a href="{{ route('admin_unit.circulations.index') }}" 
                class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-xl transition inline-flex items-center justify-center"
                title="Reset filter">
                 <i class="fas fa-times"></i>
@@ -134,7 +134,11 @@
                             {{-- BARANG --}}
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-800">{{ $circulation->item->name ?? '-' }}</div>
-                                <div class="text-xs text-gray-500 font-mono mt-0.5">{{ $circulation->item->code ?? '-' }}</div>
+                                {{-- 🔥 KODE LENGKAP --}}
+                                <div class="text-[10px] font-mono font-semibold mt-0.5 break-all"
+                                     style="color: #0F6B5F;">
+                                    {{ $circulation->item->full_code ?? $circulation->item->code ?? '-' }}
+                                </div>
                             </td>
 
                             {{-- PEMINJAM --}}
@@ -155,7 +159,7 @@
                                 </span>
                             </td>
 
-                            {{-- 🔥 JAM PINJAM --}}
+                            {{-- JAM PINJAM --}}
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 @if($circulation->borrow_date)
                                     <div class="text-sm font-medium text-gray-800">
@@ -171,7 +175,7 @@
                                 @endif
                             </td>
 
-                            {{-- 🔥 TENGGAT --}}
+                            {{-- TENGGAT --}}
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 @if($circulation->expected_return_date)
                                     <div class="text-sm font-medium {{ $isOverdue ? 'text-red-600' : 'text-gray-800' }}">
@@ -234,7 +238,6 @@
                                     </div>
                                 @endif
 
-                                {{-- 🔥 Info tambahan saat return_pending --}}
                                 @if($circulation->status == 'return_pending')
                                     <div class="mt-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded text-xs text-blue-700 max-w-[220px]">
                                         <p class="font-semibold mb-0.5">
@@ -251,14 +254,14 @@
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex gap-2 items-center">
                                     {{-- Detail --}}
-                                    <a href="{{ route('super_admin.circulations.show', $circulation) }}" 
+                                    <a href="{{ route('admin_unit.circulations.show', $circulation) }}" 
                                        class="text-blue-600 hover:text-blue-800 transition" title="Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     
                                     {{-- Pending: Approve + Reject --}}
                                     @if($circulation->status == 'pending')
-                                        <form action="{{ route('super_admin.circulations.approve', $circulation) }}" 
+                                        <form action="{{ route('admin_unit.circulations.approve', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-green-600 hover:text-green-800 transition"
@@ -279,9 +282,9 @@
                                         </button>
                                     @endif
                                     
-                                    {{-- Approved: Mark Returned (langsung) --}}
+                                    {{-- Approved: Mark Returned --}}
                                     @if($circulation->status == 'approved')
-                                        <form action="{{ route('super_admin.circulations.return', $circulation) }}" 
+                                        <form action="{{ route('admin_unit.circulations.return', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-blue-600 hover:text-blue-800 transition"
@@ -291,9 +294,9 @@
                                         </form>
                                     @endif
 
-                                    {{-- 🔥🔥🔥 RETURN_PENDING: KONFIRMASI PENGEMBALIAN (INI YANG HILANG!) --}}
+                                    {{-- Return Pending: Konfirmasi --}}
                                     @if($circulation->status == 'return_pending')
-                                        <form action="{{ route('super_admin.circulations.confirm-return', $circulation) }}" 
+                                        <form action="{{ route('admin_unit.circulations.confirm-return', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-green-600 hover:text-green-800 transition inline-flex items-center gap-1"
@@ -445,7 +448,8 @@
         const form  = document.getElementById('rejectForm');
         const input = document.getElementById('rejectionReasonInput');
 
-        form.action = `{{ url('super-admin/circulations') }}/${circulationId}/reject`;
+        // 🔥 Ganti URL ke admin-unit
+        form.action = `{{ url('admin-unit/circulations') }}/${circulationId}/reject`;
 
         document.getElementById('rejectItemName').textContent     = itemName || '-';
         document.getElementById('rejectBorrowerName').textContent = borrowerName || '-';

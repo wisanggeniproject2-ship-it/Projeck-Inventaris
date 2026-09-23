@@ -4,9 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\Category;
+use App\Models\Unit;
+use Illuminate\Http\Request;
 
 class AssetController extends Controller
 {
+    /**
+     * 🔥 Halaman Nilai Aset (existing)
+     */
     public function index()
     {
         // Ambil semua barang + relasi kategori & unit
@@ -23,7 +29,6 @@ class AssetController extends Controller
             $stok     = (int)   $item->stock;
             $subtotal = $harga * $stok;
 
-            // Akumulasi dengan cast biar konsisten
             $totalNilaiAset    = (float) $totalNilaiAset + (float) $subtotal;
             $totalJumlahBarang = (int)   $totalJumlahBarang + (int) $stok;
 
@@ -43,14 +48,9 @@ class AssetController extends Controller
             $perKategori[$namaKategori]['items'][] = $item;
         }
 
-        // Urutkan dari nilai terbesar (mempertahankan key string = nama kategori)
         uasort($perKategori, fn($a, $b) => $b['nilai'] <=> $a['nilai']);
-
-        // 🔥 KUNCI: Reset key jadi 0, 1, 2, ... (integer)
-        // Tanpa ini, key masih nama kategori (string) → di view `$i + 1` error
         $perKategori = array_values($perKategori);
 
-        // Hitung persentase per kategori
         foreach ($perKategori as &$kat) {
             $kat['persen'] = $totalNilaiAset > 0
                 ? round(((float) $kat['nilai'] / (float) $totalNilaiAset) * 100, 1)
@@ -63,6 +63,86 @@ class AssetController extends Controller
             'totalJumlahBarang',
             'perKategori',
             'items'
+        ));
+    }
+
+    /**
+     * 🔥 Halaman Penyusutan Aset
+     * DIKELOMPOKKAN PER UNIT — bukan cuma tabel rata
+     */
+    public function depreciation(Request $request)
+    {
+        // Base query: hanya barang yang punya harga & tanggal beli
+        $query = Item::with(['category', 'unit', 'fundingSource'])
+            ->whereNotNull('price')
+            ->whereNotNull('purchase_date')
+            ->where('price', '>', 0);
+
+        // Filter kategori
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Filter unit (kalau pilih 1 unit, tampil cuma unit itu)
+        if ($request->filled('unit')) {
+            $query->where('unit_id', $request->unit);
+        }
+
+        // Ambil SEMUA data (bukan paginate) — nanti dikelompokkan per unit
+        $items = $query->orderBy('unit_id', 'asc')
+                       ->orderBy('purchase_date', 'asc')
+                       ->get();
+
+        // 🔥 KELOMPOKKAN PER UNIT
+        $itemsByUnit = $items->groupBy(function ($item) {
+            return $item->unit->name ?? 'Tanpa Unit';
+        });
+
+        // 🔥 Hitung total PER UNIT
+        $unitSummary = [];
+        foreach ($itemsByUnit as $unitName => $unitItems) {
+            $totalNilaiAset = 0.0;
+            $totalAkumulasi = 0.0;
+            $totalNilaiBuku = 0.0;
+            $totalBarang    = 0;
+
+            foreach ($unitItems as $item) {
+                $stok = (int) $item->stock;
+
+                $totalNilaiAset += ((float) $item->price) * $stok;
+                $totalAkumulasi += ((float) $item->getAccumulatedDepreciation()) * $stok;
+                $totalNilaiBuku += ((float) $item->getBookValue()) * $stok;
+                $totalBarang    += $stok;
+            }
+
+            $unitSummary[$unitName] = [
+                'items'           => $unitItems,
+                'total_nilai'     => $totalNilaiAset,
+                'total_akumulasi' => $totalAkumulasi,
+                'total_buku'      => $totalNilaiBuku,
+                'total_barang'    => $totalBarang,
+                'jumlah_item'     => $unitItems->count(),
+            ];
+        }
+
+        // 🔥 Grand total (semua unit digabung)
+        $grandTotalNilai  = collect($unitSummary)->sum('total_nilai');
+        $grandTotalAkum   = collect($unitSummary)->sum('total_akumulasi');
+        $grandTotalBuku   = collect($unitSummary)->sum('total_buku');
+        $grandTotalBarang = collect($unitSummary)->sum('total_barang');
+
+        // Untuk filter dropdown
+        $categories = Category::orderBy('name')->get();
+        $units      = Unit::where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.assets.depreciation', compact(
+            'unitSummary',
+            'categories',
+            'units',
+            'grandTotalNilai',
+            'grandTotalAkum',
+            'grandTotalBuku',
+            'grandTotalBarang'
         ));
     }
 }

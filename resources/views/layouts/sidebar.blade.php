@@ -74,7 +74,7 @@
                 </a>
             </li>
 
-            {{-- 🔥 SUMBER DANA — ikon hand-holding-dollar + animasi wiggle --}}
+            {{-- 🔥 SUMBER DANA --}}
             <li>
                 <a href="{{ route('super_admin.funding-sources.index') }}"
                    class="menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
@@ -82,36 +82,50 @@
                                 ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
                                 : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
 
-                    {{-- Efek kilau melintas saat hover --}}
                     <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
 
-                    {{-- Ikon: hand-holding-dollar + animasi wiggle --}}
                     <i class="fas fa-hand-holding-dollar w-5 text-center animate-wiggle-slow relative z-10 transition-colors"></i>
 
                     <span class="text-sm font-medium relative z-10 transition-colors">Sumber Dana</span>
                 </a>
             </li>
 
-            {{-- ============================================================ --}}
-            {{-- 🔥 NILAI ASET — DISAMAKAN DENGAN SUMBER DANA                  --}}
-            {{-- ============================================================ --}}
+            {{-- 🔥 NILAI ASET --}}
             <li>
                 <a href="{{ route('super_admin.assets.index') }}"
                    class="menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
-                          {{ request()->routeIs('super_admin.assets.*')
+                          {{ request()->routeIs('super_admin.assets.index')
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+
+                    <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
+
+                    <i class="fas fa-coins w-5 text-center animate-bounce-slow relative z-10 transition-colors"></i>
+
+                    <span class="text-sm font-medium relative z-10 transition-colors">Nilai Aset</span>
+                </a>
+            </li>
+
+            {{-- ============================================================ --}}
+            {{-- 🔥🔥🔥 PENYUSUTAN ASET — MENU BARU                          --}}
+            {{-- ============================================================ --}}
+            <li>
+                <a href="{{ route('super_admin.assets.depreciation') }}"
+                   class="menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all overflow-hidden
+                          {{ request()->routeIs('super_admin.assets.depreciation')
                                 ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
                                 : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
 
                     {{-- Efek kilau melintas saat hover --}}
                     <span class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"></span>
 
-                    {{-- Ikon koin + animasi bounce --}}
-                    <i class="fas fa-coins w-5 text-center animate-bounce-slow relative z-10 transition-colors"></i>
+                    {{-- Ikon chart-line + animasi pulse --}}
+                    <i class="fas fa-chart-line w-5 text-center animate-pulse-soft relative z-10 transition-colors"></i>
 
-                    <span class="text-sm font-medium relative z-10 transition-colors">Nilai Aset</span>
+                    <span class="text-sm font-medium relative z-10 transition-colors">Penyusutan Aset</span>
                 </a>
             </li>
-            {{-- 🔥 END MENU NILAI ASET --}}
+            {{-- 🔥 END MENU PENYUSUTAN ASET --}}
 
             <li class="px-3 pb-1 pt-4 text-[11px] font-semibold tracking-wider text-teal-200/70 uppercase">Transaksi</li>
 
@@ -238,7 +252,7 @@
                 </a>
             </li>
 
-            {{-- 🔥 PENGAJUAN ASET (PENGHAPUSAN BARANG RUSAK) --}}
+            {{-- 🔥 PENGAJUAN ASET --}}
             <li>
                 <a href="{{ route('user.disposals.create') }}"
                    class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
@@ -398,7 +412,7 @@
 <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
 
 {{-- ============================================================ --}}
-{{-- 🔥 STYLE: Animasi untuk menu Sumber Dana & Nilai Aset        --}}
+{{-- 🔥 STYLE: Animasi untuk menu Sumber Dana, Nilai Aset, Penyusutan --}}
 {{-- ============================================================ --}}
 @push('styles')
 <style>
@@ -434,7 +448,7 @@
         animation: wiggleSlow 0.8s ease-in-out infinite;
     }
 
-    /* ===== Pulse halus — ikon sparkles (Nilai Aset) ===== */
+    /* ===== Pulse halus — ikon chart-line (Penyusutan Aset) ===== */
     @keyframes pulseSoft {
         0%, 100% { opacity: 0.5; transform: scale(1); }
         50%      { opacity: 1; transform: scale(1.15); }
@@ -443,6 +457,10 @@
     .animate-pulse-soft {
         animation: pulseSoft 2s ease-in-out infinite;
         display: inline-block;
+    }
+
+    .group:hover .animate-pulse-soft {
+        animation: pulseSoft 0.8s ease-in-out infinite;
     }
 </style>
 @endpush

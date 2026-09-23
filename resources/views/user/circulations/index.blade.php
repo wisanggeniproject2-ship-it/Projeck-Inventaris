@@ -109,7 +109,12 @@
                         {{-- BARANG --}}
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-800">{{ $circulation->item->name ?? '-' }}</div>
-                            <div class="text-xs text-gray-500 font-mono mt-0.5">{{ $circulation->item->code ?? '-' }}</div>
+
+                            {{-- 🔥 KODE LENGKAP --}}
+                            <div class="text-[10px] font-mono font-semibold mt-0.5 break-all"
+                                 style="color: #0F6B5F;">
+                                {{ $circulation->item->full_code ?? $circulation->item->code ?? '-' }}
+                            </div>
                         </td>
 
                         {{-- UNIT --}}

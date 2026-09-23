@@ -157,20 +157,21 @@ Route::middleware(['auth', 'role:super_admin'])
             [\App\Http\Controllers\Admin\CirculationController::class, 'markReturned']
         )->name('circulations.return');
 
-        // 🔥🔥🔥 INI YANG BARU — KONFIRMASI PENGEMBALIAN (return_pending → returned)
         Route::post('circulations/{circulation}/confirm-return', 
             [\App\Http\Controllers\Admin\CirculationController::class, 'confirmReturn']
         )->name('circulations.confirm-return');
         
         // ============================================================
-        // 🔥 FITUR NILAI ASET
+        // 🔥 FITUR NILAI ASET & PENYUSUTAN
         // ============================================================
         Route::get('assets', [\App\Http\Controllers\Admin\AssetController::class, 'index'])->name('assets.index');
 
+        // 🔥🔥🔥 BARU: Halaman Penyusutan Aset
+        Route::get('assets/depreciation', [\App\Http\Controllers\Admin\AssetController::class, 'depreciation'])
+            ->name('assets.depreciation');
+
         // ============================================================
         // 🔥 PENGAJUAN PENGHAPUSAN ASET
-        // ⚠️ URUTAN PENTING: route statis ('index') aman di sini karena
-        //    tidak ada bentrok dengan '{disposal}' yang pakai model binding.
         // ============================================================
         Route::get('disposals', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'index'])->name('disposals.index');
         Route::get('disposals/{disposal}', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'show'])->name('disposals.show');
@@ -228,7 +229,6 @@ Route::middleware(['auth', 'role:admin_unit'])
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'markReturned']
         )->name('circulations.return');
 
-        // 🔥🔥🔥 KONFIRMASI PENGEMBALIAN
         Route::post('circulations/{circulation}/confirm-return', 
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'confirmReturn']
         )->name('circulations.confirm-return');
