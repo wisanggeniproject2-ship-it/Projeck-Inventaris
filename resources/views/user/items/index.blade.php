@@ -164,6 +164,18 @@
             $isBorrowed = $item->status == 'borrowed';
             $isBroken = $item->isBroken();
             $activeCirculation = $item->activeCirculation;
+
+            // 🔥 HITUNG STOK DETAIL — pakai method (fresh) + exclude disposed
+            $totalAktif     = $item->stockCodes()->where('status', '!=', 'disposed')->count();
+            $availableStock = $item->available_stock;
+            $borrowedStock  = $item->borrowed_stock;
+
+            // 🔥 FALLBACK kalau item belum punya item_stocks (data lama)
+            if ($item->stockCodes()->count() === 0) {
+                $totalAktif     = $item->stock;
+                $availableStock = $item->status === 'available' ? $item->stock : 0;
+                $borrowedStock  = $item->status === 'borrowed' ? $item->stock : 0;
+            }
             
             if ($canBorrow) {
                 $statusBadge    = 'Tersedia';
@@ -270,23 +282,58 @@
                     </span>
                 </div>
 
+                {{-- ============================================================ --}}
+                {{-- 🔥 STOK DETAIL — Total / Tersedia / Dipinjam                 --}}
+                {{-- ============================================================ --}}
+                <div class="mb-3 p-2.5 rounded-xl border-2" style="background: #F9FAFB; border-color: #E5E7EB;">
+                    <div class="grid grid-cols-3 gap-1.5">
+                        {{-- TOTAL (exclude disposed) --}}
+                        <div class="text-center p-1.5 bg-white rounded-lg border border-gray-200">
+                            <p class="text-[9px] text-gray-500 uppercase font-semibold leading-none mb-1">
+                                <i class="fas fa-boxes text-[8px]"></i> Total
+                            </p>
+                            <p class="text-base font-bold text-gray-700 leading-none">{{ $totalAktif }}</p>
+                        </div>
+
+                        {{-- TERSEDIA --}}
+                        <div class="text-center p-1.5 rounded-lg border-2"
+                             style="background: linear-gradient(135deg, #0F6B5F10 0%, #14857A10 100%); border-color: #0F6B5F40;">
+                            <p class="text-[9px] font-bold uppercase leading-none mb-1" style="color: #0F6B5F;">
+                                <i class="fas fa-check-circle text-[8px]"></i> Ready
+                            </p>
+                            <p class="text-base font-bold leading-none" style="color: #0F6B5F;">
+                                {{ $availableStock }}
+                            </p>
+                        </div>
+
+                        {{-- DIPINJAM --}}
+                        <div class="text-center p-1.5 rounded-lg border-2 {{ $borrowedStock > 0 ? 'border-orange-300' : 'border-gray-200' }}"
+                             style="background: {{ $borrowedStock > 0 ? 'linear-gradient(135deg, #FEF3C7 0%, #FFEDD5 100%)' : '#FFFFFF' }};">
+                            <p class="text-[9px] font-bold uppercase leading-none mb-1 {{ $borrowedStock > 0 ? 'text-orange-700' : 'text-gray-400' }}">
+                                <i class="fas fa-hand-paper text-[8px]"></i> Dipinjam
+                            </p>
+                            <p class="text-base font-bold leading-none {{ $borrowedStock > 0 ? 'text-orange-700' : 'text-gray-400' }}">
+                                {{ $borrowedStock }}
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Info kalau ada yang dipinjam --}}
+                    @if($borrowedStock > 0)
+                        <div class="mt-2 pt-2 border-t border-orange-200 flex items-center gap-1.5 text-[10px] text-orange-700">
+                            <i class="fas fa-info-circle"></i>
+                            <span><strong>{{ $borrowedStock }} unit</strong> sedang dipinjam pengguna lain</span>
+                        </div>
+                    @endif
+                </div>
+
                 <div class="space-y-1.5 mb-3 text-sm">
-                    {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
+                    {{-- 🔥 KODE LENGKAP --}}
                     <div class="flex items-start gap-2">
                         <i class="fas fa-qrcode w-4 mt-0.5 text-[10px]" style="color: #0F6B5F;"></i>
                         <span class="font-mono text-[10px] font-semibold leading-tight break-all"
                               style="color: #0F6B5F;">
                             {{ $item->full_code ?? $item->code }}
-                        </span>
-                    </div>
-
-                    {{-- Stok --}}
-                    <div class="flex items-center gap-2 text-gray-600">
-                        <i class="fas fa-boxes text-gray-400 w-4"></i>
-                        <span>Stok: 
-                            <strong style="color: {{ $item->stock > 0 ? '#0F6B5F' : '#ef4444' }};">
-                                {{ $item->stock }}
-                            </strong>
                         </span>
                     </div>
 

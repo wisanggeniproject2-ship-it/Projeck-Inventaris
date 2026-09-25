@@ -142,8 +142,6 @@ Route::middleware(['auth', 'role:super_admin'])
 
         // ============================================================
         // 🔥 SIRKULASI — AKSI CUSTOM
-        // ⚠️ HARUS dideklarasikan SEBELUM resource() supaya tidak ketiban
-        //    route resource '/circulations/{circulation}' yang match duluan.
         // ============================================================
         Route::post('circulations/{circulation}/approve', 
             [\App\Http\Controllers\Admin\CirculationController::class, 'approve']
@@ -166,7 +164,6 @@ Route::middleware(['auth', 'role:super_admin'])
         // ============================================================
         Route::get('assets', [\App\Http\Controllers\Admin\AssetController::class, 'index'])->name('assets.index');
 
-        // 🔥🔥🔥 BARU: Halaman Penyusutan Aset
         Route::get('assets/depreciation', [\App\Http\Controllers\Admin\AssetController::class, 'depreciation'])
             ->name('assets.depreciation');
 
@@ -205,7 +202,6 @@ Route::middleware(['auth', 'role:admin_unit'])
         
         // ============================================================
         // MANAJEMEN BARANG
-        // ⚠️ URUTAN PENTING: route statis dulu, baru '{item}'
         // ============================================================
         Route::get('/items', [AdminUnitItemController::class, 'index'])->name('items.index');
         Route::get('/items/create', [AdminUnitItemController::class, 'create'])->name('items.create');
@@ -215,7 +211,7 @@ Route::middleware(['auth', 'role:admin_unit'])
         Route::get('/items/{item}', [AdminUnitItemController::class, 'show'])->name('items.show');
         
         // ============================================================
-        // 🔥 SIRKULASI — AKSI CUSTOM (HARUS SEBELUM resource)
+        // 🔥 SIRKULASI — AKSI CUSTOM
         // ============================================================
         Route::post('circulations/{circulation}/approve', 
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'approve']
@@ -233,8 +229,110 @@ Route::middleware(['auth', 'role:admin_unit'])
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'confirmReturn']
         )->name('circulations.confirm-return');
 
-        // Resource dideklarasikan TERAKHIR biar custom route di atas menang
+        // Resource dideklarasikan TERAKHIR
         Route::resource('circulations', \App\Http\Controllers\AdminUnit\CirculationController::class);
+});
+
+// =========================================================================
+// 🔥🔥🔥 ROUTE GROUP: MANAGER
+// =========================================================================
+Route::middleware(['auth', 'role:manager'])
+    ->prefix('manager')
+    ->name('manager.')
+    ->group(function () {
+        
+        // ============================================================
+        // DASHBOARD MANAGER
+        // ============================================================
+        Route::get('/dashboard', function () {
+            $totalItems    = \App\Models\Item::count();
+            $totalBorrowed = \App\Models\Circulation::where('status', 'approved')->count();
+            $totalPending  = \App\Models\Circulation::where('status', 'pending')->count();
+            $totalUnits    = \App\Models\Unit::count();
+
+            $stats = [
+                'total_items'    => $totalItems,
+                'total_borrowed' => $totalBorrowed,
+                'total_pending'  => $totalPending,
+                'total_units'    => $totalUnits,
+            ];
+
+            $recentCirculations = \App\Models\Circulation::with(['item', 'user'])
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $recentItems = \App\Models\Item::with(['unit', 'category'])
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $itemsByUnit = \App\Models\Unit::withCount('items')
+                ->where('is_active', true)
+                ->get();
+
+            return view('manager.dashboard', compact(
+                'stats',
+                'recentCirculations',
+                'recentItems',
+                'itemsByUnit'
+            ));
+        })->name('dashboard');
+        
+        // ============================================================
+        // MANAJEMEN BARANG (Read-only)
+        // ============================================================
+        Route::get('/items', function () {
+            $items = \App\Models\Item::with(['category', 'unit', 'stockCodes'])
+                ->latest()
+                ->paginate(15);
+
+            $units      = \App\Models\Unit::where('is_active', true)->get();
+            $categories = \App\Models\Category::all();
+
+            return view('manager.items.index', compact('items', 'units', 'categories'));
+        })->name('items.index');
+        
+        Route::get('/items/{item}', function (\App\Models\Item $item) {
+            $item->load([
+                'category', 
+                'unit', 
+                'fundingSource', 
+                'stockCodes',
+                'disposals.user',
+                'disposals.approver',
+                'circulations.user',
+                'circulations.approver',
+            ]);
+            return view('manager.items.show', compact('item'));
+        })->name('items.show');
+        
+        // ============================================================
+        // SIRKULASI (Read-only)
+        // ============================================================
+        Route::get('/circulations', function () {
+            $circulations = \App\Models\Circulation::with(['item', 'user'])
+                ->latest()
+                ->paginate(15);
+
+            return view('manager.circulations.index', compact('circulations'));
+        })->name('circulations.index');
+        
+        Route::get('/circulations/{circulation}', function (\App\Models\Circulation $circulation) {
+            $circulation->load(['item', 'user', 'approver', 'itemStock']);
+            return view('manager.circulations.show', compact('circulation'));
+        })->name('circulations.show');
+
+        // ============================================================
+        // 🔥🔥🔥 BARU: MONITORING PENGHAPUSAN ASET (READ-ONLY)
+        // ============================================================
+        Route::get('/disposal-monitoring', 
+            [\App\Http\Controllers\Manager\DisposalMonitoringController::class, 'index']
+        )->name('disposal-monitoring.index');
+
+        Route::get('/disposal-monitoring/{disposal}', 
+            [\App\Http\Controllers\Manager\DisposalMonitoringController::class, 'show']
+        )->name('disposal-monitoring.show');
 });
 
 // =========================================================================

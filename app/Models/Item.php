@@ -13,7 +13,7 @@ class Item extends Model
 
     protected $fillable = [
         'code', 
-        'full_code',           // 🔥 TAMBAH INI
+        'full_code',           // 🔥 Kode lengkap (format baru)
         'name', 
         'category_id', 
         'unit_id', 
@@ -21,7 +21,7 @@ class Item extends Model
         'condition', 
         'price', 
         'stock', 
-        'disposed_stock',      // 🔥 TAMBAH INI
+        'disposed_stock',      // 🔥 Total yang sudah di-dispose
         'location', 
         'status', 
         'image', 
@@ -34,7 +34,7 @@ class Item extends Model
         'purchase_date' => 'date',
         'price' => 'decimal:2',
         'stock' => 'integer',
-        'disposed_stock' => 'integer',   // 🔥 TAMBAH INI
+        'disposed_stock' => 'integer',
     ];
 
     // ==================== RELATIONS ====================
@@ -75,33 +75,158 @@ class Item extends Model
         return $this->hasOne(AssetDisposal::class)->where('status', 'pending')->latest();
     }
 
+    // ============================================================
+    // 🔥 RELASI KE ITEM_STOCKS (KODE PER UNIT STOK)
+    // ============================================================
+    
+    /**
+     * Semua kode stok (termasuk yang disposed/borrowed)
+     */
+    public function stockCodes()
+    {
+        return $this->hasMany(ItemStock::class)->orderBy('stock_number');
+    }
+
+    /**
+     * Kode stok yang masih available (belum rusak/dipinjam)
+     */
+    public function availableStockCodes()
+    {
+        return $this->hasMany(ItemStock::class)
+            ->where('status', 'available')
+            ->orderBy('stock_number');
+    }
+
+    /**
+     * Kode stok yang sudah disposed
+     */
+    public function disposedStockCodes()
+    {
+        return $this->hasMany(ItemStock::class)
+            ->where('status', 'disposed')
+            ->orderBy('stock_number');
+    }
+
+    // ============================================================
+    // 🔥 ACCESSOR — STOK DETAIL
+    // ============================================================
+
+    /**
+     * 🔥 Stok tersedia = hitung LIVE dari item_stocks yang available
+     */
+    public function getAvailableStockAttribute(): int
+    {
+        return $this->stockCodes()->where('status', 'available')->count();
+    }
+
+    /**
+     * 🔥 Stok sedang dipinjam (borrowed)
+     */
+    public function getBorrowedStockAttribute(): int
+    {
+        return $this->stockCodes()->where('status', 'borrowed')->count();
+    }
+
+    /**
+     * 🔥 Stok disposed (rusak/hilang)
+     */
+    public function getDisposedStockCountAttribute(): int
+    {
+        return $this->stockCodes()->where('status', 'disposed')->count();
+    }
+
+    /**
+     * 🔥 Stok maintenance
+     */
+    public function getMaintenanceStockAttribute(): int
+    {
+        return $this->stockCodes()->where('status', 'maintenance')->count();
+    }
+
+    /**
+     * 🔥 Total fisik AKTIF (exclude disposed) — untuk display
+     */
+    public function getTotalActiveStockAttribute(): int
+    {
+        return $this->stockCodes()->where('status', '!=', 'disposed')->count();
+    }
+
+    /**
+     * 🔥 Total fisik SEMUA (termasuk disposed) — untuk audit
+     */
+    public function getTotalPhysicalStockAttribute(): int
+    {
+        return $this->stockCodes()->count();
+    }
+
+    /**
+     * 🔥🔥🔥 STOCK FOR ASSET — KHUSUS UNTUK NILAI ASET
+     * 
+     * Rumus: Ready + Dipinjam + Maintenance
+     * (Disposed dianggap HILANG MUSNAH, tidak dihitung)
+     */
+    public function getStockForAssetAttribute(): int
+    {
+        return $this->stockCodes()
+            ->whereIn('status', ['available', 'borrowed', 'maintenance'])
+            ->count();
+    }
+
+    // ============================================================
+    // 🔥 SYNC STOK — AUTO UPDATE items.stock
+    // ============================================================
+
+    /**
+     * 🔥 Sync items.stock dari hitungan item_stocks yang available
+     * 
+     * Dipanggil otomatis oleh ItemStockObserver
+     */
+    public function syncStockFromItemStocks(): void
+    {
+        // Kalau belum punya stock codes sama sekali, JANGAN diubah
+        if ($this->stockCodes()->count() === 0) {
+            return;
+        }
+
+        $availableCount = $this->stockCodes()->where('status', 'available')->count();
+
+        // Pakai updateQuietly biar tidak trigger event loop
+        $this->updateQuietly(['stock' => $availableCount]);
+
+        // Refresh model biar nilai terbaru kebaca
+        $this->refresh();
+    }
+
+    /**
+     * 🔥 Cek apakah item sudah punya stock codes
+     */
+    public function hasStockCodes(): bool
+    {
+        return $this->stockCodes()->exists();
+    }
+
     // ==================== STATUS METHODS ====================
     
-    // CEK APAKAH BARANG BISA DIPINJAM
     public function canBeBorrowed()
     {
         return $this->stock > 0 && $this->status === 'available' && $this->condition === 'baik';
     }
 
-    // CEK APAKAH BARANG RUSAK ATAU PERBAIKAN
     public function isBroken()
     {
         return $this->condition === 'rusak' || $this->condition === 'perbaikan';
     }
 
-    // CEK APAKAH BARANG TERKUNCI
     public function isLocked()
     {
         return $this->status === 'borrowed' || $this->status === 'maintenance' || $this->stock <= 0;
     }
 
-    // CEK APAKAH BARANG SUDAH DIHAPUS/DINONAKTIFKAN
     public function isDisposed()
     {
         return $this->status === 'disposed';
     }
 
-    // CEK APAKAH BARANG SEDANG ADA PENGAJUAN PENGHAPUSAN YANG MASIH PENDING
     public function hasPendingDisposalRequest()
     {
         return $this->disposals()->where('status', 'pending')->exists();
@@ -114,7 +239,6 @@ class Item extends Model
             $this->stock -= $qty;
             $this->save();
             
-            // Jika stok habis, update status
             if ($this->stock <= 0) {
                 $this->status = 'borrowed';
                 $this->save();
@@ -129,7 +253,6 @@ class Item extends Model
         $this->stock += $qty;
         $this->save();
         
-        // Jika stok > 0, update status
         if ($this->stock > 0 && $this->status === 'borrowed') {
             $this->status = 'available';
             $this->save();
@@ -137,7 +260,9 @@ class Item extends Model
         return true;
     }
 
-    // 🔥 TAMBAH INI — kurangi stok karena penghapusan aset
+    /**
+     * 🔥 Kurangi stok karena penghapusan aset
+     */
     public function disposeStock($qty = 1)
     {
         // Safety net: nggak boleh mengurangi lebih dari stok yang ada
@@ -176,11 +301,6 @@ class Item extends Model
     }
 
     // ==================== GENERATE KODE LAMA ====================
-    /**
-     * Generate kode unik untuk item.
-     * Format: {prefixUnit}/{sequence}/{categoryId}/{month}/{romanMonth}/{year}/Y
-     * Contoh: A/001/01/09/IX/2026/Y
-     */
     public static function generateCode($unitId, $categoryId, $purchaseDate = null)
     {
         $unit = Unit::find($unitId);
@@ -193,7 +313,7 @@ class Item extends Model
             throw new \Exception('Kategori tidak ditemukan');
         }
 
-        // 🔥 PREFIX UNIK PER UNIT — pakai unit_id, bukan huruf pertama nama unit
+        // 🔥 PREFIX UNIK PER UNIT
         if ($unit->id <= 26) {
             $unitCode = chr(64 + (int) $unit->id);
         } else {
@@ -202,7 +322,7 @@ class Item extends Model
             $unitCode = $first . $second;
         }
 
-        // 🔥 AMBIL NOMOR URUT TERBESAR dari kode dengan prefix yang sama
+        // 🔥 AMBIL NOMOR URUT TERBESAR
         $lastItem = self::where('code', 'LIKE', $unitCode . '/%')
             ->orderByRaw('CAST(SUBSTRING(code, 3, 3) AS UNSIGNED) DESC')
             ->first();
@@ -216,7 +336,6 @@ class Item extends Model
 
         $categoryCode = str_pad($category->id, 2, '0', STR_PAD_LEFT);
 
-        // Parse tanggal kalau string
         $date = $purchaseDate ?? now();
         if (is_string($date)) {
             $date = Carbon::parse($date);
@@ -229,7 +348,7 @@ class Item extends Model
 
         $code = $unitCode . '/' . $sequence . '/' . $categoryCode . '/' . $month . '/' . $monthRoman . '/' . $year . '/' . $yayasanCode;
 
-        // 🔥 SAFETY NET — kalau masih duplikat, increment sampai unik
+        // 🔥 SAFETY NET
         $attempt = 1;
         while (self::where('code', $code)->exists()) {
             $sequence = str_pad((int) $sequence + 1, 3, '0', STR_PAD_LEFT);
@@ -258,12 +377,6 @@ class Item extends Model
 
     /**
      * 🔥 Generate & simpan full_code
-     * 
-     * Format: {KATEGORI}/{KODE_BARANG}.{LOKASI}.{UNIT}/{NO_URUT}.{NO_STOK}/{TGL}/{BLN_ROMAWI}/{THN}
-     * Contoh: ELC/TVL-001.RUA.DCP/1.01/21/IX/2026
-     * 
-     * @param int $stockNumber Nomor stok (default 1)
-     * @return string
      */
     public function generateFullCode(int $stockNumber = 1): string
     {
@@ -274,15 +387,7 @@ class Item extends Model
     }
 
     /**
-     * 🔥 Get full_code per stok (tidak disimpan, cuma di-generate)
-     * 
-     * Contoh: 
-     *   getStockCode(1) → ELC/TVL-001.RUA.DCP/1.01/21/IX/2026
-     *   getStockCode(2) → ELC/TVL-001.RUA.DCP/1.02/21/IX/2026
-     *   getStockCode(5) → ELC/TVL-001.RUA.DCP/1.05/21/IX/2026
-     * 
-     * @param int $stockNumber Nomor stok (1 s/d stock)
-     * @return string|null
+     * 🔥 Get full_code per stok (generate dari full_code utama)
      */
     public function getStockCode(int $stockNumber): ?string
     {
@@ -290,7 +395,6 @@ class Item extends Model
             return null;
         }
 
-        // Ganti bagian ".01/" jadi ".XX/" sesuai stok
         return preg_replace(
             '/\.\d{2}\//',
             '.' . str_pad($stockNumber, 2, '0', STR_PAD_LEFT) . '/',
@@ -300,39 +404,138 @@ class Item extends Model
     }
 
     /**
-     * 🔥 Get semua kode stok (array)
-     * 
-     * Return: [
-     *   ['no' => 1, 'code' => 'ELC/TVL-001.RUA.DCP/1.01/21/IX/2026'],
-     *   ['no' => 2, 'code' => 'ELC/TVL-001.RUA.DCP/1.02/21/IX/2026'],
-     *   ...
-     * ]
-     * 
-     * @return array
+     * 🔥 Get semua kode stok dari tabel item_stocks (hanya available)
      */
     public function getAllStockCodes(): array
     {
-        $codes = [];
+        return $this->availableStockCodes()
+            ->get()
+            ->map(fn($s) => [
+                'id'   => $s->id,
+                'no'   => $s->stock_number,
+                'code' => $s->stock_code,
+            ])
+            ->toArray();
+    }
 
+    /**
+     * 🔥 Get semua kode stok (termasuk yang disposed)
+     */
+    public function getAllStockCodesWithDisposed(): array
+    {
+        return $this->stockCodes()
+            ->get()
+            ->map(fn($s) => [
+                'id'     => $s->id,
+                'no'     => $s->stock_number,
+                'code'   => $s->stock_code,
+                'status' => $s->status,
+            ])
+            ->toArray();
+    }
+
+    // ============================================================
+    // 🔥🔥🔥 SYNC STOCK CODES — RESET NOMOR (FIX NUMPUK)
+    // ============================================================
+
+    /**
+     * 🔥 Sync kode stok ke tabel item_stocks — RESET NOMOR
+     * 
+     * ATURAN:
+     * - Kode dengan status borrowed/disposed/maintenance → DIPERTAHANKAN
+     * - Kode dengan status available → DIHAPUS, lalu di-generate ulang
+     * - Nomor selalu di-reset dari .01 (skip nomor yang sudah dipakai)
+     * 
+     * Contoh:
+     *   Awal: .01 s/d .40 (semua available)
+     *   Edit jadi 4 → hapus semua, generate .01-.04 (BERSIH!)
+     *   
+     *   Awal: .01-.05 available, .06 borrowed
+     *   Edit jadi 5 → hapus .01-.05, generate .01-.04 (skip .06)
+     *                 Hasil: .01, .02, .03, .04, .06 (borrowed)
+     */
+    public function syncStockCodes(): void
+    {
+        // Pastikan full_code ada
         if (!$this->full_code) {
-            return $codes;
+            $this->generateFullCode();
+            $this->refresh();
         }
 
-        for ($i = 1; $i <= $this->stock; $i++) {
-            $codes[] = [
-                'no'   => $i,
-                'code' => $this->getStockCode($i),
-            ];
+        $targetStock = (int) $this->stock;
+
+        // ============================================================
+        // 🔥 STEP 1: Ambil nomor yang DIPERTAHANKAN (tidak boleh dihapus)
+        // ============================================================
+        $protectedStocks = $this->stockCodes()
+            ->whereIn('status', ['borrowed', 'disposed', 'maintenance'])
+            ->get();
+
+        $protectedNumbers = $protectedStocks->pluck('stock_number')->toArray();
+        $protectedCount   = count($protectedNumbers);
+
+        // ============================================================
+        // 🔥 STEP 2: Hapus semua kode yang statusnya AVAILABLE
+        // ============================================================
+        $this->stockCodes()
+            ->where('status', 'available')
+            ->delete();
+
+        // ============================================================
+        // 🔥 STEP 3: Hitung berapa kode baru yang perlu di-generate
+        // ============================================================
+        $needToGenerate = $targetStock - $protectedCount;
+
+        if ($needToGenerate <= 0) {
+            if ($needToGenerate < 0) {
+                \Log::warning(
+                    "Item #{$this->id} ({$this->name}): Target stok ({$targetStock}) " .
+                    "lebih kecil dari kode yang dilindungi ({$protectedCount}). " .
+                    "Kode tidak bisa dikurangi."
+                );
+            }
+            return;
         }
 
-        return $codes;
+        // ============================================================
+        // 🔥 STEP 4: Generate kode baru, mulai dari .01, skip nomor terpakai
+        // ============================================================
+        $counter   = 1;
+        $generated = 0;
+
+        while ($generated < $needToGenerate) {
+            // Skip nomor yang sudah dipakai (borrowed/disposed/maintenance)
+            if (in_array($counter, $protectedNumbers)) {
+                $counter++;
+                continue;
+            }
+
+            $code = $this->getStockCode($counter);
+            if (!$code) {
+                $counter++;
+                continue;
+            }
+
+            ItemStock::create([
+                'item_id'      => $this->id,
+                'stock_number' => $counter,
+                'stock_code'   => $code,
+                'status'       => 'available',
+            ]);
+
+            $generated++;
+            $counter++;
+
+            // Safety net biar tidak infinite loop
+            if ($counter > 9999) {
+                \Log::error("Item #{$this->id}: Infinite loop di syncStockCodes()");
+                break;
+            }
+        }
     }
 
     /**
      * 🔥 Accessor: full_code_formatted
-     * 
-     * Pakai di blade: {{ $item->full_code_formatted }}
-     * Kalau full_code kosong, fallback ke code lama.
      */
     public function getFullCodeFormattedAttribute(): string
     {
@@ -341,18 +544,11 @@ class Item extends Model
 
     // ==================== PENYUSUTAN ASET ====================
 
-    /**
-     * Masa manfaat (tahun) diambil dari kategori barang.
-     */
     public function getUsefulLifeYears()
     {
         return $this->category->useful_life_years ?? 5;
     }
 
-    /**
-     * Penyusutan per tahun (metode garis lurus, nilai sisa = 0).
-     * Rumus: Harga Beli / Masa Manfaat
-     */
     public function getAnnualDepreciation()
     {
         if (!$this->price || !$this->purchase_date) {
@@ -367,9 +563,6 @@ class Item extends Model
         return round($this->price / $usefulLife, 2);
     }
 
-    /**
-     * Jumlah tahun sejak tanggal beli (bisa pecahan, dihitung proporsional).
-     */
     public function getYearsInUse()
     {
         if (!$this->purchase_date) {
@@ -380,10 +573,6 @@ class Item extends Model
         return max(0, $years);
     }
 
-    /**
-     * Total penyusutan yang sudah berjalan (akumulasi).
-     * Tidak akan melebihi harga beli.
-     */
     public function getAccumulatedDepreciation()
     {
         if (!$this->price || !$this->purchase_date) {
@@ -397,10 +586,6 @@ class Item extends Model
         return round(min($accumulated, $this->price), 2);
     }
 
-    /**
-     * Nilai buku saat ini (Harga Beli - Akumulasi Penyusutan).
-     * Minimal Rp 0.
-     */
     public function getBookValue()
     {
         if (!$this->price) {
@@ -411,9 +596,6 @@ class Item extends Model
         return round(max($bookValue, 0), 2);
     }
 
-    /**
-     * Persentase penyusutan yang sudah terjadi (0-100%).
-     */
     public function getDepreciationPercentage()
     {
         if (!$this->price || $this->price <= 0) {
@@ -423,9 +605,6 @@ class Item extends Model
         return round(($this->getAccumulatedDepreciation() / $this->price) * 100, 1);
     }
 
-    /**
-     * Cek apakah barang sudah habis masa manfaatnya.
-     */
     public function isFullyDepreciated()
     {
         return $this->getYearsInUse() >= $this->getUsefulLifeYears();

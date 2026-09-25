@@ -34,7 +34,7 @@
             <p class="text-3xl font-bold text-amber-600">
                 Rp {{ number_format((float) $totalNilaiAset, 0, ',', '.') }}
             </p>
-            <p class="text-xs text-gray-500 mt-1">Harga × Stok semua barang</p>
+            <p class="text-xs text-gray-500 mt-1">Harga × Stok Aktif</p>
         </div>
 
         {{-- TOTAL JUMLAH BARANG --}}
@@ -48,7 +48,7 @@
             <p class="text-3xl font-bold text-teal-600">
                 {{ number_format((int) $totalJumlahBarang, 0, ',', '.') }}
             </p>
-            <p class="text-xs text-gray-500 mt-1">Total unit (stok) semua barang</p>
+            <p class="text-xs text-gray-500 mt-1">Ready + Dipinjam + Maintenance</p>
         </div>
 
         {{-- TOTAL KATEGORI --}}
@@ -170,24 +170,69 @@
                         @foreach($items as $item)
                         @php
                             // 🔥 CAST WAJIB — karena cast 'decimal:2' di model = STRING
-                            $harga    = (float) ($item->price ?? 0);
-                            $stok     = (int)   ($item->stock ?? 1);
+                            $harga = (float) ($item->price ?? 0);
+                            
+                            // 🔥🔥🔥 STOK UNTUK NILAI ASET
+                            // = Ready + Dipinjam + Maintenance
+                            // (Disposed dianggap hilang, TIDAK dihitung)
+                            $stok = $item->stock_for_asset;
+                            
                             $subtotal = $harga * $stok;
+
+                            // Info breakdown untuk tooltip
+                            $availableStock   = $item->available_stock;
+                            $borrowedStock    = $item->borrowed_stock;
+                            $disposedStock    = $item->disposed_stock_count;
+                            $maintenanceStock = $item->maintenance_stock;
                         @endphp
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 font-mono text-sm text-gray-600">{{ $item->code }}</td>
+                            {{-- 🔥 KODE BARANG — pakai full_code --}}
+                            <td class="px-6 py-4">
+                                <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border max-w-[280px]"
+                                     style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                                    <i class="fas fa-qrcode text-[9px] mt-0.5 shrink-0" style="color: #0F6B5F;"></i>
+                                    <span class="font-mono text-[10px] lg:text-[11px] font-semibold leading-tight break-all"
+                                          style="color: #0F6B5F;">
+                                        {{ $item->full_code ?? $item->code ?? '-' }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {{-- Nama Barang --}}
                             <td class="px-6 py-4 font-medium text-gray-800">{{ $item->name }}</td>
+
+                            {{-- Kategori --}}
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
                                     {{ optional($item->category)->name ?? '-' }}
                                 </span>
                             </td>
+
+                            {{-- Harga --}}
                             <td class="px-6 py-4 text-right text-sm text-gray-700">
                                 Rp {{ number_format($harga, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-center text-sm text-gray-700">
-                                {{ $stok }}
+
+                            {{-- Stok --}}
+                            <td class="px-6 py-4 text-center">
+                                <div class="inline-flex flex-col items-center">
+                                    <span class="text-sm font-bold text-gray-800">{{ $stok }}</span>
+
+                                    @if($borrowedStock > 0 || $disposedStock > 0 || $maintenanceStock > 0)
+                                        <span class="text-[9px] text-gray-400 mt-0.5"
+                                              title="Ready: {{ $availableStock }} | Dipinjam: {{ $borrowedStock }} | Maintenance: {{ $maintenanceStock }} | Disposed (tidak dihitung): {{ $disposedStock }}">
+                                            @if($borrowedStock > 0)
+                                                <i class="fas fa-hand-paper text-orange-400"></i> {{ $borrowedStock }}
+                                            @endif
+                                            @if($disposedStock > 0)
+                                                <i class="fas fa-trash text-red-400 ml-0.5"></i> {{ $disposedStock }}
+                                            @endif
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
+
+                            {{-- Subtotal --}}
                             <td class="px-6 py-4 text-right font-semibold text-gray-800">
                                 Rp {{ number_format($subtotal, 0, ',', '.') }}
                             </td>

@@ -12,9 +12,14 @@ Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 // ============================================================
 Route::get('items', [ItemController::class, 'index'])->name('items.index');
 
-// 🔥 BARU: Ambil daftar unit yang punya barang ini (untuk modal pilih unit)
+// 🔥 Ambil daftar unit yang punya barang ini (untuk modal pilih unit)
 // PENTING: route ini HARUS di atas 'items/{item}' biar tidak bentrok
 Route::get('items/{item}/units', [ItemController::class, 'getUnitsForItem'])->name('items.units-for-item');
+
+// 🔥🔥🔥 BARU: Ambil daftar kode stok yang available (untuk form disposal)
+// PENTING: route ini HARUS di atas 'items/{item}' biar tidak bentrok
+Route::get('items/{item}/stock-codes', [AssetDisposalController::class, 'getStockCodes'])
+    ->name('items.stock-codes');
 
 Route::get('items/{item}', [ItemController::class, 'show'])->name('items.show');
 

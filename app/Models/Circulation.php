@@ -10,10 +10,23 @@ class Circulation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id', 'user_id', 'borrower_name', 'borrow_date', 'return_date',
-        'expected_return_date', 'status', 'purpose', 'notes', 
-        'approved_by', 'approved_at', 'return_confirmed_by', 'return_confirmed_at',
-        'rejection_reason', 'rejected_at',
+        'item_id',
+        'item_stock_id',      // 🔥 TAMBAH — FK ke item_stocks
+        'stock_code',         // 🔥 TAMBAH — kode stok spesifik
+        'user_id',
+        'borrower_name',
+        'borrow_date',
+        'return_date',
+        'expected_return_date',
+        'status',
+        'purpose',
+        'notes',
+        'approved_by',
+        'approved_at',
+        'return_confirmed_by',
+        'return_confirmed_at',
+        'rejection_reason',
+        'rejected_at',
     ];
 
     /**
@@ -28,9 +41,19 @@ class Circulation extends Model
         'rejected_at'          => 'datetime',
     ];
 
+    // ==================== RELATIONS ====================
+    
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /**
+     * 🔥 Relasi ke kode stok spesifik yang dipinjam
+     */
+    public function itemStock()
+    {
+        return $this->belongsTo(ItemStock::class, 'item_stock_id');
     }
 
     public function user()
@@ -49,6 +72,7 @@ class Circulation extends Model
     }
 
     // ==================== STATUS ====================
+    
     public function isPending()
     {
         return $this->status === 'pending';
@@ -80,6 +104,7 @@ class Circulation extends Model
     }
 
     // ==================== TENGGAT / TERLAMBAT ====================
+    
     /**
      * 🔥 Cek apakah peminjaman sudah lewat tenggat.
      * Hanya berlaku untuk status 'approved' atau 'return_pending'.
@@ -105,8 +130,8 @@ class Circulation extends Model
             return null;
         }
         return $this->expected_return_date->diffForHumans(now(), [
-            'parts' => 2,
-            'short' => false,
+            'parts'  => 2,
+            'short'  => false,
             'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE,
         ]);
     }
@@ -132,35 +157,49 @@ class Circulation extends Model
             return null;
         }
         return now()->diffForHumans($this->expected_return_date, [
-            'parts' => 2,
-            'short' => true,
+            'parts'  => 2,
+            'short'  => true,
             'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE,
         ]);
     }
 
     // ==================== APPROVE ====================
+    
+    /**
+     * 🔥 Setujui peminjaman.
+     * 
+     * Yang terjadi:
+     * 1. Status circulation → 'approved'
+     * 2. Status item_stock → 'borrowed' (kalau ada)
+     */
     public function approve()
     {
-        $this->status = 'approved';
+        $this->status      = 'approved';
         $this->approved_at = now();
         $this->save();
-        
-        if ($this->item) {
+
+        // 🔥 Update status kode stok → borrowed
+        if ($this->item_stock_id && $this->itemStock) {
+            $this->itemStock->markAsBorrowed(
+                'Dipinjam oleh ' . $this->borrower_name . ' via circulation #' . $this->id
+            );
+        }
+
+        // Update status item (opsional)
+        if ($this->item && !$this->item_stock_id) {
             $this->item->status = 'borrowed';
             $this->item->save();
         }
     }
 
     // ==================== REJECT ====================
+    
     /**
      * Tandai sirkulasi sebagai ditolak.
-     *
-     * @param  string|null  $reason  Alasan penolakan
-     * @return void
      */
     public function reject(?string $reason = null)
     {
-        $this->status = 'rejected';
+        $this->status      = 'rejected';
         $this->rejected_at = now();
         if ($reason) {
             $this->rejection_reason = $reason;
@@ -169,27 +208,44 @@ class Circulation extends Model
     }
 
     // ==================== RETURN ====================
+    
     public function requestReturn()
     {
         $this->status = 'return_pending';
         $this->save();
     }
 
+    /**
+     * 🔥 Konfirmasi pengembalian.
+     * 
+     * Yang terjadi:
+     * 1. Status circulation → 'returned'
+     * 2. Status item_stock → 'available' (kode stok kembali tersedia)
+     */
     public function confirmReturn($adminId)
     {
-        $this->status = 'returned';
-        $this->return_date = now();
+        $this->status              = 'returned';
+        $this->return_date         = now();
         $this->return_confirmed_by = $adminId;
         $this->return_confirmed_at = now();
         $this->save();
-        
-        if ($this->item) {
+
+        // 🔥 Update status kode stok → available kembali
+        if ($this->item_stock_id && $this->itemStock) {
+            $this->itemStock->markAsAvailable(
+                'Dikembalikan via circulation #' . $this->id
+            );
+        }
+
+        // Update status item (opsional)
+        if ($this->item && !$this->item_stock_id) {
             $this->item->status = 'available';
             $this->item->save();
         }
     }
 
     // ==================== SCOPES ====================
+    
     public function scopeActive($query)
     {
         return $query->whereIn('status', ['pending', 'approved', 'return_pending']);
@@ -216,5 +272,13 @@ class Circulation extends Model
     {
         return $query->whereIn('status', ['approved', 'return_pending'])
             ->where('expected_return_date', '<', now());
+    }
+
+    /**
+     * 🔥 Scope: filter by kode stok
+     */
+    public function scopeForStock($query, $itemStockId)
+    {
+        return $query->where('item_stock_id', $itemStockId);
     }
 }

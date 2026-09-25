@@ -10,19 +10,39 @@ class AssetDisposal extends Model
     use HasFactory;
 
     protected $fillable = [
-    'item_id', 'user_id', 'reason', 'quantity', 'photos', 'status',
-    'approved_by', 'approved_at', 'rejection_reason', 'rejected_at',
+        'item_id',
+        'item_stock_id',   // 🔥 TAMBAH — FK ke item_stocks
+        'stock_code',      // 🔥 TAMBAH — kode stok spesifik yang diajukan
+        'user_id',
+        'reason',
+        'quantity',
+        'photos',
+        'status',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
+        'rejected_at',
     ];
 
     protected $casts = [
-    'photos' => 'array',
-    'approved_at' => 'datetime',
-    'rejected_at' => 'datetime',
+        'photos'        => 'array',
+        'approved_at'   => 'datetime',
+        'rejected_at'   => 'datetime',
+        'quantity'      => 'integer',
     ];
 
+    // ==================== RELATIONS ====================
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /**
+     * 🔥 Relasi ke kode stok spesifik yang diajukan
+     */
+    public function itemStock()
+    {
+        return $this->belongsTo(ItemStock::class, 'item_stock_id');
     }
 
     public function user()
@@ -54,14 +74,21 @@ class AssetDisposal extends Model
     // ==================== APPROVE ====================
     public function approve($adminId)
     {
-        $this->status = 'approved';
+        // Update status disposal
+        $this->status      = 'approved';
         $this->approved_by = $adminId;
         $this->approved_at = now();
         $this->save();
 
-        // 🔥 Stok dikurangi sesuai jumlah yang diajukan.
-        // Kalau stok habis, disposeStock() OTOMATIS set status='disposed' + condition='rusak'.
-        // Kalau stok masih ada, item TETAP 'available' + 'baik' biar sisanya bisa dipinjam.
+        // 🔥 1. Update status item_stock → disposed (kalau ada)
+        if ($this->item_stock_id && $this->itemStock) {
+            $this->itemStock->update([
+                'status' => 'disposed',
+                'notes'  => 'Dihapus via pengajuan #' . $this->id . ' (' . ($this->reason ?? '-') . ')',
+            ]);
+        }
+
+        // 🔥 2. Kurangi stok item & tambah disposed_stock
         if ($this->item) {
             $this->item->disposeStock($this->quantity);
         }
@@ -70,7 +97,7 @@ class AssetDisposal extends Model
     // ==================== REJECT ====================
     public function reject(?string $reason = null)
     {
-        $this->status = 'rejected';
+        $this->status      = 'rejected';
         $this->rejected_at = now();
         if ($reason) {
             $this->rejection_reason = $reason;
@@ -82,5 +109,15 @@ class AssetDisposal extends Model
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
     }
 }

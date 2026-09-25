@@ -61,14 +61,27 @@
                     <tr class="hover:bg-gray-50 transition 
                         {{ $circulation->status == 'pending' ? 'bg-yellow-50' : '' }}
                         {{ $circulation->status == 'return_pending' ? 'bg-blue-50' : '' }}">
+
+                        {{-- BARANG --}}
                         <td class="px-6 py-4">
                             <div class="font-medium">{{ $circulation->item->name }}</div>
-                            <div class="text-xs text-gray-500">{{ $circulation->item->code }}</div>
+
+                            {{-- 🔥 KODE STOK SPESIFIK (badge brand) --}}
+                            @if($circulation->stock_code)
+                                <div class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold break-all"
+                                     style="background: #0F6B5F15; color: #0F6B5F;"
+                                     title="Kode stok unit yang dipinjam">
+                                    <i class="fas fa-qrcode text-[9px]"></i>
+                                    {{ $circulation->stock_code }}
+                                </div>
+                            @endif
                         </td>
+
                         <td class="px-6 py-4">
                             <div>{{ $circulation->borrower_name }}</div>
                             <div class="text-xs text-gray-500">oleh: {{ $circulation->user->name }}</div>
                         </td>
+
                         <td class="px-6 py-4">
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded">
                                 {{ $circulation->item->unit->name }}

@@ -47,7 +47,7 @@
                         <i class="fas fa-building text-[9px]"></i>{{ $selectedItem->unit->name ?? '-' }}
                     </span>
                     <span class="inline-flex items-center gap-1 font-medium bg-purple-50 text-purple-700 px-2 py-1 rounded-lg border border-purple-100">
-                        <i class="fas fa-boxes text-[9px]"></i>Stok: {{ $selectedItem->stock }}
+                        <i class="fas fa-boxes text-[9px]"></i>Stok Tersedia: {{ $availableStockCodes->count() ?? 0 }}
                     </span>
                 </div>
 
@@ -145,6 +145,61 @@
                             <i class="fas fa-lock absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                         </div>
                     </div>
+                </div>
+
+                {{-- ============================================================ --}}
+                {{-- 🔥 PILIH KODE STOK SPESIFIK                                   --}}
+                {{-- ============================================================ --}}
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-700">
+                        <i class="fas fa-qrcode text-brand-500 mr-1.5"></i>
+                        Pilih Kode Stok yang Mau Dipinjam <span class="text-red-500">*</span>
+                    </label>
+
+                    <div class="border-2 border-gray-200 rounded-xl p-3 max-h-72 overflow-y-auto bg-gray-50 space-y-2">
+                        @forelse($availableStockCodes as $sc)
+                            <label class="flex items-center gap-3 p-3 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-400 hover:bg-brand-50 cursor-pointer transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 has-[:checked]:shadow-sm">
+                                <input type="radio"
+                                       name="item_stock_id"
+                                       value="{{ $sc->id }}"
+                                       required
+                                       {{ old('item_stock_id') == $sc->id ? 'checked' : '' }}
+                                       class="w-4 h-4 text-brand-500 focus:ring-brand-500 shrink-0 cursor-pointer">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md text-[10px] font-bold shrink-0"
+                                              style="background: #0F6B5F20; color: #0F6B5F;">
+                                            {{ str_pad($sc->stock_number, 2, '0', STR_PAD_LEFT) }}
+                                        </span>
+                                        <span class="text-[10px] font-semibold text-gray-500 uppercase">
+                                            Stok ke-{{ $sc->stock_number }}
+                                        </span>
+                                    </div>
+                                    <p class="font-mono text-[11px] font-bold break-all leading-tight"
+                                       style="color: #0F6B5F;">
+                                        {{ $sc->stock_code }}
+                                    </p>
+                                </div>
+                                <i class="fas fa-check-circle text-brand-500 text-lg opacity-0 transition-opacity peer-checked:opacity-100"></i>
+                            </label>
+                        @empty
+                            <div class="text-center py-6">
+                                <i class="fas fa-exclamation-circle text-2xl text-yellow-400 mb-2 block"></i>
+                                <p class="text-xs text-gray-500">Tidak ada kode stok tersedia</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Pilih 1 kode stok. Kode stok lain yang sedang dipinjam orang lain tidak akan muncul di sini.
+                    </p>
+
+                    @error('item_stock_id')
+                        <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                            <i class="fas fa-exclamation-circle"></i>{{ $message }}
+                        </p>
+                    @enderror
                 </div>
 
                 {{-- Nama Peminjam --}}

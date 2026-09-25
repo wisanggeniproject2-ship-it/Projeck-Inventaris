@@ -9,6 +9,19 @@
     $totalPending  = $stats['total_pending'] ?? 0;
     $totalUnits    = $stats['total_units'] ?? 0;
     $totalAvailable = max($totalItems - $totalBorrowed, 0);
+
+    // ============================================================
+    // 🔥🔥🔥 BARANG YANG BARU DIHANCURKAN (dari semua unit)
+    // ============================================================
+    $recentDisposals = collect();
+    if (class_exists(\App\Models\AssetDisposal::class)) {
+        $recentDisposals = \App\Models\AssetDisposal::with(['item.unit', 'user', 'approver'])
+            ->where('status', 'approved')
+            ->whereNotNull('stock_code')
+            ->latest('approved_at')
+            ->take(8)
+            ->get();
+    }
 @endphp
 
 <div class="max-w-[1600px] mx-auto">
@@ -27,7 +40,7 @@
         </div>
     </div>
 
-    {{-- STAT CARDS (Hijau Toska) --}}
+    {{-- STAT CARDS --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
         <div class="card-elevated p-5">
             <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center mb-3 shadow-brand">
@@ -62,7 +75,106 @@
         </div>
     </div>
 
-    {{-- STATUS BARANG (Toska) --}}
+    {{-- CARD: BARANG YANG BARU DIHANCURKAN --}}
+    @if($recentDisposals->count() > 0)
+    <div class="card-elevated p-4 sm:p-5 mb-6 animate-fadeInUp border-l-4 border-l-red-500">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <span class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                    <i class="fas fa-trash-can text-red-600 text-sm"></i>
+                </span>
+                Barang yang Baru Dihancurkan
+                <span class="ml-1 px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full bg-red-500 text-white">
+                    {{ $recentDisposals->count() }}
+                </span>
+            </h3>
+            <span class="text-[10px] sm:text-xs text-gray-400 hidden sm:block">Semua Unit</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            @foreach($recentDisposals as $disposal)
+            @php
+                $approvedDate = $disposal->approved_at ?? $disposal->created_at;
+                $hariIndo = [
+                    'Sunday' => 'Minggu',
+                    'Monday' => 'Senin',
+                    'Tuesday' => 'Selasa',
+                    'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis',
+                    'Friday' => 'Jumat',
+                    'Saturday' => 'Sabtu',
+                ];
+                $namaHari = $hariIndo[$approvedDate->format('l')] ?? $approvedDate->format('l');
+            @endphp
+            <div class="bg-white rounded-xl border border-red-100 overflow-hidden hover:shadow-md hover:border-red-300 transition group">
+
+                <div class="relative h-32 bg-gray-100">
+                    <img src="{{ $disposal->item->image_url ?? asset('assets/images/default-item.png') }}"
+                         alt="{{ $disposal->item->name ?? '-' }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-red-900/70 via-red-900/20 to-transparent"></div>
+
+                    <div class="absolute top-2 right-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white shadow-md ring-2 ring-white/50">
+                            <i class="fas fa-trash-can text-[8px]"></i>
+                            DIHAPUS
+                        </span>
+                    </div>
+
+                    <div class="absolute bottom-2 left-2 text-[10px] text-white font-medium">
+                        <i class="fas fa-calendar-check text-[9px] mr-1"></i>
+                        {{ $approvedDate->format('d/m/Y') }}
+                        <span class="ml-1">
+                            <i class="fas fa-clock text-[9px] mr-1"></i>
+                            {{ $approvedDate->format('H:i') }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-3">
+                    <p class="text-sm font-bold text-gray-800 truncate" title="{{ $disposal->item->name ?? '-' }}">
+                        {{ $disposal->item->name ?? 'Barang tidak ditemukan' }}
+                    </p>
+
+                    @if($disposal->stock_code)
+                    <div class="inline-flex items-start gap-1 mt-1.5 px-1.5 py-0.5 rounded-md max-w-full"
+                         style="background: #0F6B5F15; color: #0F6B5F;">
+                        <i class="fas fa-barcode text-[8px] mt-0.5 shrink-0"></i>
+                        <span class="font-mono text-[9px] font-semibold leading-tight break-all">
+                            {{ $disposal->stock_code }}
+                        </span>
+                    </div>
+                    @endif
+
+                    <div class="mt-2 space-y-1 pt-2 border-t border-gray-100">
+                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                            <i class="fas fa-building text-teal-500"></i>
+                            <span class="truncate">
+                                Unit: <strong class="text-gray-700">{{ $disposal->item->unit->name ?? '-' }}</strong>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                            <i class="fas fa-user text-blue-500"></i>
+                            <span class="truncate" title="Diajukan oleh">
+                                Diajukan: <strong class="text-gray-700">{{ $disposal->user->name ?? '-' }}</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-2 border-t border-gray-100 text-[10px] text-gray-400 flex items-center gap-1">
+                        <i class="fas fa-calendar-day"></i>
+                        {{ $namaHari }}, {{ $approvedDate->translatedFormat('d F Y') }}
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- STATUS BARANG --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div class="card-elevated p-5 animate-fadeInUp" style="animation-delay:.1s">
             <div class="flex items-center justify-between mb-5">
@@ -101,7 +213,7 @@
             </ul>
         </div>
 
-        {{-- AKTIVITAS TERBARU (Toska) --}}
+        {{-- AKTIVITAS TERBARU --}}
         <div class="card-elevated p-5 animate-fadeInUp" style="animation-delay:.18s">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-semibold text-gray-800 flex items-center gap-2">
@@ -147,7 +259,7 @@
         </div>
     </div>
 
-    {{-- BARANG PER UNIT (Toska) --}}
+    {{-- BARANG PER UNIT --}}
     <div class="card-elevated animate-fadeInUp mb-6" style="animation-delay:.26s">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 class="font-semibold text-gray-800 flex items-center gap-2">
@@ -171,7 +283,7 @@
         </div>
     </div>
 
-    {{-- BARANG TERBARU (Toska) --}}
+    {{-- BARANG TERBARU --}}
     <div class="card-elevated animate-fadeInUp" style="animation-delay:.34s">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 class="font-semibold text-gray-800 flex items-center gap-2">
@@ -200,7 +312,17 @@
                 <tbody class="divide-y divide-gray-50">
                     @foreach($recentItems as $item)
                     <tr class="hover:bg-gray-50/70 transition">
-                        <td class="px-5 py-3.5 font-medium text-gray-700">{{ $item->code }}</td>
+                        {{-- 🔥 KODE LENGKAP (pakai full_code) --}}
+                        <td class="px-5 py-3.5">
+                            <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border max-w-[280px]"
+                                 style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                                <i class="fas fa-qrcode text-[9px] mt-0.5 shrink-0" style="color: #0F6B5F;"></i>
+                                <span class="font-mono text-[10px] font-semibold leading-tight break-all"
+                                      style="color: #0F6B5F;">
+                                    {{ $item->full_code ?? $item->code ?? '-' }}
+                                </span>
+                            </div>
+                        </td>
                         <td class="px-5 py-3.5 text-gray-700">{{ $item->name }}</td>
                         <td class="px-5 py-3.5 text-gray-500">{{ $item->unit->name ?? '-' }}</td>
                         <td class="px-5 py-3.5 text-gray-500">{{ $item->location }}</td>

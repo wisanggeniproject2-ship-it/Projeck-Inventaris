@@ -99,6 +99,9 @@ class ItemController extends Controller
 
         $item = Item::create($data);
 
+        $item->generateFullCode();
+        $item->syncStockCodes();
+
         try {
             $qrCodePath = $this->qrCodeService->generateQrCode($item);
             $item->update(['qr_code_path' => $qrCodePath]);
@@ -117,7 +120,7 @@ class ItemController extends Controller
             abort(403);
         }
 
-        $item->load(['category', 'unit', 'fundingSource', 'circulations.user']);
+        $item->load(['category', 'unit', 'fundingSource', 'circulations.user', 'stockCodes']);
         return view('admin_unit.items.show', compact('item'));
     }
 
@@ -139,27 +142,107 @@ class ItemController extends Controller
         abort(403, 'Admin unit tidak memiliki akses untuk menghapus barang.');
     }
 
-    // ==================== GENERATE PDF STIKER ====================
+    // ============================================================
+    // 🔥🔥🔥 GENERATE PDF STIKER — SPLIT 10 STIKER PER FILE
+    // ============================================================
     public function generatePdf(Item $item)
     {
+        // 🔥 Cek akses admin unit
         if ($item->unit_id !== auth()->user()->unit_id) {
             abort(403, 'Anda tidak memiliki akses ke barang ini.');
         }
 
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', '600');
+
         $item->load(['category', 'unit', 'fundingSource']);
 
-        $pdf = Pdf::loadView('admin.items.pdf', compact('item'));
-        $pdf->setPaper('A4', 'landscape');
+        // 🔥 Ambil SEMUA kode stok AKTIF (available + borrowed + maintenance)
+        // Disposed TIDAK dicetak (barang sudah hilang)
+        $stockCodes = $item->stockCodes()
+            ->where('status', '!=', 'disposed')
+            ->orderBy('stock_number')
+            ->get();
 
-        $cleanCode = str_replace('/', '-', $item->code);
-        $fileName = 'stiker-' . $cleanCode . '.pdf';
+        // Fallback kalau item_stocks kosong (item lama)
+        if ($stockCodes->count() === 0) {
+            $stockCodes = collect([
+                (object) [
+                    'stock_number' => 1,
+                    'stock_code'   => $item->full_code ?? $item->code,
+                    'status'       => 'available',
+                ],
+            ]);
+        }
 
-        return $pdf->download($fileName);
+        $totalStok = $stockCodes->count();
+        $perPage   = 10;  // 🔥 10 stiker per halaman A4
+        $cleanCode = str_replace(['/', '.'], '-', $item->code);
+
+        // ============================================================
+        // KASUS 1: 1-10 stok → 1 file PDF biasa
+        // ============================================================
+        if ($totalStok <= $perPage) {
+            $pdf = Pdf::loadView('admin.items.pdf', [
+                'item'       => $item,
+                'stockCodes' => $stockCodes,
+                'pageNumber' => 1,
+                'totalPages' => 1,
+            ])->setPaper('a4', 'portrait');
+
+            return $pdf->download('stiker-' . $cleanCode . '-x' . $totalStok . '.pdf');
+        }
+
+        // ============================================================
+        // KASUS 2: > 10 stok → ZIP berisi multiple PDF (10 stiker/file)
+        // ============================================================
+        $chunks     = $stockCodes->chunk($perPage);
+        $totalPages = $chunks->count();
+
+        // Buat ZIP temporary
+        $zipFileName = tempnam(sys_get_temp_dir(), 'stiker_pdf_') . '.zip';
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipFileName, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Gagal membuat ZIP file');
+        }
+
+        foreach ($chunks as $pageIndex => $chunk) {
+            $pageNum = $pageIndex + 1;
+
+            // Render PDF per batch
+            $pdf = Pdf::loadView('admin.items.pdf', [
+                'item'       => $item,
+                'stockCodes' => $chunk,
+                'pageNumber' => $pageNum,
+                'totalPages' => $totalPages,
+            ])->setPaper('a4', 'portrait');
+
+            $pdfContent = $pdf->output();
+
+            // Range nomor stok
+            $firstNo = $chunk->first()->stock_number ?? 1;
+            $lastNo  = $chunk->last()->stock_number ?? 1;
+
+            $pageNumStr = str_pad($pageNum, 2, '0', STR_PAD_LEFT);
+            $totalStr   = str_pad($totalPages, 2, '0', STR_PAD_LEFT);
+
+            $fileName = "stiker-{$cleanCode}-page{$pageNumStr}of{$totalStr}-stok{$firstNo}sd{$lastNo}.pdf";
+
+            $zip->addFromString($fileName, $pdfContent);
+        }
+
+        $zip->close();
+
+        $zipDownloadName = 'stiker-' . $cleanCode . '-x' . $totalStok . '.zip';
+
+        return response()->download($zipFileName, $zipDownloadName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
     }
 
     // ============================================================
-    // 🔥 GENERATE PNG STIKER — MULTI-STOK (OPTIMIZED)
-    // ⚡ AUTO-SPLIT per 25 stok → ZIP
+    // 🔥🔥🔥 GENERATE PNG STIKER — SEMUA KODE AKTIF
     // ============================================================
     public function generatePng(Item $item)
     {
@@ -168,37 +251,42 @@ class ItemController extends Controller
             abort(403, 'Anda tidak memiliki akses ke barang ini.');
         }
 
-        // 🔥 Naikkan PHP limits biar tidak crash
         ini_set('memory_limit', '1024M');
         ini_set('max_execution_time', '600');
 
         $item->load(['category', 'unit', 'fundingSource']);
 
-        $stockCodes = $item->getAllStockCodes();
-        $totalStok  = count($stockCodes);
+        // 🔥 Ambil SEMUA kode stok AKTIF (available + borrowed + maintenance)
+        $stockCodes = $item->stockCodes()
+            ->where('status', '!=', 'disposed')
+            ->orderBy('stock_number')
+            ->get()
+            ->map(fn($s) => [
+                'id'     => $s->id,
+                'no'     => $s->stock_number,
+                'code'   => $s->stock_code,
+                'status' => $s->status,
+            ])
+            ->toArray();
+
+        $totalStok = count($stockCodes);
 
         if ($totalStok === 0) {
             $stockCodes = [
-                ['no' => 1, 'code' => $item->full_code ?? $item->code],
+                ['no' => 1, 'code' => $item->full_code ?? $item->code, 'status' => 'available'],
             ];
             $totalStok = 1;
         }
 
-        // 🔥 BATAS MAKSIMAL PER PNG = 25 STOK
         $maxPerFile = 25;
 
-        // Kalau stok <= 25 → 1 file PNG biasa
         if ($totalStok <= $maxPerFile) {
             return $this->generateSinglePngFile($item, $stockCodes, $totalStok);
         }
 
-        // Kalau stok > 25 → ZIP berisi multiple PNG
         return $this->generateMultiPngZip($item, $stockCodes, $totalStok, $maxPerFile);
     }
 
-    /**
-     * 🔥 Generate 1 file PNG (untuk stok <= 25)
-     */
     private function generateSinglePngFile(Item $item, array $stockCodes, int $totalStok)
     {
         $fontRegular = public_path('fonts/font-regular.ttf');
@@ -206,7 +294,6 @@ class ItemController extends Controller
 
         $stickerW = 920;
         $stickerH = 290;
-
         $gapX = 30;
         $gapY = 30;
         $padOuter = 30;
@@ -221,7 +308,6 @@ class ItemController extends Controller
         $bgGray = imagecolorallocate($canvas, 245, 245, 245);
         imagefill($canvas, 0, 0, $bgGray);
 
-        // 🔥 CACHE LOGO
         $logoData = $this->loadLogoData();
 
         foreach ($stockCodes as $index => $sc) {
@@ -241,7 +327,7 @@ class ItemController extends Controller
         }
 
         ob_start();
-        imagepng($canvas, null, 6); // 🔥 compression 6
+        imagepng($canvas, null, 6);
         $imageData = ob_get_clean();
         imagedestroy($canvas);
 
@@ -253,9 +339,6 @@ class ItemController extends Controller
             ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
     }
 
-    /**
-     * 🔥 Generate multiple PNG → dibungkus ZIP (untuk stok > 25)
-     */
     private function generateMultiPngZip(Item $item, array $stockCodes, int $totalStok, int $maxPerFile)
     {
         $fontRegular = public_path('fonts/font-regular.ttf');
@@ -268,14 +351,11 @@ class ItemController extends Controller
         $padOuter = 30;
         $cols = 2;
 
-        // Bagi jadi beberapa batch
         $chunks     = array_chunk($stockCodes, $maxPerFile);
         $totalBatch = count($chunks);
 
-        // 🔥 CACHE LOGO sekali
         $logoData = $this->loadLogoData();
 
-        // Buat ZIP temporary
         $zipFileName = tempnam(sys_get_temp_dir(), 'stiker_') . '.zip';
         $zip = new \ZipArchive();
 
@@ -315,7 +395,7 @@ class ItemController extends Controller
             }
 
             ob_start();
-            imagepng($canvas, null, 6); // 🔥 compression 6
+            imagepng($canvas, null, 6);
             $imageData = ob_get_clean();
             imagedestroy($canvas);
 
@@ -335,9 +415,6 @@ class ItemController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    /**
-     * 🔥 Load logo SEKALI
-     */
     private function loadLogoData(): ?array
     {
         $logoPath = public_path('images/logopermata.png');
@@ -360,9 +437,6 @@ class ItemController extends Controller
         ];
     }
 
-    /**
-     * 🔥 Gambar 1 sticker di canvas pada posisi tertentu
-     */
     private function drawSticker($canvas, Item $item, array $stockCode, int $offsetX, int $offsetY, int $stickerW, int $stickerH, string $fontRegular, string $fontBold, ?array $logoData): void
     {
         $teal  = imagecolorallocate($canvas, 0, 121, 107);
@@ -396,7 +470,7 @@ class ItemController extends Controller
         imageline($canvas, $col2Start, $offsetY + 150, $col2End, $offsetY + 150, $teal);
         imageline($canvas, $col2Start, $offsetY + 220, $col2End, $offsetY + 220, $teal);
 
-        // ============ LOGO (cached) ============
+        // ============ LOGO ============
         if ($logoData) {
             $logoTargetWidth = 120;
             $logoH = (int) round($logoTargetWidth * ($logoData['height'] / $logoData['width']));
@@ -432,6 +506,7 @@ class ItemController extends Controller
             $codeFontSize -= 0.5;
         }
 
+        // 🔥 SEMUA WARNA HITAM (konsisten)
         imagettftext($canvas, (int) $codeFontSize, 0, $infoX, $offsetY + 130, $dark, $fontBold, $stockCode['code']);
 
         // TANGGAL
@@ -525,9 +600,6 @@ class ItemController extends Controller
         );
     }
 
-    /**
-     * 🔥 Build teks QR untuk kode stok spesifik
-     */
     private function buildQrTextForStock(Item $item, string $stockCode): string
     {
         $teks = "==================================\n";

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Circulation;
 use App\Models\Item;
+use App\Models\ItemStock;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,7 @@ class CirculationController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Circulation::with(['item', 'user', 'approver']);
+        $query = Circulation::with(['item', 'itemStock', 'user', 'approver']);
         
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -39,12 +40,17 @@ class CirculationController extends Controller
      */
     public function show(Circulation $circulation)
     {
-        $circulation->load(['item', 'user', 'approver']);
+        $circulation->load(['item', 'itemStock', 'user', 'approver']);
         return view('admin.circulations.show', compact('circulation'));
     }
 
     /**
      * ✅ APPROVE — setujui peminjaman (pending → approved)
+     * 
+     * Yang terjadi:
+     * 1. Cek kode stok masih available
+     * 2. Update item_stocks.status → borrowed
+     * 3. Update circulation.status → approved
      */
     public function approve(Circulation $circulation)
     {
@@ -52,18 +58,35 @@ class CirculationController extends Controller
             return back()->with('error', 'Peminjaman ini tidak bisa disetujui.');
         }
         
-        // 🔥 CEK STOK BARANG
         $item = $circulation->item;
         if (!$item) {
             return back()->with('error', 'Barang tidak ditemukan.');
         }
-        
-        if ($item->stock <= 0) {
-            return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
+
+        // 🔥 Cek kode stok spesifik
+        $itemStock = $circulation->itemStock;
+
+        if ($itemStock) {
+            // Kode stok spesifik dipilih — cek statusnya
+            if ($itemStock->status !== 'available') {
+                return back()->with('error', 
+                    'Kode stok "' . $itemStock->stock_code . '" sudah tidak tersedia (status: ' . $itemStock->status . ').');
+            }
+
+            // Update item_stock → borrowed
+            $itemStock->markAsBorrowed(
+                'Dipinjam oleh ' . $circulation->borrower_name . ' via circulation #' . $circulation->id
+            );
+        } else {
+            // Fallback: peminjaman lama tanpa item_stock_id
+            // Cek stok item masih ada
+            if ($item->stock <= 0) {
+                return back()->with('error', 'Stok barang habis! Tidak bisa menyetujui peminjaman.');
+            }
+
+            // Kurangi stok item
+            $item->decreaseStock(1);
         }
-        
-        // 🔥 KURANGI STOK
-        $item->decreaseStock(1);
         
         // Update status sirkulasi
         $circulation->status      = 'approved';
@@ -76,7 +99,9 @@ class CirculationController extends Controller
             $this->notificationService->sendCirculationNotification($circulation, 'approved');
         }
         
-        return back()->with('success', 'Peminjaman berhasil disetujui! Stok tersisa: ' . $item->fresh()->stock);
+        $kodeInfo = $circulation->stock_code ? ' Kode: ' . $circulation->stock_code : '';
+        
+        return back()->with('success', 'Peminjaman berhasil disetujui!' . $kodeInfo);
     }
 
     /**
@@ -123,13 +148,20 @@ class CirculationController extends Controller
             return back()->with('error', 'Hanya peminjaman yang disetujui yang bisa dikembalikan.');
         }
         
-        // 🔥 TAMBAHKAN STOK KEMBALI
         $item = $circulation->item;
         if (!$item) {
             return back()->with('error', 'Barang tidak ditemukan.');
         }
-        
-        $item->increaseStock(1);
+
+        // 🔥 Update status kode stok → available kembali
+        if ($circulation->item_stock_id && $circulation->itemStock) {
+            $circulation->itemStock->markAsAvailable(
+                'Dikembalikan via circulation #' . $circulation->id . ' (langsung oleh admin)'
+            );
+        } else {
+            // Fallback: peminjaman lama tanpa item_stock_id
+            $item->increaseStock(1);
+        }
         
         // Update status sirkulasi
         $circulation->status              = 'returned';
@@ -143,18 +175,18 @@ class CirculationController extends Controller
             $this->notificationService->sendCirculationNotification($circulation, 'returned');
         }
         
-        return back()->with('success', 'Barang berhasil dikembalikan! Stok sekarang: ' . $item->fresh()->stock);
+        $kodeInfo = $circulation->stock_code ? ' Kode stok: ' . $circulation->stock_code : '';
+        
+        return back()->with('success', 'Barang berhasil dikembalikan!' . $kodeInfo);
     }
 
     /**
      * 🔥🔥🔥 CONFIRM RETURN — konfirmasi pengembalian (return_pending → returned)
      * 
-     * ⚠️ INI YANG HILANG SEBELUMNYA!
-     * 
      * Alur:
      *   1. User klik "Ajukan Pengembalian" → status jadi 'return_pending'
      *   2. Admin/super_admin klik "Konfirmasi Pengembalian" (method INI) → status jadi 'returned'
-     *   3. Stok barang kembali bertambah
+     *   3. Kode stok kembali ke 'available'
      */
     public function confirmReturn(Circulation $circulation)
     {
@@ -168,8 +200,15 @@ class CirculationController extends Controller
             return back()->with('error', 'Barang tidak ditemukan.');
         }
 
-        // 🔥 TAMBAHKAN STOK KEMBALI
-        $item->increaseStock(1);
+        // 🔥 Update status kode stok → available kembali
+        if ($circulation->item_stock_id && $circulation->itemStock) {
+            $circulation->itemStock->markAsAvailable(
+                'Dikembalikan via circulation #' . $circulation->id
+            );
+        } else {
+            // Fallback: peminjaman lama tanpa item_stock_id
+            $item->increaseStock(1);
+        }
 
         // 🔥 Update status + isi return_date & return_confirmed_at
         $circulation->status              = 'returned';
@@ -183,6 +222,8 @@ class CirculationController extends Controller
             $this->notificationService->sendCirculationNotification($circulation, 'returned');
         }
 
-        return back()->with('success', 'Pengembalian berhasil dikonfirmasi! Stok barang sekarang: ' . $item->fresh()->stock);
+        $kodeInfo = $circulation->stock_code ? ' Kode stok: ' . $circulation->stock_code : '';
+
+        return back()->with('success', 'Pengembalian berhasil dikonfirmasi!' . $kodeInfo);
     }
 }

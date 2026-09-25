@@ -73,7 +73,7 @@
                 Filter
             </button>
             @if(request('status'))
-            <a href="{{ route('admin_unit.circulations.index') }}" 
+            <a href="{{ route('super_admin.circulations.index') }}" 
                class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-xl transition inline-flex items-center justify-center"
                title="Reset filter">
                 <i class="fas fa-times"></i>
@@ -132,13 +132,18 @@
                             {{ $isOverdue ? 'bg-red-50/60' : '' }}">
                             
                             {{-- BARANG --}}
-                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <td class="px-4 sm:px-6 py-4">
                                 <div class="text-sm font-medium text-gray-800">{{ $circulation->item->name ?? '-' }}</div>
-                                {{-- 🔥 KODE LENGKAP --}}
-                                <div class="text-[10px] font-mono font-semibold mt-0.5 break-all"
-                                     style="color: #0F6B5F;">
-                                    {{ $circulation->item->full_code ?? $circulation->item->code ?? '-' }}
-                                </div>
+
+                                {{-- 🔥 KODE STOK SPESIFIK (badge warna brand) --}}
+                                @if($circulation->stock_code)
+                                    <div class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold break-all"
+                                         style="background: #0F6B5F15; color: #0F6B5F;"
+                                         title="Kode stok unit yang dipinjam">
+                                        <i class="fas fa-qrcode text-[9px]"></i>
+                                        {{ $circulation->stock_code }}
+                                    </div>
+                                @endif
                             </td>
 
                             {{-- PEMINJAM --}}
@@ -254,14 +259,14 @@
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex gap-2 items-center">
                                     {{-- Detail --}}
-                                    <a href="{{ route('admin_unit.circulations.show', $circulation) }}" 
+                                    <a href="{{ route('super_admin.circulations.show', $circulation) }}" 
                                        class="text-blue-600 hover:text-blue-800 transition" title="Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     
                                     {{-- Pending: Approve + Reject --}}
                                     @if($circulation->status == 'pending')
-                                        <form action="{{ route('admin_unit.circulations.approve', $circulation) }}" 
+                                        <form action="{{ route('super_admin.circulations.approve', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-green-600 hover:text-green-800 transition"
@@ -284,7 +289,7 @@
                                     
                                     {{-- Approved: Mark Returned --}}
                                     @if($circulation->status == 'approved')
-                                        <form action="{{ route('admin_unit.circulations.return', $circulation) }}" 
+                                        <form action="{{ route('super_admin.circulations.return', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-blue-600 hover:text-blue-800 transition"
@@ -296,7 +301,7 @@
 
                                     {{-- Return Pending: Konfirmasi --}}
                                     @if($circulation->status == 'return_pending')
-                                        <form action="{{ route('admin_unit.circulations.confirm-return', $circulation) }}" 
+                                        <form action="{{ route('super_admin.circulations.confirm-return', $circulation) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="text-green-600 hover:text-green-800 transition inline-flex items-center gap-1"
@@ -448,8 +453,7 @@
         const form  = document.getElementById('rejectForm');
         const input = document.getElementById('rejectionReasonInput');
 
-        // 🔥 Ganti URL ke admin-unit
-        form.action = `{{ url('admin-unit/circulations') }}/${circulationId}/reject`;
+        form.action = `{{ url('super-admin/circulations') }}/${circulationId}/reject`;
 
         document.getElementById('rejectItemName').textContent     = itemName || '-';
         document.getElementById('rejectBorrowerName').textContent = borrowerName || '-';

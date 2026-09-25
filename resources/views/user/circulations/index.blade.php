@@ -54,7 +54,7 @@
             <div class="relative flex-1">
                 <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <input type="text" name="search" value="{{ request('search') }}" 
-                       placeholder="Cari nama barang atau kode..." 
+                       placeholder="Cari nama barang, kode, atau kode stok..." 
                        class="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-sm transition">
             </div>
             <div class="flex gap-2">
@@ -107,14 +107,23 @@
                         {{ $isOverdue ? 'bg-red-50/60' : '' }}">
 
                         {{-- BARANG --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 sm:px-6 py-4">
                             <div class="text-sm font-medium text-gray-800">{{ $circulation->item->name ?? '-' }}</div>
 
-                            {{-- 🔥 KODE LENGKAP --}}
-                            <div class="text-[10px] font-mono font-semibold mt-0.5 break-all"
-                                 style="color: #0F6B5F;">
+                            {{-- 🔥 KODE LENGKAP BARANG --}}
+                            <div class="text-[10px] font-mono font-semibold mt-0.5 break-all text-gray-500">
                                 {{ $circulation->item->full_code ?? $circulation->item->code ?? '-' }}
                             </div>
+
+                            {{-- 🔥 KODE STOK SPESIFIK --}}
+                            @if($circulation->stock_code)
+                                <div class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold break-all"
+                                     style="background: #0F6B5F15; color: #0F6B5F;"
+                                     title="Kode stok unit yang dipinjam">
+                                    <i class="fas fa-qrcode text-[9px]"></i>
+                                    {{ $circulation->stock_code }}
+                                </div>
+                            @endif
                         </td>
 
                         {{-- UNIT --}}

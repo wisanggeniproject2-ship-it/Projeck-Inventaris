@@ -2,7 +2,6 @@
 
 @section('content')
 @php
-    // Mendeteksi otomatis hak akses untuk menyesuaikan rute agar tidak memicu error
     $prefix = auth()->user()->role === 'super_admin' ? 'super_admin' : 'admin_unit';
 @endphp
 
@@ -74,13 +73,16 @@
     </div>
 
     {{-- ============================================================ --}}
-    {{-- 🔥 TABEL RESPONSIVE                                          --}}
-    {{-- Desktop/Tablet: Tabel penuh | Mobile: Card view             --}}
+    {{-- 📱 MOBILE VIEW — Card layout                                --}}
     {{-- ============================================================ --}}
-
-    {{-- 📱 MOBILE VIEW (≤ md) — Card layout --}}
     <div class="block md:hidden space-y-3">
         @forelse($items as $item)
+        @php
+            // 🔥 Total aktif (exclude disposed)
+            $totalAktif     = $item->stockCodes()->where('status', '!=', 'disposed')->count();
+            $availableStock = $item->available_stock;
+            $borrowedStock  = $item->borrowed_stock;
+        @endphp
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
             {{-- Header Card: Gambar + Nama --}}
             <div class="flex gap-3 p-3 border-b border-gray-100">
@@ -110,30 +112,42 @@
             </div>
 
             {{-- Body: Stok + Kondisi + Status --}}
-            <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border-b border-gray-100">
-                {{-- Stok --}}
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 uppercase mb-1">Stok</p>
-                    <span class="inline-block px-2 py-1 text-xs font-bold rounded-full 
-                        {{ $item->stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                        {{ $item->stock }}
-                    </span>
+            <div class="p-3 bg-gray-50 border-b border-gray-100">
+                {{-- 🔥 STOK DETAIL — 3 KOLOM --}}
+                <div class="mb-2">
+                    <p class="text-[10px] text-gray-500 uppercase mb-1.5 text-center font-semibold">Stok Barang</p>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        {{-- Total --}}
+                        <div class="text-center p-1.5 bg-white rounded-lg border border-gray-200">
+                            <p class="text-[9px] text-gray-500 uppercase font-semibold leading-none">Total</p>
+                            <span class="inline-block text-sm font-bold text-gray-700 mt-0.5">{{ $totalAktif }}</span>
+                        </div>
+
+                        {{-- Tersedia --}}
+                        <div class="text-center p-1.5 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-[9px] text-green-700 uppercase font-semibold leading-none">Ready</p>
+                            <span class="inline-block text-sm font-bold text-green-700 mt-0.5">{{ $availableStock }}</span>
+                        </div>
+
+                        {{-- Dipinjam --}}
+                        <div class="text-center p-1.5 bg-orange-50 rounded-lg border border-orange-200">
+                            <p class="text-[9px] text-orange-700 uppercase font-semibold leading-none">Pinjam</p>
+                            <span class="inline-block text-sm font-bold text-orange-700 mt-0.5">{{ $borrowedStock }}</span>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Kondisi --}}
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 uppercase mb-1">Kondisi</p>
-                    <span class="inline-block px-2 py-1 text-[10px] font-medium rounded-full
+                {{-- Kondisi & Status --}}
+                <div class="flex items-center justify-center gap-2 text-[10px]">
+                    <span class="text-gray-500 uppercase">Kondisi:</span>
+                    <span class="inline-block px-2 py-1 font-medium rounded-full
                         {{ $item->condition == 'baik' ? 'bg-green-100 text-green-700' : 
                            ($item->condition == 'rusak' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700') }}">
                         {{ ucfirst($item->condition) }}
                     </span>
-                </div>
 
-                {{-- Status --}}
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 uppercase mb-1">Status</p>
-                    <span class="inline-block px-2 py-1 text-[10px] font-medium rounded-full
+                    <span class="text-gray-500 uppercase ml-2">Status:</span>
+                    <span class="inline-block px-2 py-1 font-medium rounded-full
                         {{ $item->status == 'available' ? 'bg-green-100 text-green-700' : 
                            ($item->status == 'borrowed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
                         {{ $item->status == 'available' ? 'Tersedia' : ($item->status == 'borrowed' ? 'Dipinjam' : 'Perbaikan') }}
@@ -154,9 +168,8 @@
                 @endif
             </div>
 
-            {{-- Aksi (Tombol) --}}
+            {{-- Aksi --}}
             <div class="grid grid-cols-5 gap-1.5 p-2 border-t border-gray-100 bg-gray-50">
-                {{-- Detail --}}
                 <a href="{{ route($prefix . '.items.show', $item) }}" 
                    class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg text-blue-600 bg-white hover:bg-blue-50 transition border border-gray-100"
                    title="Detail">
@@ -164,7 +177,6 @@
                     <span class="text-[9px] font-medium">Detail</span>
                 </a>
 
-                {{-- PDF --}}
                 <a href="{{ route($prefix . '.items.pdf', $item) }}" 
                    target="_blank"
                    class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg text-red-600 bg-white hover:bg-red-50 transition border border-gray-100"
@@ -173,7 +185,6 @@
                     <span class="text-[9px] font-medium">PDF</span>
                 </a>
 
-                {{-- PNG --}}
                 <a href="{{ route('items.png', $item) }}" 
                    download
                    class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg text-green-600 bg-white hover:bg-green-50 transition border border-gray-100"
@@ -182,7 +193,6 @@
                     <span class="text-[9px] font-medium">PNG</span>
                 </a>
 
-                {{-- Edit --}}
                 <a href="{{ route($prefix . '.items.edit', $item) }}" 
                    class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg text-yellow-600 bg-white hover:bg-yellow-50 transition border border-gray-100"
                    title="Edit">
@@ -190,7 +200,6 @@
                     <span class="text-[9px] font-medium">Edit</span>
                 </a>
 
-                {{-- Hapus --}}
                 <form action="{{ route($prefix . '.items.destroy', $item) }}" method="POST" class="w-full">
                     @csrf
                     @method('DELETE')
@@ -215,7 +224,7 @@
         @endforelse
     </div>
 
-    {{-- 💻 TABLET & DESKTOP VIEW (≥ md) — Tabel --}}
+    {{-- 💻 TABLET & DESKTOP VIEW --}}
     <div class="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -225,7 +234,9 @@
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Kode</th>
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Nama</th>
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
-                        <th class="px-3 lg:px-4 xl:px-6 py-3 text-center text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Stok</th>
+                        <th class="px-3 lg:px-4 xl:px-6 py-3 text-center text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-boxes text-gray-400 mr-1"></i>Stok
+                        </th>
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Kondisi</th>
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-3 lg:px-4 xl:px-6 py-3 text-left text-[10px] lg:text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Sumber Dana</th>
@@ -235,6 +246,11 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($items as $item)
+                    @php
+                        $totalAktif     = $item->stockCodes()->where('status', '!=', 'disposed')->count();
+                        $availableStock = $item->available_stock;
+                        $borrowedStock  = $item->borrowed_stock;
+                    @endphp
                     <tr class="hover:bg-gray-50 transition">
                         {{-- Gambar --}}
                         <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4">
@@ -269,12 +285,33 @@
                             </span>
                         </td>
 
-                        {{-- Stok --}}
-                        <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4 text-center">
-                            <span class="inline-block px-2 py-1 text-[10px] lg:text-xs font-bold rounded-full 
-                                {{ $item->stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                                {{ $item->stock }}
-                            </span>
+                        {{-- 🔥 STOK — 3 badge saja --}}
+                        <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4">
+                            <div class="flex items-center justify-center gap-1.5">
+                                {{-- Total --}}
+                                <div class="text-center" title="Total unit aktif">
+                                    <div class="inline-flex flex-col items-center px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200 min-w-[42px]">
+                                        <span class="text-[8px] text-gray-500 uppercase leading-none font-semibold">Total</span>
+                                        <span class="text-xs lg:text-sm font-bold text-gray-700 leading-tight">{{ $totalAktif }}</span>
+                                    </div>
+                                </div>
+
+                                {{-- Tersedia --}}
+                                <div class="text-center" title="Stok tersedia (bisa dipinjam)">
+                                    <div class="inline-flex flex-col items-center px-2 py-0.5 rounded-md bg-green-100 border border-green-200 min-w-[42px]">
+                                        <span class="text-[8px] text-green-700 uppercase leading-none font-semibold">Ready</span>
+                                        <span class="text-xs lg:text-sm font-bold text-green-700 leading-tight">{{ $availableStock }}</span>
+                                    </div>
+                                </div>
+
+                                {{-- Dipinjam --}}
+                                <div class="text-center" title="Stok sedang dipinjam">
+                                    <div class="inline-flex flex-col items-center px-2 py-0.5 rounded-md bg-orange-100 border border-orange-200 min-w-[42px]">
+                                        <span class="text-[8px] text-orange-700 uppercase leading-none font-semibold">Pinjam</span>
+                                        <span class="text-xs lg:text-sm font-bold text-orange-700 leading-tight">{{ $borrowedStock }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
 
                         {{-- Kondisi --}}
@@ -295,12 +332,12 @@
                             </span>
                         </td>
 
-                        {{-- Sumber Dana (hidden di tablet) --}}
+                        {{-- Sumber Dana --}}
                         <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4 hidden lg:table-cell text-xs lg:text-sm text-gray-600">
                             {{ $item->fundingSource->name ?? '-' }}
                         </td>
 
-                        {{-- QR (hidden sampai xl) --}}
+                        {{-- QR --}}
                         <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4 hidden xl:table-cell text-center">
                             @if($item->qr_code_url)
                                 <img src="{{ $item->qr_code_url }}" alt="QR" class="w-8 h-8 lg:w-10 lg:h-10 mx-auto rounded border border-gray-200">
@@ -312,14 +349,12 @@
                         {{-- Aksi --}}
                         <td class="px-3 lg:px-4 xl:px-6 py-3 lg:py-4">
                             <div class="flex gap-1.5 lg:gap-2 items-center flex-wrap">
-                                {{-- Detail --}}
                                 <a href="{{ route($prefix . '.items.show', $item) }}" 
                                    class="text-blue-600 hover:text-blue-800 transition p-1" 
                                    title="Detail">
                                     <i class="fas fa-eye text-xs lg:text-sm"></i>
                                 </a>
                                 
-                                {{-- PDF --}}
                                 <a href="{{ route($prefix . '.items.pdf', $item) }}" 
                                    target="_blank"
                                    class="text-red-600 hover:text-red-800 transition p-1" 
@@ -327,7 +362,6 @@
                                     <i class="fas fa-file-pdf text-xs lg:text-sm"></i>
                                 </a>
 
-                                {{-- PNG --}}
                                 <a href="{{ route('items.png', $item) }}" 
                                    download
                                    class="text-green-600 hover:text-green-800 transition p-1" 
@@ -335,14 +369,12 @@
                                     <i class="fas fa-file-image text-xs lg:text-sm"></i>
                                 </a>
                                 
-                                {{-- Edit --}}
                                 <a href="{{ route($prefix . '.items.edit', $item) }}" 
                                    class="text-yellow-600 hover:text-yellow-800 transition p-1" 
                                    title="Edit">
                                     <i class="fas fa-edit text-xs lg:text-sm"></i>
                                 </a>
                                 
-                                {{-- Hapus --}}
                                 <form action="{{ route($prefix . '.items.destroy', $item) }}" method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')

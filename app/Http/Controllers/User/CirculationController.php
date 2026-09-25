@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\ItemStock;
 use App\Models\Unit;
 use App\Models\Circulation;
 use App\Services\NotificationService;
@@ -24,7 +25,7 @@ class CirculationController extends Controller
         $userId = auth()->id();
         
         $query = Circulation::where('user_id', $userId)
-            ->with(['item', 'item.unit']);
+            ->with(['item', 'item.unit', 'itemStock']);
         
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -56,6 +57,8 @@ class CirculationController extends Controller
 
     /**
      * 🔥 FORM CREATE — barang & unit auto-isi dari ?item=ID
+     * 
+     * User bisa pilih kode stok spesifik yang mau dipinjam
      */
     public function create(Request $request)
     {
@@ -76,10 +79,13 @@ class CirculationController extends Controller
                 ->with('error', 'Barang tidak ditemukan.');
         }
 
-        if (!$selectedItem->canBeBorrowed()) {
+        // 🔥 Ambil kode stok yang AVAILABLE (bukan yang sedang dipinjam)
+        $availableStockCodes = $selectedItem->availableStockCodes()->get();
+
+        if ($availableStockCodes->isEmpty()) {
             return redirect()
                 ->route('user.items.index')
-                ->with('error', 'Barang ini tidak bisa dipinjam saat ini (stok habis / rusak / sedang dipinjam).');
+                ->with('error', 'Semua unit barang ini sedang dipinjam atau tidak tersedia.');
         }
 
         // Cek apakah user sudah punya peminjaman aktif untuk item ini
@@ -96,20 +102,18 @@ class CirculationController extends Controller
 
         $units = Unit::where('is_active', true)->get();
 
-        return view('user.circulations.create', compact('selectedItem', 'units'));
+        return view('user.circulations.create', compact('selectedItem', 'units', 'availableStockCodes'));
     }
 
     /**
      * 🔥 STORE — simpan peminjaman
      * 
-     * User bisa pilih:
-     *  - borrow_date (tanggal pinjam, bisa hari ini atau besok/lusa)
-     *  - borrow_hour + borrow_minute (jam pinjam, 24 jam)
-     *  - expected_return_date (tanggal tenggat, boleh SAMA dengan tanggal pinjam)
-     *  - return_hour + return_minute (jam tenggat, 24 jam)
-     * 
-     * ⚡ Support pinjam beberapa jam (same-day return):
-     *    Contoh: Pinjam 18 Sep 10:00 → Kembali 18 Sep 12:00
+     * User pilih:
+     *  - item_stock_id (kode stok spesifik yang mau dipinjam)
+     *  - borrow_date + borrow_hour + borrow_minute
+     *  - expected_return_date + return_hour + return_minute
+     *  - borrower_name
+     *  - purpose
      */
     public function store(Request $request)
     {
@@ -118,17 +122,20 @@ class CirculationController extends Controller
         // ============================================================
         $request->validate([
             'item_id'              => 'required|exists:items,id',
+            'item_stock_id'        => 'required|exists:item_stocks,id',       // 🔥 BARU
             'borrower_name'        => 'required|string|max:100',
             'borrow_date'          => 'required|date|after_or_equal:today',
-            'borrow_hour'          => 'required|numeric|between:0,23',       // ✅ numeric (bukan integer)
-            'borrow_minute'        => 'required|numeric|between:0,59',       // ✅ numeric
+            'borrow_hour'          => 'required|numeric|between:0,23',
+            'borrow_minute'        => 'required|numeric|between:0,59',
             'expected_return_date' => 'required|date|after_or_equal:borrow_date',
-            'return_hour'          => 'required|numeric|between:0,23',       // ✅ numeric
-            'return_minute'        => 'required|numeric|between:0,59',       // ✅ numeric
+            'return_hour'          => 'required|numeric|between:0,23',
+            'return_minute'        => 'required|numeric|between:0,59',
             'purpose'              => 'required|string|max:1000',
         ], [
             'item_id.required'                    => 'Barang wajib dipilih.',
             'item_id.exists'                      => 'Barang tidak valid.',
+            'item_stock_id.required'              => 'Pilih kode stok yang mau dipinjam.',     // 🔥 BARU
+            'item_stock_id.exists'                => 'Kode stok tidak valid.',                  // 🔥 BARU
             'borrower_name.required'              => 'Nama peminjam wajib diisi.',
             'borrower_name.max'                   => 'Nama peminjam maksimal 100 karakter.',
             'borrow_date.required'                => 'Tanggal pinjam wajib diisi.',
@@ -152,26 +159,39 @@ class CirculationController extends Controller
         ]);
 
         // ============================================================
-        // 2. AMBIL ITEM & CEK KETERSEDIAAN
+        // 2. AMBIL ITEM & CEK KODE STOK
         // ============================================================
         $item = Item::findOrFail($request->item_id);
 
-        if (!$item->canBeBorrowed()) {
+        // 🔥 Cek kode stok spesifik yang dipilih
+        $itemStock = ItemStock::where('id', $request->item_stock_id)
+            ->where('item_id', $item->id)
+            ->first();
+
+        if (!$itemStock) {
             return back()
                 ->withInput()
-                ->with('error', 'Barang tidak tersedia untuk dipinjam (stok habis / rusak / sedang dipinjam).');
+                ->with('error', 'Kode stok tidak ditemukan untuk barang ini.');
         }
 
-        $activeCirculation = Circulation::where('item_id', $item->id)
+        if ($itemStock->status !== 'available') {
+            return back()
+                ->withInput()
+                ->with('error', 'Kode stok "' . $itemStock->stock_code . '" sedang tidak tersedia (status: ' . $itemStock->status . ').');
+        }
+
+        // 🔥 Cek: sudah ada circulation aktif untuk kode stok ini?
+        $activeCirculation = Circulation::where('item_stock_id', $itemStock->id)
             ->whereIn('status', ['pending', 'approved', 'return_pending'])
             ->exists();
 
         if ($activeCirculation) {
             return back()
                 ->withInput()
-                ->with('error', 'Barang sedang dalam proses peminjaman oleh pihak lain.');
+                ->with('error', 'Kode stok ini sedang dalam proses peminjaman.');
         }
 
+        // Cek: user sudah punya circulation aktif untuk item ini?
         $userExisting = Circulation::where('item_id', $item->id)
             ->where('user_id', auth()->id())
             ->whereIn('status', ['pending', 'approved', 'return_pending'])
@@ -184,8 +204,7 @@ class CirculationController extends Controller
         }
 
         // ============================================================
-        // 3. 🔥 GABUNG TANGGAL + JAM PINJAM → DATETIME
-        //    Dari dropdown: borrow_hour (0-23) + borrow_minute (0-59)
+        // 3. GABUNG TANGGAL + JAM PINJAM → DATETIME
         // ============================================================
         try {
             $borrowTime = str_pad($request->borrow_hour, 2, '0', STR_PAD_LEFT)
@@ -209,8 +228,7 @@ class CirculationController extends Controller
         }
 
         // ============================================================
-        // 4. 🔥 GABUNG TANGGAL + JAM TENGGAT → DATETIME
-        //    Dari dropdown: return_hour (0-23) + return_minute (0-59)
+        // 4. GABUNG TANGGAL + JAM TENGGAT → DATETIME
         // ============================================================
         try {
             $returnTime = str_pad($request->return_hour, 2, '0', STR_PAD_LEFT)
@@ -226,7 +244,7 @@ class CirculationController extends Controller
                 ->with('error', 'Format tanggal atau jam kembali tidak valid.');
         }
 
-        // 🔥 Validasi: tenggat harus SETELAH waktu pinjam
+        // Validasi: tenggat harus SETELAH waktu pinjam
         if ($expectedReturn->lte($borrowDateTime)) {
             return back()
                 ->withInput()
@@ -234,9 +252,9 @@ class CirculationController extends Controller
         }
 
         // ============================================================
-        // 🔥 5. VALIDASI DURASI
+        // 5. VALIDASI DURASI
         // ============================================================
-        // Durasi minimal 30 menit (boleh pinjam cuma 1-2 jam)
+        // Durasi minimal 30 menit
         if ($expectedReturn->lessThan($borrowDateTime->copy()->addMinutes(30))) {
             return back()
                 ->withInput()
@@ -255,6 +273,8 @@ class CirculationController extends Controller
         // ============================================================
         $circulation = Circulation::create([
             'item_id'              => $item->id,
+            'item_stock_id'        => $itemStock->id,         // 🔥 FK ke item_stocks
+            'stock_code'           => $itemStock->stock_code, // 🔥 Simpan kode (history)
             'user_id'              => auth()->id(),
             'borrower_name'        => $request->borrower_name,
             'borrow_date'          => $borrowDateTime,
@@ -270,7 +290,7 @@ class CirculationController extends Controller
 
         return redirect()
             ->route('user.circulations.index')
-            ->with('success', 'Peminjaman berhasil diajukan! Menunggu persetujuan admin unit.');
+            ->with('success', 'Peminjaman berhasil diajukan! Kode stok: ' . $itemStock->stock_code);
     }
 
     /**

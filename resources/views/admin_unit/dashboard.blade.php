@@ -63,6 +63,103 @@
         </div>
     </div>
     
+   {{-- ============================================================ --}}
+    {{-- 🔥🔥🔥 CARD: BARANG YANG BARU DIHANCURKAN (Khusus Unit Ini)  --}}
+    {{-- ============================================================ --}}
+    @php
+        // 🔥 Ambil barang dihancurkan dari unit yang sedang login
+        $recentDisposals = collect();
+        if (class_exists(\App\Models\AssetDisposal::class)) {
+            $recentDisposals = \App\Models\AssetDisposal::with(['item', 'user', 'itemStock'])
+                ->whereHas('item', function($q) {
+                    $q->where('unit_id', auth()->user()->unit_id);
+                })
+                ->where('status', 'approved')
+                ->whereNotNull('stock_code')
+                ->latest('approved_at')
+                ->take(8)
+                ->get();
+        }
+    @endphp
+
+    @if($recentDisposals->count() > 0)
+    <div class="bg-white rounded-lg shadow p-4 sm:p-5 mb-6 border-l-4 border-l-red-500">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <span class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                    <i class="fas fa-trash-can text-red-600 text-sm"></i>
+                </span>
+                Barang yang Baru Dihancurkan
+                <span class="ml-1 px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full bg-red-500 text-white">
+                    {{ $recentDisposals->count() }}
+                </span>
+            </h3>
+            <span class="text-[10px] sm:text-xs text-gray-400 hidden sm:block">
+                Unit {{ auth()->user()->unit->name ?? '-' }}
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            @foreach($recentDisposals as $disposal)
+            <div class="bg-white rounded-xl border border-red-100 overflow-hidden hover:shadow-md hover:border-red-300 transition group">
+
+                {{-- Foto Barang + Badge DIHAPUS --}}
+                <div class="relative h-32 bg-gray-100">
+                    <img src="{{ $disposal->item->image_url ?? asset('assets/images/default-item.png') }}"
+                         alt="{{ $disposal->item->name ?? '-' }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-red-900/70 via-red-900/20 to-transparent"></div>
+
+                    <div class="absolute top-2 right-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white shadow-md ring-2 ring-white/50">
+                            <i class="fas fa-trash-can text-[8px]"></i>
+                            DIHAPUS
+                        </span>
+                    </div>
+
+                    <div class="absolute bottom-2 left-2 text-[10px] text-white font-medium">
+                        <i class="fas fa-calendar-check text-[9px] mr-1"></i>
+                        {{ $disposal->approved_at ? $disposal->approved_at->format('d/m/Y') : $disposal->created_at->format('d/m/Y') }}
+                    </div>
+                </div>
+
+                {{-- Info --}}
+                <div class="p-3">
+                    <p class="text-sm font-bold text-gray-800 truncate" title="{{ $disposal->item->name ?? '-' }}">
+                        {{ $disposal->item->name ?? 'Barang tidak ditemukan' }}
+                    </p>
+
+                    {{-- Kode stok --}}
+                    @if($disposal->stock_code)
+                    <div class="inline-flex items-start gap-1 mt-1.5 px-1.5 py-0.5 rounded-md max-w-full"
+                         style="background: #0F6B5F15; color: #0F6B5F;">
+                        <i class="fas fa-barcode text-[8px] mt-0.5 shrink-0"></i>
+                        <span class="font-mono text-[9px] font-semibold leading-tight break-all">
+                            {{ $disposal->stock_code }}
+                        </span>
+                    </div>
+                    @endif
+
+                    <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-500">
+                        <span class="truncate">
+                            <i class="fas fa-user mr-1"></i>
+                            {{ $disposal->user->name ?? '-' }}
+                        </span>
+                        @if($disposal->approved_at)
+                        <span class="shrink-0 ml-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ $disposal->approved_at->format('H:i') }}
+                        </span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Recent Items -->
     <div class="bg-white rounded-lg shadow mb-6">
         <div class="px-6 py-4 border-b flex justify-between items-center">
@@ -86,7 +183,6 @@
                 <tbody class="divide-y divide-gray-200">
                     @foreach($recentItems as $item)
                     <tr class="hover:bg-gray-50 transition">
-                        {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
                         <td class="px-6 py-4">
                             <div class="font-mono text-[11px] font-semibold leading-tight break-all"
                                  style="color: #0F6B5F;">

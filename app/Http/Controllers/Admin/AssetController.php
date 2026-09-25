@@ -11,22 +11,33 @@ use Illuminate\Http\Request;
 class AssetController extends Controller
 {
     /**
-     * 🔥 Halaman Nilai Aset (existing)
+     * 🔥 Halaman Nilai Aset
+     * 
+     * KONSEP:
+     * - Barang DIPINJAM → tetap milik yayasan → DIHITUNG ✅
+     * - Barang MAINTENANCE → masih ada fisiknya → DIHITUNG ✅
+     * - Barang DISPOSED → sudah hilang/rusak → TIDAK DIHITUNG ❌
+     * 
+     * Rumus: Stok Nilai Aset = Ready + Dipinjam + Maintenance
+     *                          = count(item_stocks WHERE status IN ('available','borrowed','maintenance'))
      */
     public function index()
     {
-        // Ambil semua barang + relasi kategori & unit
-        $items = Item::with(['category', 'unit'])->get();
+        // 🔥 Eager load stockCodes (biar accessor cepat)
+        $items = Item::with(['category', 'unit', 'stockCodes'])->get();
 
-        // Inisialisasi sebagai float/int (BUKAN null/string)
         $totalNilaiAset    = 0.0;
         $totalJumlahBarang = 0;
         $perKategori       = [];
 
         foreach ($items as $item) {
-            // 🔥 CAST WAJIB — karena cast 'decimal:2' di model mengembalikan STRING
-            $harga    = (float) $item->price;
-            $stok     = (int)   $item->stock;
+            $harga = (float) $item->price;
+            
+            // 🔥🔥🔥 STOK UNTUK NILAI ASET
+            // = Ready + Dipinjam + Maintenance
+            // Disposed dianggap hilang musnah, TIDAK dihitung
+            $stok = $item->stock_for_asset;
+            
             $subtotal = $harga * $stok;
 
             $totalNilaiAset    = (float) $totalNilaiAset + (float) $subtotal;
@@ -68,12 +79,15 @@ class AssetController extends Controller
 
     /**
      * 🔥 Halaman Penyusutan Aset
-     * DIKELOMPOKKAN PER UNIT — bukan cuma tabel rata
+     * DIKELOMPOKKAN PER UNIT
+     * 
+     * Perhitungan pakai stock_for_asset (Ready + Dipinjam + Maintenance)
+     * Disposed tidak dihitung
      */
     public function depreciation(Request $request)
     {
-        // Base query: hanya barang yang punya harga & tanggal beli
-        $query = Item::with(['category', 'unit', 'fundingSource'])
+        // 🔥 Eager load stockCodes
+        $query = Item::with(['category', 'unit', 'fundingSource', 'stockCodes'])
             ->whereNotNull('price')
             ->whereNotNull('purchase_date')
             ->where('price', '>', 0);
@@ -83,12 +97,12 @@ class AssetController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // Filter unit (kalau pilih 1 unit, tampil cuma unit itu)
+        // Filter unit
         if ($request->filled('unit')) {
             $query->where('unit_id', $request->unit);
         }
 
-        // Ambil SEMUA data (bukan paginate) — nanti dikelompokkan per unit
+        // Ambil SEMUA data
         $items = $query->orderBy('unit_id', 'asc')
                        ->orderBy('purchase_date', 'asc')
                        ->get();
@@ -107,7 +121,9 @@ class AssetController extends Controller
             $totalBarang    = 0;
 
             foreach ($unitItems as $item) {
-                $stok = (int) $item->stock;
+                // 🔥🔥🔥 STOK UNTUK PENYUSUTAN
+                // = Ready + Dipinjam + Maintenance
+                $stok = $item->stock_for_asset;
 
                 $totalNilaiAset += ((float) $item->price) * $stok;
                 $totalAkumulasi += ((float) $item->getAccumulatedDepreciation()) * $stok;
@@ -125,13 +141,12 @@ class AssetController extends Controller
             ];
         }
 
-        // 🔥 Grand total (semua unit digabung)
+        // 🔥 Grand total
         $grandTotalNilai  = collect($unitSummary)->sum('total_nilai');
         $grandTotalAkum   = collect($unitSummary)->sum('total_akumulasi');
         $grandTotalBuku   = collect($unitSummary)->sum('total_buku');
         $grandTotalBarang = collect($unitSummary)->sum('total_barang');
 
-        // Untuk filter dropdown
         $categories = Category::orderBy('name')->get();
         $units      = Unit::where('is_active', true)->orderBy('name')->get();
 

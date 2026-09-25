@@ -2,34 +2,6 @@
 
 @section('title', 'Dashboard')
 
-{{--
-    CATATAN UNTUK CONTROLLER (opsional, dashboard tetap jalan tanpa ini):
-
-    Variabel WAJIB (sudah ada sebelumnya, tidak berubah):
-        $stats = [
-            'total_items'    => ...,
-            'total_borrowed' => ...,
-            'total_pending'  => ...,
-            'total_units'    => ...,
-            'total_users'    => ...,
-        ];
-        $recentItems         -> koleksi Item (code, name, unit->name, location, status)
-        $recentCirculations  -> koleksi Circulation (item->name, borrower_name, borrow_date, status, created_at)
-
-    Variabel OPSIONAL (kalau dikirim, dashboard akan menampilkan data asli, bukan state kosong):
-        $stats['total_maintenance']  -> jumlah barang status 'maintenance'
-        $stats['total_nilai_aset']   -> total nilai aset (harga × stok semua barang)
-        $chartTrend = [
-            'labels' => ['Jan','Feb','Mar','Apr','Mei','Jun'],
-            'data'   => [12, 19, 14, 22, 18, 25],
-        ];
-        $unitBreakdown = [
-            ['name' => 'SMPIT', 'count' => 120],
-            ['name' => 'Daycare', 'count' => 80],
-            ...
-        ];
---}}
-
 @section('content')
 @php
     $totalItems    = $stats['total_items'] ?? 0;
@@ -38,15 +10,15 @@
     $totalUnits    = $stats['total_units'] ?? 0;
     $totalUsers    = $stats['total_users'] ?? 0;
 
-    // 🔥 TOTAL NILAI ASET — fallback hitung di blade kalau controller belum kirim
+    // 🔥 TOTAL NILAI ASET — pakai stock_for_asset (ready + dipinjam + maintenance)
     if (isset($stats['total_nilai_aset'])) {
         $totalNilaiAset = (float) $stats['total_nilai_aset'];
     } else {
         $totalNilaiAset = 0.0;
         if (class_exists(\App\Models\Item::class)) {
-            foreach (\App\Models\Item::all() as $it) {
-                $h    = (float) ($it->price ?? 0);
-                $s    = (int)   ($it->stock ?? 1);
+            foreach (\App\Models\Item::with('stockCodes')->get() as $it) {
+                $h = (float) ($it->price ?? 0);
+                $s = $it->stock_for_asset;
                 $totalNilaiAset += $h * $s;
             }
         }
@@ -61,7 +33,7 @@
     $hasUnitBreakdown = isset($unitBreakdown) && count($unitBreakdown) > 0;
 
     // ============================================================
-    // 🔥 TENGGAT HARI INI — query langsung di blade (tanpa ubah controller)
+    // 🔥 TENGGAT HARI INI
     // ============================================================
     $todayDeadlines = collect();
     if (class_exists(\App\Models\Circulation::class)) {
@@ -71,14 +43,24 @@
             ->orderBy('expected_return_date', 'asc')
             ->get();
     }
+
+    // ============================================================
+    // 🔥🔥🔥 BARANG YANG BARU DIHANCURKAN (disposed via approval)
+    // ============================================================
+    $recentDisposals = collect();
+    if (class_exists(\App\Models\AssetDisposal::class)) {
+        $recentDisposals = \App\Models\AssetDisposal::with(['item', 'user'])
+            ->where('status', 'approved')
+            ->whereNotNull('stock_code')
+            ->latest('approved_at')
+            ->take(8)
+            ->get();
+    }
 @endphp
 
-{{-- ============================================================ --}}
-{{-- 🔥 CUSTOM STYLE — Animasi khusus card nilai aset             --}}
-{{-- ============================================================ --}}
+{{-- STYLE — sama seperti sebelumnya --}}
 @push('styles')
 <style>
-    /* Gradient border berputar */
     @keyframes borderSpin {
         0%   { background-position: 0% 50%; }
         50%  { background-position: 100% 50%; }
@@ -101,7 +83,6 @@
         box-shadow: 0 20px 40px -12px rgba(245, 158, 11, 0.5);
     }
 
-    /* Shine effect (kilau melintas) */
     .asset-card::after {
         content: '';
         position: absolute;
@@ -109,12 +90,7 @@
         left: -100%;
         width: 60%;
         height: 100%;
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.35),
-            transparent
-        );
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
         border-radius: 18px;
         animation: shine 4s ease-in-out infinite;
         pointer-events: none;
@@ -127,27 +103,20 @@
         100% { left: 150%; }
     }
 
-    /* Ikon koin — pulse */
-    .coin-icon {
-        animation: coinPulse 3s ease-in-out infinite;
-    }
+    .coin-icon { animation: coinPulse 3s ease-in-out infinite; }
 
     @keyframes coinPulse {
         0%, 100% { transform: scale(1) rotate(0deg); }
         50%      { transform: scale(1.06) rotate(-5deg); }
     }
 
-    /* Angka nilai aset — slide in dari bawah */
     @keyframes countUp {
         from { opacity: 0; transform: translateY(12px); }
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    .asset-value {
-        animation: countUp 0.9s ease-out 0.2s both;
-    }
+    .asset-value { animation: countUp 0.9s ease-out 0.2s both; }
 
-    /* Tombol Lihat — hover lebih hidup */
     .btn-asset {
         position: relative;
         overflow: hidden;
@@ -163,50 +132,51 @@
         transition: opacity 0.3s ease;
     }
 
-    .btn-asset:hover::before {
-        opacity: 1;
-    }
+    .btn-asset:hover::before { opacity: 1; }
 
     .btn-asset:hover {
         transform: translateY(-2px);
         box-shadow: 0 12px 30px -8px rgba(245, 158, 11, 0.6);
     }
 
-    .btn-asset i.fa-arrow-right {
-        transition: transform 0.3s ease;
-    }
+    .btn-asset i.fa-arrow-right { transition: transform 0.3s ease; }
+    .btn-asset:hover i.fa-arrow-right { transform: translateX(4px); }
 
-    .btn-asset:hover i.fa-arrow-right {
-        transform: translateX(4px);
-    }
-
-    /* Dekorasi lingkaran */
-    .deco-circle {
-        animation: floatCircle 8s ease-in-out infinite;
-    }
+    .deco-circle { animation: floatCircle 8s ease-in-out infinite; }
 
     @keyframes floatCircle {
         0%, 100% { transform: translate(0, 0) scale(1); }
         50%      { transform: translate(-10px, 10px) scale(1.1); }
     }
 
-    /* 🔥 Icon jam di card tenggat — tick animation */
     @keyframes tick {
         0%, 100% { transform: rotate(0deg); }
         25%      { transform: rotate(-8deg); }
         75%      { transform: rotate(8deg); }
     }
-    .clock-tick {
-        animation: tick 2s ease-in-out infinite;
-    }
+    .clock-tick { animation: tick 2s ease-in-out infinite; }
 
-    /* 🔥 Pulse halus untuk card tenggat */
-    .deadline-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
+    .deadline-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
     .deadline-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 12px 30px -10px rgba(245, 158, 11, 0.4);
+    }
+
+    /* 🔥 Card Dihancurkan */
+    .destroyed-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .destroyed-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px -10px rgba(220, 38, 38, 0.3);
+    }
+
+    /* Trash icon rotate on hover */
+    .trash-icon {
+        transition: transform 0.4s ease;
+    }
+    .destroyed-card:hover .trash-icon {
+        transform: rotate(-15deg) scale(1.1);
     }
 </style>
 @endpush
@@ -228,26 +198,22 @@
     </div>
 
     {{-- ============================================================ --}}
-    {{-- 🔥 CARD TOTAL NILAI ASET — Versi Baru Lebih Rapi & Kecil     --}}
+    {{-- CARD TOTAL NILAI ASET                                        --}}
     {{-- ============================================================ --}}
     <div class="mb-5 sm:mb-6 animate-fadeInUp">
         <div class="asset-card">
             <div class="relative rounded-[16px] bg-white overflow-hidden">
-                {{-- Dekorasi background --}}
                 <div class="absolute top-0 right-0 w-40 sm:w-56 h-40 sm:h-56 bg-gradient-to-br from-amber-100/70 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none deco-circle"></div>
                 <div class="absolute bottom-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-tr from-amber-100/50 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
                 <div class="relative p-4 sm:p-5">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
 
-                        {{-- KIRI: Ikon + Label + Nilai --}}
                         <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-                            {{-- Ikon koin --}}
                             <div class="coin-icon w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 shrink-0">
                                 <i class="fas fa-coins text-white text-xl sm:text-2xl"></i>
                             </div>
 
-                            {{-- Label + Nilai --}}
                             <div class="min-w-0 flex-1">
                                 <p class="text-[10px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">
                                     <i class="fas fa-gem mr-1"></i>Total Nilai Aset
@@ -262,7 +228,6 @@
                             </div>
                         </div>
 
-                        {{-- KANAN: Tombol Lihat --}}
                         <a href="{{ route('super_admin.assets.index') }}"
                            class="btn-asset inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-amber-500/30 shrink-0 w-full sm:w-auto">
                             <i class="fas fa-eye"></i>
@@ -319,7 +284,7 @@
     </div>
 
     {{-- ============================================================ --}}
-    {{-- 🔥 CARD: TENGGAT PENGEMBALIAN HARI INI                       --}}
+    {{-- CARD: TENGGAT PENGEMBALIAN HARI INI                          --}}
     {{-- ============================================================ --}}
     @if($todayDeadlines->count() > 0)
     <div class="card-elevated deadline-card p-4 sm:p-5 mb-5 sm:mb-6 animate-fadeInUp border-l-4 border-l-amber-500">
@@ -342,7 +307,6 @@
                 $isOverdue = $c->expected_return_date < now();
             @endphp
             <div class="flex items-center gap-3 p-3 rounded-xl border {{ $isOverdue ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100' }} transition hover:shadow-sm">
-                {{-- Jam --}}
                 <div class="shrink-0 text-center min-w-[52px]">
                     <p class="text-base sm:text-lg font-bold {{ $isOverdue ? 'text-red-600' : 'text-amber-600' }} leading-none">
                         {{ $c->expected_return_date->format('H:i') }}
@@ -350,10 +314,8 @@
                     <p class="text-[10px] text-gray-500 mt-0.5">WIB</p>
                 </div>
 
-                {{-- Divider --}}
                 <div class="w-px h-10 {{ $isOverdue ? 'bg-red-200' : 'bg-gray-200' }}"></div>
 
-                {{-- Info --}}
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-gray-800 truncate">
                         {{ $c->item->name ?? '-' }}
@@ -363,7 +325,6 @@
                     </p>
                 </div>
 
-                {{-- Status --}}
                 @if($isOverdue)
                     <span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white">
                         <i class="fas fa-exclamation-triangle text-[9px]"></i>
@@ -375,6 +336,92 @@
                         HARI INI
                     </span>
                 @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- ============================================================ --}}
+    {{-- 🔥🔥🔥 CARD: BARANG YANG BARU DIHANCURKAN                     --}}
+    {{-- ============================================================ --}}
+    @if($recentDisposals->count() > 0)
+    <div class="card-elevated p-4 sm:p-5 mb-5 sm:mb-6 animate-fadeInUp border-l-4 border-l-red-500">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                <span class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                    <i class="fas fa-trash-can text-red-600 text-sm trash-icon"></i>
+                </span>
+                Barang yang Baru Dihancurkan
+                <span class="ml-1 px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full bg-red-500 text-white">
+                    {{ $recentDisposals->count() }}
+                </span>
+            </h3>
+            <a href="{{ route('super_admin.disposals.index', ['status' => 'approved']) }}"
+               class="text-[10px] sm:text-xs text-red-600 hover:text-red-800 font-medium">
+                Lihat semua <i class="fas fa-arrow-right text-[9px] ml-0.5"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            @foreach($recentDisposals as $disposal)
+            <div class="destroyed-card bg-white rounded-xl border border-red-100 overflow-hidden group">
+
+                {{-- Foto Barang + Badge DIHAPUS --}}
+                <div class="relative h-32 bg-gray-100">
+                    <img src="{{ $disposal->item->image_url ?? asset('assets/images/default-item.png') }}"
+                         alt="{{ $disposal->item->name ?? '-' }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+
+                    {{-- Overlay merah gelap --}}
+                    <div class="absolute inset-0 bg-gradient-to-t from-red-900/70 via-red-900/20 to-transparent"></div>
+
+                    {{-- Badge DIHAPUS --}}
+                    <div class="absolute top-2 right-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white shadow-md ring-2 ring-white/50">
+                            <i class="fas fa-trash-can text-[8px]"></i>
+                            DIHAPUS
+                        </span>
+                    </div>
+
+                    {{-- Tanggal --}}
+                    <div class="absolute bottom-2 left-2 text-[10px] text-white font-medium">
+                        <i class="fas fa-calendar-check text-[9px] mr-1"></i>
+                        {{ $disposal->approved_at ? $disposal->approved_at->format('d/m/Y') : $disposal->created_at->format('d/m/Y') }}
+                    </div>
+                </div>
+
+                {{-- Info --}}
+                <div class="p-3">
+                    <p class="text-sm font-bold text-gray-800 truncate" title="{{ $disposal->item->name ?? '-' }}">
+                        {{ $disposal->item->name ?? 'Barang tidak ditemukan' }}
+                    </p>
+
+                    {{-- Kode stok --}}
+                    @if($disposal->stock_code)
+                    <div class="inline-flex items-start gap-1 mt-1.5 px-1.5 py-0.5 rounded-md max-w-full"
+                         style="background: #0F6B5F15; color: #0F6B5F;">
+                        <i class="fas fa-barcode text-[8px] mt-0.5 shrink-0"></i>
+                        <span class="font-mono text-[9px] font-semibold leading-tight break-all">
+                            {{ $disposal->stock_code }}
+                        </span>
+                    </div>
+                    @endif
+
+                    {{-- Info tambahan --}}
+                    <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-500">
+                        <span class="truncate">
+                            <i class="fas fa-user mr-1"></i>
+                            {{ $disposal->user->name ?? '-' }}
+                        </span>
+                        @if($disposal->approved_at)
+                        <span class="shrink-0 ml-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ $disposal->approved_at->format('H:i') }}
+                        </span>
+                        @endif
+                    </div>
+                </div>
             </div>
             @endforeach
         </div>
@@ -533,7 +580,6 @@
                     <tbody class="divide-y divide-gray-50">
                         @foreach($recentItems as $item)
                         <tr class="hover:bg-gray-50/70 transition">
-                            {{-- 🔥 KODE LENGKAP (menggantikan kode lama) --}}
                             <td class="px-4 sm:px-5 py-3.5">
                                 <div class="font-mono text-[11px] font-semibold leading-tight break-all"
                                      style="color: #0F6B5F;">
@@ -647,12 +693,10 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1) Animasi progress bar status barang
     document.querySelectorAll('[data-target-width]').forEach((bar, i) => {
         setTimeout(() => { bar.style.width = bar.dataset.targetWidth; }, 300 + (i * 150));
     });
 
-    // 2) Kalau Chart.js gagal dimuat
     if (typeof Chart === 'undefined') {
         console.error('Chart.js tidak berhasil dimuat dari CDN.');
         document.querySelectorAll('.chart-fallback-slot').forEach(function (slot) {
@@ -819,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('Gagal membuat unitChart:', err);
     }
     @endif
-    } // end initCharts
+    }
 });
 </script>
 @endpush
