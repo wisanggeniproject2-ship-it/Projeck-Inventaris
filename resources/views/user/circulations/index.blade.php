@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="container mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
 
     {{-- HEADER --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -73,95 +73,294 @@
         </form>
     </div>
 
-    {{-- TABEL --}}
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+    {{-- ============================================================ --}}
+    {{-- 📱 MOBILE VIEW — Card Layout                                --}}
+    {{-- ============================================================ --}}
+    <div class="block md:hidden space-y-3 mb-5">
+        @forelse($circulations as $circulation)
+        @php
+            $isOverdue = method_exists($circulation, 'isOverdue')
+                ? ($circulation->isOverdue() ?? false)
+                : false;
+            $statusConfig = [
+                'pending'        => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'border' => 'border-yellow-200', 'icon' => 'fa-clock',           'label' => 'Menunggu'],
+                'approved'       => ['bg' => 'bg-green-100',  'text' => 'text-green-700',  'border' => 'border-green-200',  'icon' => 'fa-check-circle',    'label' => 'Disetujui'],
+                'return_pending' => ['bg' => 'bg-blue-100',   'text' => 'text-blue-700',   'border' => 'border-blue-200',   'icon' => 'fa-rotate',          'label' => 'Proses Kembali'],
+                'returned'       => ['bg' => 'bg-gray-100',   'text' => 'text-gray-700',   'border' => 'border-gray-200',   'icon' => 'fa-box',             'label' => 'Dikembalikan'],
+                'rejected'       => ['bg' => 'bg-red-100',    'text' => 'text-red-700',    'border' => 'border-red-200',    'icon' => 'fa-times-circle',    'label' => 'Ditolak'],
+            ];
+            $sc = $statusConfig[$circulation->status] ?? $statusConfig['pending'];
+        @endphp
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+            {{-- Header Card --}}
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <h3 class="font-bold text-sm text-gray-800 flex-1 min-w-0 line-clamp-2">
+                        {{ $circulation->item->name ?? '-' }}
+                    </h3>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-full {{ $sc['bg'] }} {{ $sc['text'] }} border {{ $sc['border'] }} shrink-0">
+                        <i class="fas {{ $sc['icon'] }} text-[9px]"></i>
+                        {{ $sc['label'] }}
+                    </span>
+                </div>
+
+                {{-- 🔥 KODE STOK SAJA (tanpa full_code) --}}
+                @if($circulation->stock_code)
+                    <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border max-w-full"
+                         style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                        <i class="fas fa-barcode text-[9px] mt-0.5 shrink-0" style="color: #0F6B5F;"></i>
+                        <span class="font-mono text-[10px] font-semibold leading-tight"
+                              style="color: #0F6B5F; word-break: break-word; overflow-wrap: anywhere;">
+                            {{ $circulation->stock_code }}
+                        </span>
+                    </div>
+                @endif
+
+                {{-- Unit --}}
+                <div class="mt-2">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-medium bg-teal-50 text-teal-700 px-2 py-0.5 rounded border border-teal-100">
+                        <i class="fas fa-building text-[9px]"></i>
+                        {{ $circulation->item->unit->name ?? '-' }}
+                    </span>
+                </div>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-4 space-y-3">
+                {{-- Jam Pinjam & Tenggat --}}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <p class="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+                            <i class="fas fa-sign-out-alt mr-1"></i>Jam Pinjam
+                        </p>
+                        <p class="text-xs text-gray-700 font-medium">
+                            {{ $circulation->borrow_date ? $circulation->borrow_date->format('d/m/Y') : '-' }}
+                        </p>
+                        <p class="text-[10px] text-gray-500">
+                            {{ $circulation->borrow_date ? $circulation->borrow_date->format('H:i') : '-' }} WIB
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+                            <i class="fas fa-hourglass-half mr-1"></i>Tenggat
+                        </p>
+                        @if($circulation->expected_return_date)
+                            <p class="text-xs font-medium {{ $isOverdue ? 'text-red-600' : 'text-gray-700' }}">
+                                {{ $circulation->expected_return_date->format('d/m/Y') }}
+                            </p>
+                            <p class="text-[10px] {{ $isOverdue ? 'text-red-600 font-bold' : 'text-gray-500' }}">
+                                {{ $circulation->expected_return_date->format('H:i') }} WIB
+                            </p>
+                            @if($isOverdue)
+                                <span class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-red-100 text-red-700 border border-red-200">
+                                    <i class="fas fa-exclamation-triangle text-[8px]"></i>
+                                    TERLAMBAT
+                                </span>
+                            @endif
+                        @else
+                            <p class="text-xs text-gray-400">-</p>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Jam Kembali --}}
+                <div>
+                    <p class="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+                        <i class="fas fa-sign-in-alt mr-1"></i>Jam Kembali
+                    </p>
+                    @if($circulation->return_date)
+                        <p class="text-xs text-gray-700 font-medium">
+                            {{ $circulation->return_date->format('d/m/Y') }}
+                            <span class="text-gray-500">— {{ $circulation->return_date->format('H:i') }} WIB</span>
+                        </p>
+                    @else
+                        <p class="text-xs text-gray-400 italic">Belum dikembalikan</p>
+                    @endif
+                </div>
+
+                {{-- Alasan reject --}}
+                @if($circulation->status == 'rejected' && $circulation->rejection_reason)
+                    <div class="p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
+                        <p class="text-[10px] font-semibold text-red-700 uppercase mb-1">
+                            <i class="fas fa-info-circle mr-1"></i>Alasan Ditolak
+                        </p>
+                        <p class="text-xs text-red-700 leading-snug break-words">{{ $circulation->rejection_reason }}</p>
+                        @if($circulation->rejected_at)
+                            <p class="mt-1.5 text-[10px] text-red-500/80">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ $circulation->rejected_at->format('d/m/Y H:i') }}
+                            </p>
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            {{-- Footer: Aksi --}}
+            <div class="p-3 border-t border-gray-100 bg-gray-50 flex flex-wrap gap-2">
+                {{-- Detail Barang --}}
+                <a href="{{ route('user.items.show', $circulation->item_id) }}" 
+                   class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
+                   title="Detail Barang">
+                    <i class="fas fa-eye text-[10px]"></i>
+                    <span>Detail</span>
+                </a>
+
+                {{-- Ajukan Pengembalian --}}
+                @if($circulation->status == 'approved')
+                    <form action="{{ route('user.circulations.requestReturn', $circulation) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" 
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium transition"
+                                onclick="return confirm('Yakin ingin mengajukan pengembalian barang ini?')">
+                            <i class="fas fa-undo-alt text-[10px]"></i>
+                            <span>Ajukan Kembali</span>
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Menunggu Konfirmasi --}}
+                @if($circulation->status == 'return_pending')
+                    <span class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium">
+                        <i class="fas fa-clock text-[10px]"></i>
+                        Menunggu Konfirmasi
+                    </span>
+                @endif
+            </div>
+        </div>
+        @empty
+        <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-gray-100">
+            <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                <i class="fas fa-inbox text-3xl text-gray-300"></i>
+            </div>
+            <p class="text-gray-600 font-medium mb-1">Belum ada riwayat peminjaman</p>
+            <p class="text-gray-400 text-sm mb-4">Silakan ajukan peminjaman barang terlebih dahulu</p>
+            <a href="{{ route('user.items.index') }}" 
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl text-sm font-medium transition shadow-sm hover:shadow-md">
+                <i class="fas fa-plus"></i>
+                Ajukan Peminjaman
+            </a>
+        </div>
+        @endforelse
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- 💻 DESKTOP VIEW — Tabel (6 KOLOM, LEBIH LEGA)               --}}
+    {{-- ============================================================ --}}
+    <div class="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
         <div class="overflow-x-auto">
-            <table class="min-w-full">
+            <table class="min-w-full divide-y divide-gray-200" style="table-layout: fixed;">
+                <colgroup>
+                    <col style="width: 22%;">   {{-- Barang + Kode Stok --}}
+                    <col style="width: 10%;">   {{-- Unit --}}
+                    <col style="width: 14%;">   {{-- Jam Pinjam --}}
+                    <col style="width: 16%;">   {{-- Tenggat --}}
+                    <col style="width: 14%;">   {{-- Jam Kembali --}}
+                    <col style="width: 14%;">   {{-- Status --}}
+                    <col style="width: 10%;">   {{-- Aksi --}}
+                </colgroup>
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Barang</th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                            <i class="fas fa-sign-out-alt mr-1 text-gray-400"></i>Jam Pinjam
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-box text-gray-400 mr-1"></i>Barang & Kode
                         </th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                            <i class="fas fa-hourglass-half mr-1 text-gray-400"></i>Tenggat
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-building text-gray-400 mr-1"></i>Unit
                         </th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                            <i class="fas fa-sign-in-alt mr-1 text-gray-400"></i>Jam Kembali
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sign-out-alt text-gray-400 mr-1"></i>Jam Pinjam
                         </th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-hourglass-half text-gray-400 mr-1"></i>Tenggat
+                        </th>
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sign-in-alt text-gray-400 mr-1"></i>Jam Kembali
+                        </th>
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-info-circle text-gray-400 mr-1"></i>Status
+                        </th>
+                        <th class="px-3 py-3 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-cog text-gray-400 mr-1"></i>Aksi
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100">
                     @forelse($circulations as $circulation)
                     @php
                         $isOverdue = method_exists($circulation, 'isOverdue')
                             ? ($circulation->isOverdue() ?? false)
                             : false;
+                        $statusConfig = [
+                            'pending'        => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'border' => 'border-yellow-200', 'icon' => 'fa-clock',        'label' => 'Menunggu'],
+                            'approved'       => ['bg' => 'bg-green-100',  'text' => 'text-green-700',  'border' => 'border-green-200',  'icon' => 'fa-check-circle', 'label' => 'Disetujui'],
+                            'return_pending' => ['bg' => 'bg-blue-100',   'text' => 'text-blue-700',   'border' => 'border-blue-200',   'icon' => 'fa-rotate',       'label' => 'Proses Kembali'],
+                            'returned'       => ['bg' => 'bg-gray-100',   'text' => 'text-gray-700',   'border' => 'border-gray-200',   'icon' => 'fa-box',          'label' => 'Dikembalikan'],
+                            'rejected'       => ['bg' => 'bg-red-100',    'text' => 'text-red-700',    'border' => 'border-red-200',    'icon' => 'fa-times-circle', 'label' => 'Ditolak'],
+                        ];
+                        $sc = $statusConfig[$circulation->status] ?? $statusConfig['pending'];
                     @endphp
-                    <tr class="border-t border-gray-100 
+                    <tr class="hover:bg-gray-50/70 transition
                         {{ $circulation->status == 'pending' ? 'bg-yellow-50/50' : '' }}
                         {{ $circulation->status == 'rejected' ? 'bg-red-50/40' : '' }}
                         {{ $isOverdue ? 'bg-red-50/60' : '' }}">
 
-                        {{-- BARANG --}}
-                        <td class="px-4 sm:px-6 py-4">
-                            <div class="text-sm font-medium text-gray-800">{{ $circulation->item->name ?? '-' }}</div>
-
-                            {{-- 🔥 KODE LENGKAP BARANG --}}
-                            <div class="text-[10px] font-mono font-semibold mt-0.5 break-all text-gray-500">
-                                {{ $circulation->item->full_code ?? $circulation->item->code ?? '-' }}
+                        {{-- BARANG + KODE STOK --}}
+                        <td class="px-3 py-3">
+                            <div class="text-sm font-medium text-gray-800 leading-tight line-clamp-2">
+                                {{ $circulation->item->name ?? '-' }}
                             </div>
 
-                            {{-- 🔥 KODE STOK SPESIFIK --}}
+                            {{-- 🔥 KODE STOK SAJA (kode lengkap dihapus) --}}
                             @if($circulation->stock_code)
-                                <div class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold break-all"
-                                     style="background: #0F6B5F15; color: #0F6B5F;"
-                                     title="Kode stok unit yang dipinjam">
-                                    <i class="fas fa-qrcode text-[9px]"></i>
-                                    {{ $circulation->stock_code }}
+                                <div class="inline-flex items-start gap-1 mt-1.5 px-1.5 py-0.5 rounded-md border max-w-full"
+                                     style="background: #0F6B5F10; border-color: #0F6B5F30;">
+                                    <i class="fas fa-barcode text-[9px] mt-0.5 shrink-0" style="color: #0F6B5F;"></i>
+                                    <span class="font-mono text-[10px] font-semibold leading-tight"
+                                          style="color: #0F6B5F; word-break: break-word; overflow-wrap: anywhere;">
+                                        {{ $circulation->stock_code }}
+                                    </span>
                                 </div>
+                            @else
+                                <div class="text-[10px] text-gray-400 italic mt-1">-</div>
                             @endif
                         </td>
 
                         {{-- UNIT --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center gap-1 text-xs font-medium bg-teal-50 text-teal-700 px-2 py-1 rounded-lg border border-teal-100">
+                        <td class="px-3 py-3">
+                            <span class="inline-flex items-center gap-1 text-[10px] font-medium bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-100 whitespace-nowrap">
                                 <i class="fas fa-building text-[9px]"></i>
                                 {{ $circulation->item->unit->name ?? '-' }}
                             </span>
                         </td>
 
-                        {{-- 🔥 JAM PINJAM --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-800">
-                                <i class="fas fa-calendar-alt text-gray-400 text-xs mr-1"></i>
+                        {{-- JAM PINJAM --}}
+                        <td class="px-3 py-3">
+                            <div class="text-xs font-medium text-gray-800 leading-tight">
+                                <i class="fas fa-calendar-alt text-gray-400 text-[10px] mr-1"></i>
                                 {{ $circulation->borrow_date ? $circulation->borrow_date->format('d/m/Y') : '-' }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-0.5">
-                                <i class="fas fa-clock text-gray-400 text-[10px] mr-1"></i>
+                            <div class="text-[10px] text-gray-500 mt-0.5">
+                                <i class="fas fa-clock text-gray-400 text-[9px] mr-1"></i>
                                 {{ $circulation->borrow_date ? $circulation->borrow_date->format('H:i') : '-' }} WIB
                             </div>
                         </td>
 
-                        {{-- 🔥 TENGGAT --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        {{-- TENGGAT --}}
+                        <td class="px-3 py-3">
                             @if($circulation->expected_return_date)
-                                <div class="text-sm font-medium {{ $isOverdue ? 'text-red-600' : 'text-gray-800' }}">
-                                    <i class="fas fa-calendar-alt text-gray-400 text-xs mr-1"></i>
+                                <div class="text-xs font-medium {{ $isOverdue ? 'text-red-600' : 'text-gray-800' }} leading-tight">
+                                    <i class="fas fa-calendar-alt text-gray-400 text-[10px] mr-1"></i>
                                     {{ $circulation->expected_return_date->format('d/m/Y') }}
                                 </div>
-                                <div class="text-xs {{ $isOverdue ? 'text-red-600 font-bold' : 'text-gray-500' }} mt-0.5">
-                                    <i class="fas fa-clock text-[10px] mr-1"></i>
+                                <div class="text-[10px] {{ $isOverdue ? 'text-red-600 font-bold' : 'text-gray-500' }} mt-0.5">
+                                    <i class="fas fa-clock text-[9px] mr-1"></i>
                                     {{ $circulation->expected_return_date->format('H:i') }} WIB
                                 </div>
 
-                                {{-- Badge terlambat --}}
                                 @if($isOverdue)
-                                    <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 border border-red-200">
-                                        <i class="fas fa-exclamation-triangle text-[9px]"></i>
+                                    <span class="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-red-100 text-red-700 border border-red-200">
+                                        <i class="fas fa-exclamation-triangle text-[8px]"></i>
                                         TERLAMBAT
                                     </span>
                                 @elseif($circulation->status == 'approved')
@@ -171,69 +370,46 @@
                                             : null;
                                     @endphp
                                     @if($sisaJam)
-                                        <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-700 border border-green-200">
-                                            <i class="fas fa-hourglass-half text-[9px]"></i>
-                                            Sisa {{ $sisaJam }}
+                                        <span class="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-green-100 text-green-700 border border-green-200">
+                                            <i class="fas fa-hourglass-half text-[8px]"></i>
+                                            {{ $sisaJam }}
                                         </span>
                                     @endif
                                 @endif
                             @else
-                                <span class="text-gray-400 text-sm">-</span>
+                                <span class="text-gray-400 text-xs">-</span>
                             @endif
                         </td>
 
-                        {{-- 🔥 JAM KEMBALI --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        {{-- JAM KEMBALI --}}
+                        <td class="px-3 py-3">
                             @if($circulation->return_date)
-                                <div class="text-sm font-medium text-gray-800">
-                                    <i class="fas fa-calendar-check text-green-500 text-xs mr-1"></i>
+                                <div class="text-xs font-medium text-gray-800 leading-tight">
+                                    <i class="fas fa-calendar-check text-green-500 text-[10px] mr-1"></i>
                                     {{ $circulation->return_date->format('d/m/Y') }}
                                 </div>
-                                <div class="text-xs text-gray-500 mt-0.5">
-                                    <i class="fas fa-clock text-gray-400 text-[10px] mr-1"></i>
+                                <div class="text-[10px] text-gray-500 mt-0.5">
+                                    <i class="fas fa-clock text-gray-400 text-[9px] mr-1"></i>
                                     {{ $circulation->return_date->format('H:i') }} WIB
                                 </div>
                             @else
-                                <span class="text-gray-400 text-sm italic">Belum dikembalikan</span>
+                                <span class="text-gray-400 text-[10px] italic">Belum kembali</span>
                             @endif
                         </td>
 
                         {{-- STATUS --}}
-                        <td class="px-4 sm:px-6 py-4">
-                            @php
-                                $statusClasses = [
-                                    'approved'       => 'bg-green-100 text-green-700',
-                                    'pending'        => 'bg-yellow-100 text-yellow-700',
-                                    'return_pending' => 'bg-blue-100 text-blue-700',
-                                    'returned'       => 'bg-gray-100 text-gray-700',
-                                    'rejected'       => 'bg-red-100 text-red-700',
-                                ];
-                                $statusIcons = [
-                                    'pending'        => '⏳',
-                                    'approved'       => '✅',
-                                    'return_pending' => '🔄',
-                                    'returned'       => '📦',
-                                    'rejected'       => '❌',
-                                ];
-                                $cls  = $statusClasses[$circulation->status] ?? 'bg-gray-100 text-gray-700';
-                                $icon = $statusIcons[$circulation->status] ?? '';
-                            @endphp
-                            <span class="px-2 py-1 text-xs rounded-full {{ $cls }}">
-                                {{ $icon }} {{ ucfirst(str_replace('_', ' ', $circulation->status)) }}
+                        <td class="px-3 py-3">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full {{ $sc['bg'] }} {{ $sc['text'] }} border {{ $sc['border'] }} whitespace-nowrap">
+                                <i class="fas {{ $sc['icon'] }} text-[8px]"></i>
+                                {{ $sc['label'] }}
                             </span>
 
                             {{-- Alasan reject --}}
                             @if($circulation->status == 'rejected' && $circulation->rejection_reason)
-                                <div class="mt-2 p-2.5 bg-red-50 border-l-4 border-red-400 rounded-r-lg text-xs text-red-700 max-w-xs">
-                                    <p class="font-semibold mb-1 flex items-center gap-1">
-                                        <i class="fas fa-info-circle"></i>
-                                        Alasan Ditolak:
-                                    </p>
-                                    <p class="break-words leading-snug">{{ $circulation->rejection_reason }}</p>
-
+                                <div class="mt-1.5 p-1.5 bg-red-50 border-l-2 border-red-400 rounded-r text-[10px] text-red-700">
+                                    <p class="break-words leading-snug line-clamp-3">{{ $circulation->rejection_reason }}</p>
                                     @if($circulation->rejected_at)
-                                        <p class="mt-1.5 text-[10px] text-red-500/80">
-                                            <i class="fas fa-clock mr-1"></i>
+                                        <p class="mt-0.5 text-[9px] text-red-500/80">
                                             {{ $circulation->rejected_at->format('d/m/Y H:i') }}
                                         </p>
                                     @endif
@@ -242,31 +418,35 @@
                         </td>
 
                         {{-- AKSI --}}
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
-                            <div class="flex gap-3 items-center">
+                        <td class="px-3 py-3 text-center">
+                            <div class="flex flex-col gap-1.5 items-center">
                                 {{-- Detail Barang --}}
                                 <a href="{{ route('user.items.show', $circulation->item_id) }}" 
-                                   class="text-blue-600 hover:text-blue-800" title="Detail Barang">
-                                    <i class="fas fa-eye text-lg"></i>
+                                   class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 text-[10px] font-medium transition whitespace-nowrap"
+                                   title="Detail Barang">
+                                    <i class="fas fa-eye text-[9px]"></i>
+                                    <span>Detail</span>
                                 </a>
-                                
+
                                 {{-- Ajukan Pengembalian --}}
                                 @if($circulation->status == 'approved')
                                     <form action="{{ route('user.circulations.requestReturn', $circulation) }}" method="POST" class="inline">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="text-orange-600 hover:text-orange-800" 
-                                                title="Ajukan Pengembalian"
+                                        <button type="submit" 
+                                                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-medium transition whitespace-nowrap"
                                                 onclick="return confirm('Yakin ingin mengajukan pengembalian barang ini?')">
-                                            <i class="fas fa-undo-alt text-lg"></i>
+                                            <i class="fas fa-undo-alt text-[9px]"></i>
+                                            <span>Kembali</span>
                                         </button>
                                     </form>
                                 @endif
-                                
+
                                 {{-- Menunggu Konfirmasi --}}
                                 @if($circulation->status == 'return_pending')
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200" title="Menunggu konfirmasi admin">
-                                        <i class="fas fa-clock text-[10px]"></i>
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg bg-blue-100 text-blue-700 border border-blue-200 whitespace-nowrap"
+                                          title="Menunggu konfirmasi admin">
+                                        <i class="fas fa-clock text-[9px]"></i>
                                         Menunggu
                                     </span>
                                 @endif
@@ -275,7 +455,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 sm:px-6 py-12 text-center text-gray-500">
+                        <td colspan="7" class="px-4 py-12 text-center text-gray-500">
                             <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
                                 <i class="fas fa-inbox text-3xl text-gray-300"></i>
                             </div>

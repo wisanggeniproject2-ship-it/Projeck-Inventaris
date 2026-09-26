@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto max-w-5xl px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+<div class="container mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
 
     {{-- HEADER --}}
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
@@ -146,6 +146,18 @@
                     </div>
                 @endif
             </div>
+
+            {{-- 🔥 FOOTER: Tombol Cetak Berita Acara (khusus approved) --}}
+            @if($disposal->status == 'approved')
+            <div class="p-3 border-t border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <a href="{{ route('user.disposals.berita-acara', $disposal) }}"
+                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-semibold shadow-sm hover:shadow-md transition"
+                   target="_blank">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Cetak Berita Acara Penghapusan</span>
+                </a>
+            </div>
+            @endif
         </div>
         @empty
         <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-gray-100">
@@ -164,30 +176,38 @@
     </div>
 
     {{-- ============================================================ --}}
-    {{-- 💻 DESKTOP VIEW — Tabel                                     --}}
+    {{-- 💻 DESKTOP VIEW — Tabel (6 KOLOM, LEBIH LEGA)               --}}
     {{-- ============================================================ --}}
     <div class="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200" style="table-layout: fixed;">
+                <colgroup>
+                    <col style="width: 16%;">   {{-- Barang --}}
+                    <col style="width: 20%;">   {{-- KodeStok --}}
+                    <col style="width: 18%;">   {{-- Alasan --}}
+                    <col style="width: 12%;">   {{-- Tanggal --}}
+                    <col style="width: 12%;">   {{-- Status --}}
+                    <col style="width: 22%;">   {{-- Catatan + Aksi --}}
+                </colgroup>
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                             <i class="fas fa-box text-gray-400 mr-1"></i>Barang
                         </th>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                             <i class="fas fa-qrcode text-gray-400 mr-1"></i>Kode Stok
                         </th>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                             <i class="fas fa-comment-alt text-gray-400 mr-1"></i>Alasan
                         </th>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                            <i class="fas fa-calendar text-gray-400 mr-1"></i>Tanggal Ajuan
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-calendar text-gray-400 mr-1"></i>Tanggal
                         </th>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                             <i class="fas fa-info-circle text-gray-400 mr-1"></i>Status
                         </th>
-                        <th class="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                            <i class="fas fa-reply text-gray-400 mr-1"></i>Catatan Admin
+                        <th class="px-3 py-3 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-cog text-gray-400 mr-1"></i>Aksi
                         </th>
                     </tr>
                 </thead>
@@ -196,7 +216,7 @@
                     @php
                         $statusConfig = [
                             'pending'  => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'border' => 'border-yellow-200', 'icon' => 'fa-clock', 'label' => 'Menunggu Konfirmasi'],
-                            'approved' => ['bg' => 'bg-red-100',    'text' => 'text-red-700',    'border' => 'border-red-200',    'icon' => 'fa-check-circle', 'label' => 'Disetujui (Dihapus)'],
+                            'approved' => ['bg' => 'bg-red-100',    'text' => 'text-red-700',    'border' => 'border-red-200',    'icon' => 'fa-check-circle', 'label' => 'Disetujui'],
                             'rejected' => ['bg' => 'bg-gray-100',   'text' => 'text-gray-600',   'border' => 'border-gray-200',   'icon' => 'fa-times-circle', 'label' => 'Ditolak'],
                         ];
                         $sc = $statusConfig[$disposal->status] ?? $statusConfig['pending'];
@@ -206,34 +226,34 @@
                         {{ $disposal->status == 'approved' ? 'bg-red-50/30' : '' }}">
 
                         {{-- BARANG --}}
-                        <td class="px-4 lg:px-6 py-4">
-                            <div class="text-sm font-medium text-gray-800">
+                        <td class="px-3 py-3">
+                            <div class="text-sm font-medium text-gray-800 leading-tight">
                                 {{ $disposal->item->name ?? 'Barang tidak ditemukan' }}
                             </div>
 
                             {{-- Kategori/Unit --}}
-                            <div class="flex flex-wrap gap-1.5 mt-1.5">
+                            <div class="flex flex-wrap gap-1 mt-1">
                                 @if($disposal->item->category ?? false)
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">
+                                    <span class="inline-flex items-center gap-0.5 text-[9px] font-medium bg-blue-50 text-blue-700 px-1 py-0.5 rounded border border-blue-100">
                                         <i class="fas fa-tag text-[8px]"></i>{{ $disposal->item->category->name }}
                                     </span>
                                 @endif
                                 @if($disposal->item->unit ?? false)
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-medium bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-100">
+                                    <span class="inline-flex items-center gap-0.5 text-[9px] font-medium bg-teal-50 text-teal-700 px-1 py-0.5 rounded border border-teal-100">
                                         <i class="fas fa-building text-[8px]"></i>{{ $disposal->item->unit->name }}
                                     </span>
                                 @endif
                             </div>
                         </td>
 
-                        {{-- 🔥 KODE STOK --}}
-                        <td class="px-4 lg:px-6 py-4 max-w-[240px]">
+                        {{-- KODE STOK — lebar fix, word-break normal --}}
+                        <td class="px-3 py-3">
                             @if($disposal->stock_code)
-                                <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border"
+                                <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border max-w-full"
                                      style="background: #0F6B5F10; border-color: #0F6B5F30;">
                                     <i class="fas fa-barcode text-[9px] mt-0.5 shrink-0" style="color: #0F6B5F;"></i>
-                                    <span class="font-mono text-[10px] font-semibold leading-tight break-all"
-                                          style="color: #0F6B5F;">
+                                    <span class="font-mono text-[10px] font-semibold leading-tight"
+                                          style="color: #0F6B5F; word-break: break-word; overflow-wrap: anywhere;">
                                         {{ $disposal->stock_code }}
                                     </span>
                                 </div>
@@ -243,51 +263,63 @@
                         </td>
 
                         {{-- ALASAN --}}
-                        <td class="px-4 lg:px-6 py-4 max-w-xs">
+                        <td class="px-3 py-3">
                             <p class="text-sm text-gray-700 leading-snug line-clamp-3">
                                 {{ $disposal->reason }}
                             </p>
                         </td>
 
                         {{-- TANGGAL --}}
-                        <td class="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-700">
-                                <i class="fas fa-calendar-alt text-gray-400 text-xs mr-1"></i>
+                        <td class="px-3 py-3">
+                            <div class="text-xs text-gray-700 leading-tight">
+                                <i class="fas fa-calendar-alt text-gray-400 text-[10px] mr-1"></i>
                                 {{ $disposal->created_at->format('d/m/Y') }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-0.5">
-                                <i class="fas fa-clock text-gray-400 text-[10px] mr-1"></i>
+                            <div class="text-[10px] text-gray-500 mt-0.5">
+                                <i class="fas fa-clock text-gray-400 text-[9px] mr-1"></i>
                                 {{ $disposal->created_at->format('H:i') }} WIB
                             </div>
                         </td>
 
                         {{-- STATUS --}}
-                        <td class="px-4 lg:px-6 py-4">
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full {{ $sc['bg'] }} {{ $sc['text'] }} border {{ $sc['border'] }}">
-                                <i class="fas {{ $sc['icon'] }} text-[10px]"></i>
+                        <td class="px-3 py-3">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full {{ $sc['bg'] }} {{ $sc['text'] }} border {{ $sc['border'] }}">
+                                <i class="fas {{ $sc['icon'] }} text-[8px]"></i>
                                 {{ $sc['label'] }}
                             </span>
 
-                            {{-- Info tambahan --}}
                             @if($disposal->status == 'approved' && $disposal->approved_at ?? false)
-                                <p class="text-[10px] text-gray-400 mt-1">
-                                    <i class="fas fa-clock mr-1"></i>
+                                <p class="text-[9px] text-gray-400 mt-1">
                                     {{ $disposal->approved_at->format('d/m/Y H:i') }}
                                 </p>
                             @elseif($disposal->status == 'rejected' && $disposal->rejected_at ?? false)
-                                <p class="text-[10px] text-gray-400 mt-1">
-                                    <i class="fas fa-clock mr-1"></i>
+                                <p class="text-[9px] text-gray-400 mt-1">
                                     {{ $disposal->rejected_at->format('d/m/Y H:i') }}
                                 </p>
                             @endif
                         </td>
 
-                        {{-- CATATAN ADMIN --}}
-                        <td class="px-4 lg:px-6 py-4 max-w-xs">
+                        {{-- AKSI (+ catatan admin kalau ada) --}}
+                        <td class="px-3 py-3 text-center">
                             @if($disposal->rejection_reason)
-                                <div class="p-2 bg-red-50 border-l-4 border-red-400 rounded-r text-xs text-red-700">
+                                <div class="p-1.5 bg-red-50 border-l-2 border-red-400 rounded-r text-[10px] text-red-700 mb-2 text-left">
                                     <p class="break-words leading-snug">{{ $disposal->rejection_reason }}</p>
                                 </div>
+                            @endif
+
+                            @if($disposal->status == 'approved')
+                                <a href="{{ route('user.disposals.berita-acara', $disposal) }}"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-[11px] font-medium shadow-sm hover:shadow-md transition whitespace-nowrap"
+                                   target="_blank"
+                                   title="Cetak Berita Acara Penghapusan">
+                                    <i class="fas fa-file-pdf text-[10px]"></i>
+                                    <span>Cetak BA</span>
+                                </a>
+                            @elseif($disposal->status == 'pending')
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg bg-gray-100 text-gray-500" title="Menunggu persetujuan">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    Menunggu
+                                </span>
                             @else
                                 <span class="text-xs text-gray-400 italic">-</span>
                             @endif

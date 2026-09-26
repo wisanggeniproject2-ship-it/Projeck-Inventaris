@@ -218,7 +218,7 @@ class ItemController extends Controller
     }
 
     // ============================================================
-    // 🔥🔥🔥 GENERATE PDF — SPLIT 10 STIKER PER FILE
+    // 🔥🔥🔥 GENERATE PDF — SPLIT 10 STIKER PER FILE (FIXED)
     // ============================================================
     public function pdf(Item $item)
     {
@@ -249,6 +249,21 @@ class ItemController extends Controller
         $perPage   = 10;  // 🔥 10 stiker per halaman A4
         $cleanCode = str_replace(['/', '.'], '-', $item->code);
 
+        // 🔥🔥🔥 KONFIGURASI MARGIN UNTUK DOM PDF
+        // WAJIB di-set di controller via setOption(), karena DomPDF
+        // tidak reliable baca @page { margin } dari CSS blade.
+        // Tanpa ini, margin jadi 0 → stiker mepet ke tepi kertas.
+        $pdfOptions = [
+            'margin_top'    => 15,   // mm — dari 10 → 15
+            'margin_right'  => 15,   // mm — dari 10 → 15
+            'margin_bottom' => 15,   // mm — dari 10 → 15
+            'margin_left'   => 15,   // mm — dari 10 → 15
+            'dpi'                  => 150,
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled'      => true,
+            'defaultFont'          => 'Arial',
+        ];
+
         // ============================================================
         // KASUS 1: 1-10 stok → 1 file PDF biasa
         // ============================================================
@@ -258,7 +273,9 @@ class ItemController extends Controller
                 'stockCodes' => $stockCodes,
                 'pageNumber' => 1,
                 'totalPages' => 1,
-            ])->setPaper('a4', 'portrait');
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption($pdfOptions);
 
             return $pdf->download('stiker-' . $cleanCode . '-x' . $totalStok . '.pdf');
         }
@@ -286,7 +303,9 @@ class ItemController extends Controller
                 'stockCodes' => $chunk,
                 'pageNumber' => $pageNum,
                 'totalPages' => $totalPages,
-            ])->setPaper('a4', 'portrait');
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption($pdfOptions);
 
             $pdfContent = $pdf->output();
 

@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\ItemStock;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AssetDisposalController extends Controller
 {
@@ -172,5 +173,78 @@ class AssetDisposalController extends Controller
             'item_name'  => $item->name,
             'stockCodes' => $stockCodes,
         ]);
+    }
+
+    /**
+     * ============================================================
+     * 🔥🔥🔥 CETAK BERITA ACARA PENGHAPUSAN
+     * ============================================================
+     * 
+     * Hanya bisa dicetak kalau:
+     * 1. Disposal milik user yang sedang login (ownership check)
+     * 2. Status disposal = approved
+     * 
+     * Route: GET /user/disposals/{disposal}/berita-acara
+     * Name:  user.disposals.berita-acara
+     * 
+     * 🔥 FIX:
+     * - margin 0 karena background template full A4
+     * - Posisi konten diatur oleh padding di blade
+     * - dpi 150 & parser HTML5 biar stabil
+     */
+    public function beritaAcara(AssetDisposal $disposal)
+    {
+        // 🔒 Cek ownership — pengajuan ini punya user yang login?
+        if ($disposal->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak memiliki akses ke pengajuan ini.');
+        }
+
+        // 🔒 Cek status — hanya bisa cetak kalau sudah approved
+        if ($disposal->status !== 'approved') {
+            return back()->with('error', 
+                'Berita acara hanya bisa dicetak untuk pengajuan yang sudah disetujui.'
+            );
+        }
+
+        // 🔥 Load relasi yang dibutuhkan untuk template PDF
+        $disposal->load([
+            'item.category',
+            'item.unit',
+            'item.fundingSource',
+            'itemStock',
+            'user',
+            'approver',
+        ]);
+
+        // 🔥 Render PDF
+        // Margin 0 karena background template full A4
+        // Posisi konten diatur oleh padding di blade (.konten)
+        $pdf = Pdf::loadView('user.disposals.berita-acara-pdf', [
+            'disposal' => $disposal,
+        ])
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                // 🔥 Margin 0 — background template full A4
+                'margin_top'    => 0,
+                'margin_right'  => 0,
+                'margin_bottom' => 0,
+                'margin_left'   => 0,
+
+                // 🔥 Parser & rendering options biar stabil
+                'dpi'                  => 150,
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => true,
+                'defaultFont'          => 'Times New Roman',
+            ]);
+
+        // 🔥 Nama file
+        $cleanCode = str_replace(
+            ['/', '.', ' '],
+            '-',
+            $disposal->stock_code ?? $disposal->item->code ?? 'item'
+        );
+        $fileName = 'berita-acara-' . $cleanCode . '.pdf';
+
+        return $pdf->download($fileName);
     }
 }

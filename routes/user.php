@@ -34,8 +34,20 @@ Route::put('circulations/{circulation}/request-return', [CirculationController::
 
 // ============================================================
 // 🔥 PENGAJUAN ASET (PENGHAPUSAN BARANG RUSAK)
-// ⚠️ URUTAN PENTING: 'create' HARUS sebelum route lain yang statis, aman di sini
+// ⚠️ URUTAN PENTING:
+//   1. Route statis (index, create, store)
+//   2. Route custom ({disposal}/xxx) — HARUS sebelum {disposal}
+//   3. Route dinamis ({disposal}) — paling bawah
 // ============================================================
 Route::get('disposals', [AssetDisposalController::class, 'index'])->name('disposals.index');
 Route::get('disposals/create', [AssetDisposalController::class, 'create'])->name('disposals.create');
 Route::post('disposals', [AssetDisposalController::class, 'store'])->name('disposals.store');
+
+// 🔥🔥🔥 BARU: Cetak Berita Acara Penghapusan (PDF)
+// PENTING: route ini HARUS di atas 'disposals/{disposal}' biar tidak bentrok
+Route::get('disposals/{disposal}/berita-acara', 
+    [AssetDisposalController::class, 'beritaAcara']
+)->name('disposals.berita-acara');
+
+// Route dinamis (paling bawah) — kalau ada show/detail
+Route::get('disposals/{disposal}', [AssetDisposalController::class, 'show'])->name('disposals.show');
