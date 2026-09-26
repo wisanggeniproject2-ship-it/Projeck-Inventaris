@@ -160,11 +160,23 @@
             <li>
                 <a href="{{ route('super_admin.users.index') }}"
                    class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
-                          {{ request()->routeIs('super_admin.users.*')
+                          {{ request()->routeIs('super_admin.users.*') && !request()->routeIs('super_admin.users.import.*')
                                 ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
                                 : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
                     <i class="fas fa-user-gear w-5 text-center transition-colors"></i>
                     <span class="text-sm font-medium transition-colors">Manajemen Akun</span>
+                </a>
+            </li>
+
+            {{-- 🔥 IMPORT USER DARI EXCEL --}}
+            <li>
+                <a href="{{ route('super_admin.users.import.form') }}"
+                   class="menu-item group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                          {{ request()->routeIs('super_admin.users.import.*')
+                                ? 'bg-white/20 text-orange-400 shadow-lg shadow-black/10'
+                                : 'text-white/80 hover:bg-white/20 hover:text-orange-400' }}">
+                    <i class="fas fa-file-excel w-5 text-center transition-colors"></i>
+                    <span class="text-sm font-medium transition-colors">Import User</span>
                 </a>
             </li>
 

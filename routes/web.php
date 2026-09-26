@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 // Import semua Controller Utama
 use App\Http\Controllers\Admin\ItemController as SuperAdminItemController;
 use App\Http\Controllers\AdminUnit\ItemController as AdminUnitItemController;
+use App\Http\Controllers\UserImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,7 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     Route::post('/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();
@@ -104,20 +105,20 @@ Route::middleware(['auth', 'role:super_admin'])
     ->prefix('super-admin')
     ->name('super_admin.')
     ->group(function () {
-        
+
         // DASHBOARD
         Route::get('/dashboard', function () {
             if (class_exists(\App\Http\Controllers\Admin\DashboardController::class)) {
                 return app(\App\Http\Controllers\Admin\DashboardController::class)->index();
             }
-            
-            $recentCirculations = class_exists(\App\Models\Circulation::class) 
-                ? \App\Models\Circulation::latest()->take(5)->get() 
+
+            $recentCirculations = class_exists(\App\Models\Circulation::class)
+                ? \App\Models\Circulation::latest()->take(5)->get()
                 : [];
-                
+
             return view('admin.dashboard', compact('recentCirculations'));
         })->name('dashboard');
-        
+
         // ============================================================
         // MANAJEMEN BARANG
         // ⚠️ URUTAN PENTING: 'create' & route statis HARUS sebelum '{item}'
@@ -131,7 +132,7 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::get('/items/{item}', [SuperAdminItemController::class, 'show'])->name('items.show');
         Route::put('/items/{item}', [SuperAdminItemController::class, 'update'])->name('items.update');
         Route::delete('/items/{item}', [SuperAdminItemController::class, 'destroy'])->name('items.destroy');
-        
+
         // ============================================================
         // MASTER DATA
         // ============================================================
@@ -143,22 +144,22 @@ Route::middleware(['auth', 'role:super_admin'])
         // ============================================================
         // 🔥 SIRKULASI — AKSI CUSTOM
         // ============================================================
-        Route::post('circulations/{circulation}/approve', 
+        Route::post('circulations/{circulation}/approve',
             [\App\Http\Controllers\Admin\CirculationController::class, 'approve']
         )->name('circulations.approve');
 
-        Route::post('circulations/{circulation}/reject', 
+        Route::post('circulations/{circulation}/reject',
             [\App\Http\Controllers\Admin\CirculationController::class, 'reject']
         )->name('circulations.reject');
 
-        Route::post('circulations/{circulation}/return', 
+        Route::post('circulations/{circulation}/return',
             [\App\Http\Controllers\Admin\CirculationController::class, 'markReturned']
         )->name('circulations.return');
 
-        Route::post('circulations/{circulation}/confirm-return', 
+        Route::post('circulations/{circulation}/confirm-return',
             [\App\Http\Controllers\Admin\CirculationController::class, 'confirmReturn']
         )->name('circulations.confirm-return');
-        
+
         // ============================================================
         // 🔥 FITUR NILAI ASET & PENYUSUTAN
         // ============================================================
@@ -174,7 +175,15 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::get('disposals/{disposal}', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'show'])->name('disposals.show');
         Route::post('disposals/{disposal}/approve', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'approve'])->name('disposals.approve');
         Route::post('disposals/{disposal}/reject', [\App\Http\Controllers\Admin\AssetDisposalController::class, 'reject'])->name('disposals.reject');
-        
+
+        // ============================================================
+        // 🔥 IMPORT USER DARI EXCEL
+        // ⚠️ URUTAN PENTING: HARUS di atas Route::resource('users', ...)
+        // supaya '/users/import' tidak ketangkap oleh route '/users/{user}'
+        // ============================================================
+        Route::get('users/import', [UserImportController::class, 'form'])->name('users.import.form');
+        Route::post('users/import', [UserImportController::class, 'import'])->name('users.import');
+
         // Manajemen User
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
 });
@@ -186,20 +195,20 @@ Route::middleware(['auth', 'role:admin_unit'])
     ->prefix('admin-unit')
     ->name('admin_unit.')
     ->group(function () {
-        
+
         // DASHBOARD
         Route::get('/dashboard', function () {
             if (class_exists(\App\Http\Controllers\AdminUnit\DashboardController::class)) {
                 return app(\App\Http\Controllers\AdminUnit\DashboardController::class)->index();
             }
-            
-            $recentCirculations = class_exists(\App\Models\Circulation::class) 
-                ? \App\Models\Circulation::latest()->take(5)->get() 
+
+            $recentCirculations = class_exists(\App\Models\Circulation::class)
+                ? \App\Models\Circulation::latest()->take(5)->get()
                 : [];
-                
+
             return view('admin_unit.dashboard', compact('recentCirculations'));
         })->name('dashboard');
-        
+
         // ============================================================
         // MANAJEMEN BARANG
         // ============================================================
@@ -209,23 +218,23 @@ Route::middleware(['auth', 'role:admin_unit'])
         Route::get('/items/{item}/png', [AdminUnitItemController::class, 'generatePng'])->name('items.png');
         Route::get('/items/{item}/pdf', [AdminUnitItemController::class, 'generatePdf'])->name('items.pdf');
         Route::get('/items/{item}', [AdminUnitItemController::class, 'show'])->name('items.show');
-        
+
         // ============================================================
         // 🔥 SIRKULASI — AKSI CUSTOM
         // ============================================================
-        Route::post('circulations/{circulation}/approve', 
+        Route::post('circulations/{circulation}/approve',
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'approve']
         )->name('circulations.approve');
 
-        Route::post('circulations/{circulation}/reject', 
+        Route::post('circulations/{circulation}/reject',
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'reject']
         )->name('circulations.reject');
 
-        Route::post('circulations/{circulation}/return', 
+        Route::post('circulations/{circulation}/return',
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'markReturned']
         )->name('circulations.return');
 
-        Route::post('circulations/{circulation}/confirm-return', 
+        Route::post('circulations/{circulation}/confirm-return',
             [\App\Http\Controllers\AdminUnit\CirculationController::class, 'confirmReturn']
         )->name('circulations.confirm-return');
 
@@ -240,7 +249,7 @@ Route::middleware(['auth', 'role:manager'])
     ->prefix('manager')
     ->name('manager.')
     ->group(function () {
-        
+
         // ============================================================
         // DASHBOARD MANAGER
         // ============================================================
@@ -278,7 +287,7 @@ Route::middleware(['auth', 'role:manager'])
                 'itemsByUnit'
             ));
         })->name('dashboard');
-        
+
         // ============================================================
         // MANAJEMEN BARANG (Read-only)
         // ============================================================
@@ -292,12 +301,12 @@ Route::middleware(['auth', 'role:manager'])
 
             return view('manager.items.index', compact('items', 'units', 'categories'));
         })->name('items.index');
-        
+
         Route::get('/items/{item}', function (\App\Models\Item $item) {
             $item->load([
-                'category', 
-                'unit', 
-                'fundingSource', 
+                'category',
+                'unit',
+                'fundingSource',
                 'stockCodes',
                 'disposals.user',
                 'disposals.approver',
@@ -306,7 +315,7 @@ Route::middleware(['auth', 'role:manager'])
             ]);
             return view('manager.items.show', compact('item'));
         })->name('items.show');
-        
+
         // ============================================================
         // SIRKULASI (Read-only)
         // ============================================================
@@ -317,7 +326,7 @@ Route::middleware(['auth', 'role:manager'])
 
             return view('manager.circulations.index', compact('circulations'));
         })->name('circulations.index');
-        
+
         Route::get('/circulations/{circulation}', function (\App\Models\Circulation $circulation) {
             $circulation->load(['item', 'user', 'approver', 'itemStock']);
             return view('manager.circulations.show', compact('circulation'));
@@ -326,11 +335,11 @@ Route::middleware(['auth', 'role:manager'])
         // ============================================================
         // 🔥🔥🔥 BARU: MONITORING PENGHAPUSAN ASET (READ-ONLY)
         // ============================================================
-        Route::get('/disposal-monitoring', 
+        Route::get('/disposal-monitoring',
             [\App\Http\Controllers\Manager\DisposalMonitoringController::class, 'index']
         )->name('disposal-monitoring.index');
 
-        Route::get('/disposal-monitoring/{disposal}', 
+        Route::get('/disposal-monitoring/{disposal}',
             [\App\Http\Controllers\Manager\DisposalMonitoringController::class, 'show']
         )->name('disposal-monitoring.show');
 });
