@@ -44,7 +44,8 @@ class ItemController extends Controller
             $query->where('condition', $request->condition);
         }
         
-        $items = $query->latest()->paginate(15);
+        // 🔥 PAGINATION 10 PER HALAMAN (dari 15 → 10)
+        $items = $query->latest()->paginate(10);
         $units = Unit::where('is_active', true)->get();
         $categories = Category::all();
         
@@ -218,7 +219,7 @@ class ItemController extends Controller
     }
 
     // ============================================================
-    // 🔥🔥🔥 GENERATE PDF — SPLIT 10 STIKER PER FILE (FIXED)
+    // 🔥🔥🔥 GENERATE PDF — SPLIT 10 STIKER PER FILE
     // ============================================================
     public function pdf(Item $item)
     {
@@ -227,14 +228,11 @@ class ItemController extends Controller
 
         $item->load(['category', 'unit', 'fundingSource']);
 
-        // 🔥 Ambil SEMUA kode stok AKTIF (available + borrowed + maintenance)
-        // Disposed TIDAK dicetak (barang sudah hilang)
         $stockCodes = $item->stockCodes()
             ->where('status', '!=', 'disposed')
             ->orderBy('stock_number')
             ->get();
 
-        // Fallback kalau item_stocks kosong (item lama)
         if ($stockCodes->count() === 0) {
             $stockCodes = collect([
                 (object) [
@@ -246,27 +244,21 @@ class ItemController extends Controller
         }
 
         $totalStok = $stockCodes->count();
-        $perPage   = 10;  // 🔥 10 stiker per halaman A4
+        $perPage   = 10;
         $cleanCode = str_replace(['/', '.'], '-', $item->code);
 
-        // 🔥🔥🔥 KONFIGURASI MARGIN UNTUK DOM PDF
-        // WAJIB di-set di controller via setOption(), karena DomPDF
-        // tidak reliable baca @page { margin } dari CSS blade.
-        // Tanpa ini, margin jadi 0 → stiker mepet ke tepi kertas.
         $pdfOptions = [
-            'margin_top'    => 15,   // mm — dari 10 → 15
-            'margin_right'  => 15,   // mm — dari 10 → 15
-            'margin_bottom' => 15,   // mm — dari 10 → 15
-            'margin_left'   => 15,   // mm — dari 10 → 15
+            'margin_top'    => 15,
+            'margin_right'  => 15,
+            'margin_bottom' => 15,
+            'margin_left'   => 15,
             'dpi'                  => 150,
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled'      => true,
             'defaultFont'          => 'Arial',
         ];
 
-        // ============================================================
-        // KASUS 1: 1-10 stok → 1 file PDF biasa
-        // ============================================================
+        // KASUS 1: 1-10 stok → 1 file PDF
         if ($totalStok <= $perPage) {
             $pdf = Pdf::loadView('admin.items.pdf', [
                 'item'       => $item,
@@ -280,13 +272,10 @@ class ItemController extends Controller
             return $pdf->download('stiker-' . $cleanCode . '-x' . $totalStok . '.pdf');
         }
 
-        // ============================================================
-        // KASUS 2: > 10 stok → ZIP berisi multiple PDF (10 stiker/file)
-        // ============================================================
+        // KASUS 2: > 10 stok → ZIP berisi multiple PDF
         $chunks     = $stockCodes->chunk($perPage);
         $totalPages = $chunks->count();
 
-        // Buat ZIP temporary
         $zipFileName = tempnam(sys_get_temp_dir(), 'stiker_pdf_') . '.zip';
         $zip = new \ZipArchive();
 
@@ -297,7 +286,6 @@ class ItemController extends Controller
         foreach ($chunks as $pageIndex => $chunk) {
             $pageNum = $pageIndex + 1;
 
-            // Render PDF per batch
             $pdf = Pdf::loadView('admin.items.pdf', [
                 'item'       => $item,
                 'stockCodes' => $chunk,
@@ -309,7 +297,6 @@ class ItemController extends Controller
 
             $pdfContent = $pdf->output();
 
-            // Range nomor stok
             $firstNo = $chunk->first()->stock_number ?? 1;
             $lastNo  = $chunk->last()->stock_number ?? 1;
 
@@ -331,7 +318,7 @@ class ItemController extends Controller
     }
 
     // ============================================================
-    // 🔥🔥🔥 GENERATE PNG STIKER — SEMUA KODE AKTIF
+    // 🔥🔥🔥 GENERATE PNG STIKER — SPLIT 10 STIKER PER FILE
     // ============================================================
     public function generatePng(Item $item)
     {
@@ -361,7 +348,8 @@ class ItemController extends Controller
             $totalStok = 1;
         }
 
-        $maxPerFile = 25;
+        // 🔥 PAGINATION 10 PER FILE (sama dengan PDF)
+        $maxPerFile = 10;
 
         if ($totalStok <= $maxPerFile) {
             return $this->generateSinglePngFile($item, $stockCodes, $totalStok);

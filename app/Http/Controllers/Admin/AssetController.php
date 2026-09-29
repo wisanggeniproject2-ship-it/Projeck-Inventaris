@@ -20,24 +20,26 @@ class AssetController extends Controller
      * 
      * Rumus: Stok Nilai Aset = Ready + Dipinjam + Maintenance
      *                          = count(item_stocks WHERE status IN ('available','borrowed','maintenance'))
+     * 
+     * 🔥 CATATAN:
+     * - Total & perKategori → dihitung dari SEMUA item (TIDAK ikut filter)
+     * - Daftar items        → IKUT filter + paginate 15
      */
-    public function index()
+    public function index(Request $request)
     {
-        // 🔥 Eager load stockCodes (biar accessor cepat)
-        $items = Item::with(['category', 'unit', 'stockCodes'])->get();
+        // ============================================================
+        // 1. HITUNG TOTAL & PER KATEGORI (DARI SEMUA ITEM — TIDAK DIFILTER)
+        // ============================================================
+        $allItems = Item::with(['category', 'stockCodes'])->get();
 
         $totalNilaiAset    = 0.0;
         $totalJumlahBarang = 0;
         $perKategori       = [];
 
-        foreach ($items as $item) {
+        foreach ($allItems as $item) {
             $harga = (float) $item->price;
-            
-            // 🔥🔥🔥 STOK UNTUK NILAI ASET
-            // = Ready + Dipinjam + Maintenance
-            // Disposed dianggap hilang musnah, TIDAK dihitung
-            $stok = $item->stock_for_asset;
-            
+            $stok  = $item->stock_for_asset;
+
             $subtotal = $harga * $stok;
 
             $totalNilaiAset    = (float) $totalNilaiAset + (float) $subtotal;
@@ -69,11 +71,48 @@ class AssetController extends Controller
         }
         unset($kat);
 
+        // ============================================================
+        // 2. DAFTAR ITEMS — IKUT FILTER + PAGINATE 15
+        // ============================================================
+        $itemsQuery = Item::with(['category', 'unit', 'fundingSource', 'stockCodes']);
+
+        // Filter kategori
+        if ($request->filled('category')) {
+            $itemsQuery->where('category_id', $request->category);
+        }
+
+        // Filter unit
+        if ($request->filled('unit')) {
+            $itemsQuery->where('unit_id', $request->unit);
+        }
+
+        // Filter kondisi
+        if ($request->filled('condition')) {
+            $itemsQuery->where('condition', $request->condition);
+        }
+
+        // Search nama / kode
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $itemsQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $itemsQuery->latest()->paginate(15)->withQueryString();
+
+        $categories = Category::orderBy('name')->get();
+        $units      = Unit::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.assets.index', compact(
             'totalNilaiAset',
             'totalJumlahBarang',
             'perKategori',
-            'items'
+            'items',
+            'categories',
+            'units'
         ));
     }
 
@@ -83,36 +122,28 @@ class AssetController extends Controller
      * 
      * Perhitungan pakai stock_for_asset (Ready + Dipinjam + Maintenance)
      * Disposed tidak dihitung
+     * 
+     * 🔥 CATATAN:
+     * - Grand total & unit summary → dihitung dari SEMUA item (TIDAK ikut filter)
+     * - Daftar items per unit      → IKUT filter + paginate 15
      */
     public function depreciation(Request $request)
     {
-        // 🔥 Eager load stockCodes
-        $query = Item::with(['category', 'unit', 'fundingSource', 'stockCodes'])
+        // ============================================================
+        // 1. HITUNG GRAND TOTAL & UNIT SUMMARY (DARI SEMUA — TIDAK DIFILTER)
+        // ============================================================
+        $allItems = Item::with(['category', 'unit', 'fundingSource', 'stockCodes'])
             ->whereNotNull('price')
             ->whereNotNull('purchase_date')
-            ->where('price', '>', 0);
+            ->where('price', '>', 0)
+            ->orderBy('unit_id', 'asc')
+            ->orderBy('purchase_date', 'asc')
+            ->get();
 
-        // Filter kategori
-        if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
-        }
-
-        // Filter unit
-        if ($request->filled('unit')) {
-            $query->where('unit_id', $request->unit);
-        }
-
-        // Ambil SEMUA data
-        $items = $query->orderBy('unit_id', 'asc')
-                       ->orderBy('purchase_date', 'asc')
-                       ->get();
-
-        // 🔥 KELOMPOKKAN PER UNIT
-        $itemsByUnit = $items->groupBy(function ($item) {
+        $itemsByUnit = $allItems->groupBy(function ($item) {
             return $item->unit->name ?? 'Tanpa Unit';
         });
 
-        // 🔥 Hitung total PER UNIT
         $unitSummary = [];
         foreach ($itemsByUnit as $unitName => $unitItems) {
             $totalNilaiAset = 0.0;
@@ -121,8 +152,6 @@ class AssetController extends Controller
             $totalBarang    = 0;
 
             foreach ($unitItems as $item) {
-                // 🔥🔥🔥 STOK UNTUK PENYUSUTAN
-                // = Ready + Dipinjam + Maintenance
                 $stok = $item->stock_for_asset;
 
                 $totalNilaiAset += ((float) $item->price) * $stok;
@@ -141,11 +170,43 @@ class AssetController extends Controller
             ];
         }
 
-        // 🔥 Grand total
         $grandTotalNilai  = collect($unitSummary)->sum('total_nilai');
         $grandTotalAkum   = collect($unitSummary)->sum('total_akumulasi');
         $grandTotalBuku   = collect($unitSummary)->sum('total_buku');
         $grandTotalBarang = collect($unitSummary)->sum('total_barang');
+
+        // ============================================================
+        // 2. DAFTAR ITEMS — IKUT FILTER + PAGINATE 15
+        // ============================================================
+        $itemsQuery = Item::with(['category', 'unit', 'fundingSource', 'stockCodes'])
+            ->whereNotNull('price')
+            ->whereNotNull('purchase_date')
+            ->where('price', '>', 0);
+
+        // Filter kategori
+        if ($request->filled('category')) {
+            $itemsQuery->where('category_id', $request->category);
+        }
+
+        // Filter unit
+        if ($request->filled('unit')) {
+            $itemsQuery->where('unit_id', $request->unit);
+        }
+
+        // Search nama / kode
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $itemsQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        $filteredItems = $itemsQuery
+            ->orderBy('unit_id', 'asc')
+            ->orderBy('purchase_date', 'asc')
+            ->paginate(15)
+            ->withQueryString();
 
         $categories = Category::orderBy('name')->get();
         $units      = Unit::where('is_active', true)->orderBy('name')->get();
@@ -157,7 +218,8 @@ class AssetController extends Controller
             'grandTotalNilai',
             'grandTotalAkum',
             'grandTotalBuku',
-            'grandTotalBarang'
+            'grandTotalBarang',
+            'filteredItems'
         ));
     }
 }

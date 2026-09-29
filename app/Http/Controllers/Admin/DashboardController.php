@@ -7,8 +7,9 @@ use App\Models\Item;
 use App\Models\Circulation;
 use App\Models\User;
 use App\Models\Unit;
-use App\Models\AssetDisposal;   // 🔥 TAMBAH INI
+use App\Models\AssetDisposal;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -23,16 +24,33 @@ class DashboardController extends Controller
             'total_maintenance' => Item::where('status', 'maintenance')->count(),
         ];
 
-        $recentItems = Item::with(['category', 'unit'])->latest()->take(5)->get();
-        $recentCirculations = Circulation::with(['item', 'user'])->latest()->take(5)->get();
+        // ============================================================
+        // 🔥 BATAS 7 HARI TERAKHIR
+        // ============================================================
+        $sevenDaysAgo = Carbon::now()->subDays(7);
 
-        // 🔥 TAMBAH INI — pengajuan penghapusan terbaru
-        $recentDisposals = AssetDisposal::with(['item', 'user'])
+        // 🔥 Barang terbaru — 7 hari terakhir
+        $recentItems = Item::with(['category', 'unit'])
+            ->where('created_at', '>=', $sevenDaysAgo)
             ->latest()
             ->take(5)
             ->get();
 
-        // 🔥 TAMBAH INI — hitung total pengajuan yang masih pending
+        // 🔥 Peminjaman terbaru — 7 hari terakhir
+        $recentCirculations = Circulation::with(['item', 'user'])
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // 🔥 Pengajuan penghapusan terbaru — 7 hari terakhir
+        $recentDisposals = AssetDisposal::with(['item', 'user'])
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // 🔥 Total pengajuan yang masih pending (SEMUA, tidak dibatasi 7 hari)
         $stats['total_disposal_pending'] = AssetDisposal::where('status', 'pending')->count();
 
         // Tren peminjaman 6 bulan terakhir (berdasarkan tanggal pinjam)
@@ -59,8 +77,12 @@ class DashboardController extends Controller
             ->toArray();
 
         return view('admin.dashboard', compact(
-            'stats', 'recentItems', 'recentCirculations', 'chartTrend', 'unitBreakdown',
-            'recentDisposals'   // 🔥 TAMBAHAN
+            'stats',
+            'recentItems',
+            'recentCirculations',
+            'recentDisposals',
+            'chartTrend',
+            'unitBreakdown'
         ));
     }
 }

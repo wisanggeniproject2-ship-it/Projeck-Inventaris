@@ -148,6 +148,84 @@
             </h2>
         </div>
 
+        {{-- 🔥 FORM FILTER --}}
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <form method="GET" action="{{ route('super_admin.assets.index') }}">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+                    {{-- Filter Kategori --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Kategori</label>
+                        <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="">Semua Kategori</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>
+                                    {{ $cat->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Filter Unit --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Unit</label>
+                        <select name="unit" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="">Semua Unit</option>
+                            @foreach($units as $unit)
+                                <option value="{{ $unit->id }}" {{ request('unit') == $unit->id ? 'selected' : '' }}>
+                                    {{ $unit->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Filter Kondisi --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Kondisi</label>
+                        <select name="condition" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="">Semua Kondisi</option>
+                            <option value="baik" {{ request('condition') == 'baik' ? 'selected' : '' }}>Baik</option>
+                            <option value="rusak" {{ request('condition') == 'rusak' ? 'selected' : '' }}>Rusak</option>
+                            <option value="perbaikan" {{ request('condition') == 'perbaikan' ? 'selected' : '' }}>Perbaikan</option>
+                        </select>
+                    </div>
+
+                    {{-- Search --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Cari</label>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               placeholder="Nama / Kode / Lokasi..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+
+                    {{-- Tombol --}}
+                    <div class="flex items-end gap-2">
+                        <button type="submit"
+                                class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition">
+                            <i class="fas fa-search"></i>Filter
+                        </button>
+                        @if(request()->hasAny(['category', 'unit', 'condition', 'search']))
+                            <a href="{{ route('super_admin.assets.index') }}"
+                               class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition"
+                               title="Reset filter">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+
+                </div>
+
+                {{-- Info hasil filter --}}
+                @if(request()->hasAny(['category', 'unit', 'condition', 'search']))
+                    <div class="mt-3 text-xs text-gray-500">
+                        <i class="fas fa-info-circle text-teal-500"></i>
+                        Menampilkan <strong>{{ $items->total() }}</strong> barang sesuai filter.
+                        <span class="text-gray-400">(Total di atas tetap dihitung dari semua barang)</span>
+                    </div>
+                @endif
+            </form>
+        </div>
+
         @if($items->isEmpty())
             <div class="p-12 text-center text-gray-500">
                 <i class="fas fa-box-open text-5xl mb-3 text-gray-300"></i>
@@ -169,24 +247,17 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($items as $item)
                         @php
-                            // 🔥 CAST WAJIB — karena cast 'decimal:2' di model = STRING
                             $harga = (float) ($item->price ?? 0);
-                            
-                            // 🔥🔥🔥 STOK UNTUK NILAI ASET
-                            // = Ready + Dipinjam + Maintenance
-                            // (Disposed dianggap hilang, TIDAK dihitung)
                             $stok = $item->stock_for_asset;
-                            
                             $subtotal = $harga * $stok;
 
-                            // Info breakdown untuk tooltip
                             $availableStock   = $item->available_stock;
                             $borrowedStock    = $item->borrowed_stock;
                             $disposedStock    = $item->disposed_stock_count;
                             $maintenanceStock = $item->maintenance_stock;
                         @endphp
                         <tr class="hover:bg-gray-50 transition">
-                            {{-- 🔥 KODE BARANG — pakai full_code --}}
+                            {{-- KODE BARANG --}}
                             <td class="px-6 py-4">
                                 <div class="inline-flex items-start gap-1 px-2 py-1 rounded-md border max-w-[280px]"
                                      style="background: #0F6B5F10; border-color: #0F6B5F30;">
@@ -250,6 +321,11 @@
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            {{-- 🔥 PAGINATION --}}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                {{ $items->links() }}
             </div>
         @endif
     </div>
