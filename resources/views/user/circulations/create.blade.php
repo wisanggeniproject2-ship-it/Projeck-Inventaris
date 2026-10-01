@@ -148,7 +148,7 @@
                 </div>
 
                 {{-- ============================================================ --}}
-                {{-- 🔥 PILIH KODE STOK SPESIFIK                                   --}}
+                {{-- 🔥 PILIH KODE STOK SPESIFIK (MULTI-SELECT CHECKBOX)          --}}
                 {{-- ============================================================ --}}
                 <div>
                     <label class="block text-sm font-medium mb-2 text-gray-700">
@@ -159,12 +159,11 @@
                     <div class="border-2 border-gray-200 rounded-xl p-3 max-h-72 overflow-y-auto bg-gray-50 space-y-2">
                         @forelse($availableStockCodes as $sc)
                             <label class="flex items-center gap-3 p-3 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-400 hover:bg-brand-50 cursor-pointer transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 has-[:checked]:shadow-sm">
-                                <input type="radio"
-                                       name="item_stock_id"
+                                <input type="checkbox"
+                                       name="item_stock_ids[]"
                                        value="{{ $sc->id }}"
-                                       required
-                                       {{ old('item_stock_id') == $sc->id ? 'checked' : '' }}
-                                       class="w-4 h-4 text-brand-500 focus:ring-brand-500 shrink-0 cursor-pointer">
+                                       {{ collect(old('item_stock_ids', []))->contains($sc->id) ? 'checked' : '' }}
+                                       class="w-4 h-4 text-brand-500 focus:ring-brand-500 shrink-0 cursor-pointer rounded">
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-1.5 mb-0.5">
                                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-md text-[10px] font-bold shrink-0"
@@ -180,7 +179,6 @@
                                         {{ $sc->stock_code }}
                                     </p>
                                 </div>
-                                <i class="fas fa-check-circle text-brand-500 text-lg opacity-0 transition-opacity peer-checked:opacity-100"></i>
                             </label>
                         @empty
                             <div class="text-center py-6">
@@ -190,12 +188,47 @@
                         @endforelse
                     </div>
 
-                    <p class="text-xs text-gray-400 mt-2">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Pilih 1 kode stok. Kode stok lain yang sedang dipinjam orang lain tidak akan muncul di sini.
-                    </p>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
+                        <p class="text-xs text-gray-400">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Centang satu atau lebih kode stok kalau mau pinjam beberapa unit sekaligus.
+                        </p>
+                        @if($availableStockCodes->count() > 1)
+                        <button type="button" id="selectAllStocks" class="text-xs text-brand-600 hover:text-brand-800 font-medium shrink-0 sm:ml-2 self-start sm:self-auto">
+                            Pilih Semua
+                        </button>
+                        @endif
+                    </div>
 
-                    @error('item_stock_id')
+                    {{-- ============================================================ --}}
+                    {{-- 🔥 TOTAL BARANG YANG DIPINJAM — update otomatis              --}}
+                    {{-- ============================================================ --}}
+                    <div class="mt-3 flex items-center justify-between gap-3 border-2 rounded-xl px-3 sm:px-4 py-3"
+                         style="background: #0F6B5F10; border-color: #0F6B5F40;">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0"
+                                 style="color: #0F6B5F;">
+                                <i class="fas fa-boxes-stacked text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide truncate"
+                                   style="color: #0F6B5F;">
+                                    Total Barang yang Dipinjam
+                                </p>
+                                <p class="text-[11px] text-gray-500 mt-0.5 truncate">
+                                    Jumlah unit yang kamu centang di atas
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-1 shrink-0">
+                            <span id="totalBorrowCount"
+                                  class="text-2xl font-bold tabular-nums"
+                                  style="color: #0F6B5F;">0</span>
+                            <span class="text-xs font-medium" style="color: #0F6B5F;">unit</span>
+                        </div>
+                    </div>
+
+                    @error('item_stock_ids')
                         <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                             <i class="fas fa-exclamation-circle"></i>{{ $message }}
                         </p>
@@ -488,6 +521,52 @@
                 // Kalau return_date sekarang < borrow_date, auto-update
                 if (returnDateInput.value && returnDateInput.value < borrow) {
                     returnDateInput.value = borrow;
+                }
+            });
+        }
+    });
+
+    // ============================================================
+    // 🔥 MULTI-SELECT KODE STOK — Pilih Semua + validasi + total counter
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllBtn    = document.getElementById('selectAllStocks');
+        const stockCheckboxes = document.querySelectorAll('input[name="item_stock_ids[]"]');
+        const totalBorrowEl   = document.getElementById('totalBorrowCount');
+
+        // 🔥 Update jumlah total barang yang dipinjam
+        function updateTotalBorrow() {
+            if (!totalBorrowEl) return;
+            const checked = document.querySelectorAll('input[name="item_stock_ids[]"]:checked');
+            totalBorrowEl.textContent = checked.length;
+        }
+
+        // Dengarkan perubahan tiap checkbox
+        stockCheckboxes.forEach(function (cb) {
+            cb.addEventListener('change', updateTotalBorrow);
+        });
+
+        // Hitung saat halaman pertama dibuka (kalau ada old value dari validasi gagal)
+        updateTotalBorrow();
+
+        // Tombol "Pilih Semua" / "Batal Pilih Semua"
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function () {
+                const allChecked = Array.from(stockCheckboxes).every(function (cb) { return cb.checked; });
+                stockCheckboxes.forEach(function (cb) { cb.checked = !allChecked; });
+                selectAllBtn.textContent = allChecked ? 'Pilih Semua' : 'Batal Pilih Semua';
+                updateTotalBorrow();
+            });
+        }
+
+        // Validasi minimal 1 checkbox dicentang saat submit
+        const circForm = document.querySelector('form[action="{{ route('user.circulations.store') }}"]');
+        if (circForm) {
+            circForm.addEventListener('submit', function (e) {
+                const checked = document.querySelectorAll('input[name="item_stock_ids[]"]:checked');
+                if (checked.length === 0) {
+                    e.preventDefault();
+                    alert('Pilih minimal 1 kode stok yang mau dipinjam.');
                 }
             });
         }

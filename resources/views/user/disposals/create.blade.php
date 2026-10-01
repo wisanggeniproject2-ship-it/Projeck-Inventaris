@@ -307,40 +307,83 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ============================================================
-    // Preview foto
+    // 🔥 Kompresi otomatis + Preview foto
     // ============================================================
     const photosInput = document.getElementById('photosInput');
     const photoPreview = document.getElementById('photoPreview');
 
-    if (photosInput) {
-        photosInput.addEventListener('change', function () {
-            photoPreview.innerHTML = '';
-            const files = Array.from(this.files);
+    function compressImage(file, maxDimension = 1280, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) { resolve(file); return; }
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.onload = function () {
+                    let { width, height } = img;
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) { height = Math.round(height * (maxDimension / width)); width = maxDimension; }
+                        else { width = Math.round(width * (maxDimension / height)); height = maxDimension; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(function (blob) {
+                        if (!blob) { resolve(file); return; }
+                        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() }));
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
 
-            if (files.length === 0) {
+    function renderPreview(files) {
+        photoPreview.innerHTML = '';
+        if (files.length === 0) {
+            photoPreview.classList.add('hidden');
+            return;
+        }
+        photoPreview.classList.remove('hidden');
+        files.forEach((file, i) => {
+            if (!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200';
+                div.innerHTML = `
+                    <img src="${e.target.result}" class="w-full h-full object-cover">
+                    <div class="absolute top-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        ${i + 1}
+                    </div>
+                `;
+                photoPreview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (photosInput) {
+        photosInput.addEventListener('change', async function () {
+            const originalFiles = Array.from(this.files);
+            if (originalFiles.length === 0) {
                 photoPreview.classList.add('hidden');
                 return;
             }
 
-            photoPreview.classList.remove('hidden');
+            const compressed = [];
+            for (const file of originalFiles) {
+                try { compressed.push(await compressImage(file)); }
+                catch (err) { console.error('Gagal kompres foto, pakai file asli:', err); compressed.push(file); }
+            }
 
-            files.forEach((file, i) => {
-                if (!file.type.startsWith('image/')) return;
+            const dt = new DataTransfer();
+            compressed.forEach(f => dt.items.add(f));
+            this.files = dt.files;
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const div = document.createElement('div');
-                    div.className = 'relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200';
-                    div.innerHTML = `
-                        <img src="${e.target.result}" class="w-full h-full object-cover">
-                        <div class="absolute top-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                            ${i + 1}
-                        </div>
-                    `;
-                    photoPreview.appendChild(div);
-                };
-                reader.readAsDataURL(file);
-            });
+            renderPreview(compressed);
         });
     }
 });

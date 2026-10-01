@@ -9,6 +9,7 @@ use App\Models\Unit;
 use App\Models\Circulation;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CirculationController extends Controller
@@ -106,14 +107,16 @@ class CirculationController extends Controller
     }
 
     /**
-     * 🔥 STORE — simpan peminjaman
+     * 🔥 STORE — simpan peminjaman (multi-select kode stok)
      * 
      * User pilih:
-     *  - item_stock_id (kode stok spesifik yang mau dipinjam)
+     *  - item_stock_ids[] (1 atau lebih kode stok spesifik yang mau dipinjam)
      *  - borrow_date + borrow_hour + borrow_minute
      *  - expected_return_date + return_hour + return_minute
      *  - borrower_name
      *  - purpose
+     * 
+     * 1 baris Circulation dibuat per kode stok yang dipilih.
      */
     public function store(Request $request)
     {
@@ -122,7 +125,8 @@ class CirculationController extends Controller
         // ============================================================
         $request->validate([
             'item_id'              => 'required|exists:items,id',
-            'item_stock_id'        => 'required|exists:item_stocks,id',       // 🔥 BARU
+            'item_stock_ids'       => 'required|array|min:1',
+            'item_stock_ids.*'     => 'integer|exists:item_stocks,id',
             'borrower_name'        => 'required|string|max:100',
             'borrow_date'          => 'required|date|after_or_equal:today',
             'borrow_hour'          => 'required|numeric|between:0,23',
@@ -134,8 +138,9 @@ class CirculationController extends Controller
         ], [
             'item_id.required'                    => 'Barang wajib dipilih.',
             'item_id.exists'                      => 'Barang tidak valid.',
-            'item_stock_id.required'              => 'Pilih kode stok yang mau dipinjam.',     // 🔥 BARU
-            'item_stock_id.exists'                => 'Kode stok tidak valid.',                  // 🔥 BARU
+            'item_stock_ids.required'             => 'Pilih minimal 1 kode stok yang mau dipinjam.',
+            'item_stock_ids.min'                  => 'Pilih minimal 1 kode stok yang mau dipinjam.',
+            'item_stock_ids.*.exists'             => 'Salah satu kode stok tidak valid.',
             'borrower_name.required'              => 'Nama peminjam wajib diisi.',
             'borrower_name.max'                   => 'Nama peminjam maksimal 100 karakter.',
             'borrow_date.required'                => 'Tanggal pinjam wajib diisi.',
@@ -159,39 +164,37 @@ class CirculationController extends Controller
         ]);
 
         // ============================================================
-        // 2. AMBIL ITEM & CEK KODE STOK
+        // 2. AMBIL ITEM & VALIDASI SEMUA KODE STOK YANG DIPILIH
         // ============================================================
         $item = Item::findOrFail($request->item_id);
 
-        // 🔥 Cek kode stok spesifik yang dipilih
-        $itemStock = ItemStock::where('id', $request->item_stock_id)
+        $itemStocks = ItemStock::whereIn('id', $request->item_stock_ids)
             ->where('item_id', $item->id)
-            ->first();
+            ->get();
 
-        if (!$itemStock) {
-            return back()
-                ->withInput()
-                ->with('error', 'Kode stok tidak ditemukan untuk barang ini.');
+        if ($itemStocks->count() !== count($request->item_stock_ids)) {
+            return back()->withInput()
+                ->with('error', 'Sebagian kode stok yang dipilih tidak valid untuk barang ini.');
         }
 
-        if ($itemStock->status !== 'available') {
-            return back()
-                ->withInput()
-                ->with('error', 'Kode stok "' . $itemStock->stock_code . '" sedang tidak tersedia (status: ' . $itemStock->status . ').');
+        $notAvailable = $itemStocks->where('status', '!=', 'available');
+        if ($notAvailable->isNotEmpty()) {
+            $codes = $notAvailable->pluck('stock_code')->implode(', ');
+            return back()->withInput()
+                ->with('error', 'Kode stok berikut sudah tidak tersedia: ' . $codes);
         }
 
-        // 🔥 Cek: sudah ada circulation aktif untuk kode stok ini?
-        $activeCirculation = Circulation::where('item_stock_id', $itemStock->id)
+        $activeStockIds = Circulation::whereIn('item_stock_id', $itemStocks->pluck('id'))
             ->whereIn('status', ['pending', 'approved', 'return_pending'])
-            ->exists();
+            ->pluck('item_stock_id')
+            ->toArray();
 
-        if ($activeCirculation) {
-            return back()
-                ->withInput()
-                ->with('error', 'Kode stok ini sedang dalam proses peminjaman.');
+        if (!empty($activeStockIds)) {
+            $codes = $itemStocks->whereIn('id', $activeStockIds)->pluck('stock_code')->implode(', ');
+            return back()->withInput()
+                ->with('error', 'Kode stok berikut sedang dalam proses peminjaman: ' . $codes);
         }
 
-        // Cek: user sudah punya circulation aktif untuk item ini?
         $userExisting = Circulation::where('item_id', $item->id)
             ->where('user_id', auth()->id())
             ->whereIn('status', ['pending', 'approved', 'return_pending'])
@@ -220,7 +223,6 @@ class CirculationController extends Controller
                 ->with('error', 'Format tanggal atau jam pinjam tidak valid.');
         }
 
-        // 🔥 Validasi: jam pinjam tidak boleh di masa lalu
         if ($borrowDateTime->isPast()) {
             return back()
                 ->withInput()
@@ -244,7 +246,6 @@ class CirculationController extends Controller
                 ->with('error', 'Format tanggal atau jam kembali tidak valid.');
         }
 
-        // Validasi: tenggat harus SETELAH waktu pinjam
         if ($expectedReturn->lte($borrowDateTime)) {
             return back()
                 ->withInput()
@@ -254,14 +255,12 @@ class CirculationController extends Controller
         // ============================================================
         // 5. VALIDASI DURASI
         // ============================================================
-        // Durasi minimal 30 menit
         if ($expectedReturn->lessThan($borrowDateTime->copy()->addMinutes(30))) {
             return back()
                 ->withInput()
                 ->with('error', 'Durasi peminjaman minimal 30 menit.');
         }
 
-        // Durasi maksimal 7 hari
         if ($expectedReturn->greaterThan($borrowDateTime->copy()->addDays(7))) {
             return back()
                 ->withInput()
@@ -269,28 +268,39 @@ class CirculationController extends Controller
         }
 
         // ============================================================
-        // 6. BUAT CIRCULATION
+        // 6. BUAT CIRCULATION — 1 BARIS PER KODE STOK YANG DIPILIH
         // ============================================================
-        $circulation = Circulation::create([
-            'item_id'              => $item->id,
-            'item_stock_id'        => $itemStock->id,         // 🔥 FK ke item_stocks
-            'stock_code'           => $itemStock->stock_code, // 🔥 Simpan kode (history)
-            'user_id'              => auth()->id(),
-            'borrower_name'        => $request->borrower_name,
-            'borrow_date'          => $borrowDateTime,
-            'expected_return_date' => $expectedReturn,
-            'purpose'              => $request->purpose,
-            'status'               => 'pending',
-        ]);
+        $createdCirculations = [];
+
+        DB::transaction(function () use (&$createdCirculations, $itemStocks, $item, $request, $borrowDateTime, $expectedReturn) {
+            foreach ($itemStocks as $itemStock) {
+                $createdCirculations[] = Circulation::create([
+                    'item_id'              => $item->id,
+                    'item_stock_id'        => $itemStock->id,
+                    'stock_code'           => $itemStock->stock_code,
+                    'user_id'              => auth()->id(),
+                    'borrower_name'        => $request->borrower_name,
+                    'borrow_date'          => $borrowDateTime,
+                    'expected_return_date' => $expectedReturn,
+                    'purpose'              => $request->purpose,
+                    'status'               => 'pending',
+                ]);
+            }
+        });
 
         // ============================================================
-        // 7. KIRIM NOTIFIKASI KE ADMIN UNIT
+        // 7. KIRIM NOTIFIKASI KE ADMIN UNIT (1 notif per unit)
         // ============================================================
-        $this->notificationService->sendCirculationNotification($circulation, 'pending');
+        foreach ($createdCirculations as $circulation) {
+            $this->notificationService->sendCirculationNotification($circulation, 'pending');
+        }
+
+        $codesList = $itemStocks->pluck('stock_code')->implode(', ');
+        $count = count($createdCirculations);
 
         return redirect()
             ->route('user.circulations.index')
-            ->with('success', 'Peminjaman berhasil diajukan! Kode stok: ' . $itemStock->stock_code);
+            ->with('success', $count . ' unit berhasil diajukan! Menunggu persetujuan admin unit. Kode: ' . $codesList);
     }
 
     /**
